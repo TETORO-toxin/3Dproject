@@ -15,6 +15,7 @@ class Player
 {
 public:
     enum class Mode { Melee, Ranged };
+    enum class AnimLayer { Full = 0, Lower = 1, Upper = 2 };
 
     Player(AssetsMgr* assets = nullptr);
     ~Player();
@@ -45,7 +46,8 @@ public:
 
     // Animation (uses separate MV1 models per animation for compatibility)
     // NOTE: animations are played against the original/base model instead of swapping the active model handle.
-    void PlayAnimation(const std::string& name, bool loop = false);
+    // layer parameter selects whether to play as full-body, or only lower/upper body.
+    void PlayAnimation(const std::string& name, bool loop = false, AnimLayer layer = AnimLayer::Full);
     void UpdateAnimation(float dt);
 
     // Animation event helpers: call cb when animation time (seconds) is reached
@@ -104,6 +106,8 @@ private:
 
     // Animation timing and events (per-animation duration is configurable)
     std::unordered_map<std::string, float> animDurations_; // seconds
+
+    // Lower-body (original) animation state
     std::string currentAnim_;
     float animTime_ = 0.0f; // seconds
     bool animLoop_ = true;
@@ -115,23 +119,40 @@ private:
     // camera reference for camera-relative movement/facing
     CameraRig* camera_ = nullptr;
 
-    // currently attached animation attach index (returned by MV1AttachAnim), or -1 if none
+    // currently attached animation attach index (returned by MV1AttachAnim), or -1 if none (lower-body)
     int attachedAnimAttachIndex_ = -1;
     // previously attached animation attach index (for blending)
     int prevAttachedAnimAttachIndex_ = -1;
 
-    // DXLib attach-animation total time for current and previous attachments
+    // DXLib attach-animation total time for current and previous attachments (lower-body)
     float attachedAnimTotalTime_ = 0.0f;
     float prevAttachedAnimTotalTime_ = 0.0f;
 
-    // store previous anim name and its seconds-based playhead for event/length lookup
+    // store previous anim name and its seconds-based playhead for event/length lookup (lower-body)
     std::string prevAnimName_;
     float prevAnimTimeSeconds_ = 0.0f;
     bool prevAnimLoop_ = true;
 
-    // blending control
+    // blending control (lower-body)
     float animBlendRate_ = 1.0f; // 0..1, goes to 1 when blend completes
     float animBlendSpeed_ = 0.12f; // per-frame increment
+
+    // Upper-body animation state (new)
+    std::string upperAnim_;
+    float upperAnimTime_ = 0.0f;
+    bool upperAnimLoop_ = true;
+
+    int upperAttachedAnimAttachIndex_ = -1;
+    int prevUpperAttachedAnimAttachIndex_ = -1;
+
+    float upperAttachedAnimTotalTime_ = 0.0f;
+    float prevUpperAttachedAnimTotalTime_ = 0.0f;
+
+    std::string prevUpperAnim_;
+    float prevUpperAnimTimeSeconds_ = 0.0f;
+    bool prevUpperAnimLoop_ = true;
+
+    float upperAnimBlendRate_ = 1.0f; // blending for upper layer
 
     // whether this object owns the base model handle (loaded directly instead of via AssetsMgr)
     bool ownsBaseModel_ = false;
