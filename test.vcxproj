@@ -26,6 +26,11 @@
     <ClCompile Include="Game\CameraRig.cpp" />
     <ClCompile Include="Game\Enemy.cpp" />
     <ClCompile Include="Game\Player.cpp" />
+    <ClCompile Include="Game\Player_Animation.cpp" />
+    <ClCompile Include="Game\Player_AuxAndCombat.cpp" />
+    <ClCompile Include="Game\Player_Draw.cpp" />
+    <ClCompile Include="Game\Player_Init.cpp" />
+    <ClCompile Include="Game\Player_InputAndMovement.cpp" />
     <ClCompile Include="Game\Projectile.cpp" />
     <ClCompile Include="Game\SupportSystem.cpp" />
     <ClCompile Include="Game\UI3D2D.cpp" />
