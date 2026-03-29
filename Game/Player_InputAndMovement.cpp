@@ -86,10 +86,21 @@ void Player::UpdateLogic()
               float faceDX = worldDX;
               float faceDZ = worldDZ;
               if (fabsf(faceDX) > 0.0001f || fabsf(faceDZ) > 0.0001f) {
-                  float yaw = atan2f(faceDX, faceDZ);
-                  // モデルハンドルに回転を適用
-                  if (modelHandle_ != -1) MV1SetRotationXYZ(modelHandle_, VGet(0.0f, yaw + DX_PI_F, 0.0f));
-                  if (baseModelHandle_ != -1 && baseModelHandle_ != modelHandle_) MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, yaw + DX_PI_F, 0.0f));
+                  float desiredYaw = atan2f(faceDX, faceDZ);
+                  targetYaw_ = desiredYaw;
+                  // step toward desired yaw using shortest angular distance
+                  float a = currentYaw_;
+                  float b = desiredYaw;
+                  float diff = b - a;
+                  // wrap to [-pi, pi]
+                  while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
+                  while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
+                  float maxStep = yawTurnSpeed_ * dt;
+                  if (fabsf(diff) <= maxStep) currentYaw_ = b;
+                  else currentYaw_ += (diff > 0.0f ? 1.0f : -1.0f) * maxStep;
+
+                  if (modelHandle_ != -1) MV1SetRotationXYZ(modelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
+                  if (baseModelHandle_ != -1 && baseModelHandle_ != modelHandle_) MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
               }
           }
       } else {
@@ -101,9 +112,19 @@ void Player::UpdateLogic()
               float faceDX = moveX;
               float faceDZ = moveY;
               if (fabsf(faceDX) > 0.0001f || fabsf(faceDZ) > 0.0001f) {
-                  float yaw = atan2f(faceDX, faceDZ);
-                  if (modelHandle_ != -1) MV1SetRotationXYZ(modelHandle_, VGet(0.0f, yaw + DX_PI_F, 0.0f));
-                  if (baseModelHandle_ != -1 && baseModelHandle_ != modelHandle_) MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, yaw + DX_PI_F, 0.0f));
+                  float desiredYaw = atan2f(faceDX, faceDZ);
+                  targetYaw_ = desiredYaw;
+                  float a = currentYaw_;
+                  float b = desiredYaw;
+                  float diff = b - a;
+                  while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
+                  while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
+                  float maxStep = yawTurnSpeed_ * dt;
+                  if (fabsf(diff) <= maxStep) currentYaw_ = b;
+                  else currentYaw_ += (diff > 0.0f ? 1.0f : -1.0f) * maxStep;
+
+                  if (modelHandle_ != -1) MV1SetRotationXYZ(modelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
+                  if (baseModelHandle_ != -1 && baseModelHandle_ != modelHandle_) MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
               }
           }
       }
@@ -122,13 +143,18 @@ void Player::UpdateLogic()
      
      // 攻撃入力の処理（移動より優先、ジャンプよりは劣後）
     unsigned int now = GetNowCount();
-    if (attackInput) {
+
+    // Edge-detect attack input so a single press triggers only one attack
+    bool attackBtnComposite = attackInput;
+    if (attackBtnComposite && !prevAttackBtnDown_) {
+        // newly pressed
         if (now - lastAttackTimeMs_ > (unsigned int)attackCooldownMs_) {
             lastAttackTimeMs_ = now;
             // Play upper-body attack while keeping lower-body state (move/idle)
             PlayAnimation("attack", false, AnimLayer::Upper);
         }
     }
+    prevAttackBtnDown_ = attackBtnComposite;
 
     // ジャンプ入力の処理
     if (jumpInput && onGround_) {

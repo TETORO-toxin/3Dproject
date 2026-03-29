@@ -119,6 +119,11 @@ private:
     // camera reference for camera-relative movement/facing
     CameraRig* camera_ = nullptr;
 
+    // Smoothed facing (yaw) state: target and current yaw in radians and tuning speed (rad/s)
+    float currentYaw_ = 0.0f; // current applied yaw (radians)
+    float targetYaw_ = 0.0f;  // desired yaw computed from input
+    float yawTurnSpeed_ = 8.0f; // radians per second (how fast player turns toward input)
+
     // currently attached animation attach index (returned by MV1AttachAnim), or -1 if none (lower-body)
     int attachedAnimAttachIndex_ = -1;
     // previously attached animation attach index (for blending)
@@ -165,4 +170,7 @@ private:
 
     // timing helper for jump input (debounce)
     unsigned int lastJumpTimeMs_ = 0;
+
+    // Track previous frame's attack button composite state to detect press edges (one attack per press)
+    bool prevAttackBtnDown_ = false;
 };
