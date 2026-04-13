@@ -7,10 +7,12 @@ class CameraRig;
 class AssetsMgr;
 class Enemy;
 class TitleScene;
+class EffectManager;
 
 class SceneMgr
 {
 public:
+    ~SceneMgr();
     enum class Scene
     {
         Title,
@@ -42,4 +44,6 @@ private:
 
     // Title scene
     TitleScene* titleScene_ = nullptr;
+    // owned effect manager (registered as global)
+    EffectManager* effects_ = nullptr;
 };

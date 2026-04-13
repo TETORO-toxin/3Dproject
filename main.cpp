@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include "main.h"
 #include "App/SceneMgr.h"
+#include "Sys/GlobalEffects.h"
 
 // Helper: confine cursor to the current active window's client area
 static bool ConfineCursorToActiveWindow()
@@ -126,7 +127,16 @@ int RunApp()
     ReleaseCursorClip();
 
     delete scene;
+    // Shutdown DXLib first, then clean up any global systems that may rely on graphics device.
     DxLib_End();
+    // If an EffectManager was set globally, delete it now to avoid device-related teardown crashes.
+    {
+        EffectManager* gm = GetGlobalEffectManager();
+        if (gm) {
+            SetGlobalEffectManager(nullptr);
+            delete gm;
+        }
+    }
     return 0;
 }
 

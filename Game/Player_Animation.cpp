@@ -5,7 +5,9 @@
 //  - 各レイヤー（lower/upper/full）ごとにアタッチ、ブレンド、時間更新のロジックが含まれます。
 
 #include "Player.h"
+#include "CameraRig.h"
 #include "../Sys/DebugPrint.h"
+#include "../Sys/GlobalEffects.h"
 #include <algorithm>
 
 // PlayAnimation now supports an optional layer parameter to target full, lower or upper body animation slots.
@@ -151,6 +153,26 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 
     if (layer == AnimLayer::Upper) {
         attachForLayer(true);
+        // register effect event for attack on upper layer
+        if (name == "attack") {
+            ClearAnimEvents("attack");
+            AddAnimEvent("attack", 0.05f, [this]() {
+                DebugPrint("Player attack event fired\n");
+                EffectManager* em = GetGlobalEffectManager();
+                if (em) {
+                    VECTOR p = GetPosition();
+                    // prefer camera forward on XZ plane, fallback to +Z
+                    VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
+                    if (camera_) forward = camera_->GetForwardXZ();
+                    float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+                    if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
+                    // place effect slightly in front of player and above
+                    VECTOR pos = VAdd(p, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
+                    DebugPrint("Player attack effect pos=%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
+                    em->PlayEffectAt(pos, "assets/VFX/03_Hanmado01/hit_hanmado_0409.efkefc");
+                }
+            });
+        }
         return;
     }
     else if (layer == AnimLayer::Lower) {
@@ -159,9 +181,40 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
     }
     else { // Full
         attachForLayer(false);
+        if (name == "attack") {
+            ClearAnimEvents("attack");
+            AddAnimEvent("attack", 0.05f, [this]() {
+                DebugPrint("Player attack event fired\n");
+                EffectManager* em = GetGlobalEffectManager();
+                if (em) {
+                    VECTOR p = GetPosition();
+                    VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
+                    if (camera_) forward = camera_->GetForwardXZ();
+                    float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+                    if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
+                    VECTOR pos = VAdd(p, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
+                    DebugPrint("Player attack effect pos=%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
+                    em->PlayEffectAt(pos, "assets/VFX/03_Hanmado01/hit_hanmado_0409.efkefc");
+                }
+            });
+        }
         return;
     }
 }
+
+// register effect event when attack played
+// We place this after implementations to avoid forward decl issues
+#include "../Sys/GlobalEffects.h"
+
+// attach small helper to PlayAnimation: if attack started, add an event at 0.05s
+// We add this by hooking into AddAnimEvent here (one-shot per PlayAnimation call).
+// Note: this is a simple approach suitable for this project.
+
+
+// If attack animation is played, register a small event at time 0.05s to spawn effect
+// This keeps effect playback close to the animation without changing many other systems.
+// Requires global effect manager to be set by application.
+// Note: duplicate events for the same anim name will accumulate, so we only add here when name=="attack" and layer is upper/full.
 
 void Player::AddAnimEvent(const std::string& animName, float timeSec, std::function<void()> cb)
 {
