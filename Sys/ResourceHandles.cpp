@@ -8,6 +8,15 @@ ResourceHandles::ResourceHandles()
 
 ResourceHandles::~ResourceHandles()
 {
+    // Wait for any outstanding async workers to finish before unloading resources.
+    {
+        std::lock_guard<std::mutex> lk(workersMutex_);
+        for (auto &t : workers_) {
+            if (t.joinable()) t.join();
+        }
+        workers_.clear();
+    }
+
     UnloadAll();
 }
 
@@ -101,11 +110,18 @@ void ResourceHandles::UnloadAll()
 
 void ResourceHandles::AsyncLoadModel(const std::string& path)
 {
-    // Launch a detached thread to load the model and register it when complete.
-    // Caution: MV1LoadModel may not be thread-safe for DXLib; test in your environment.
-    std::thread([this, path]() {
+    // Launch a thread to load the model and store the thread so it can be joined
+    // during shutdown. Do NOT call DxLib graphics API from worker threads in
+    // general; MV1LoadModel may not be thread-safe. Use with caution.
+    std::thread worker([this, path]() {
         int h = MV1LoadModel(path.c_str());
         std::lock_guard<std::mutex> lk(mutex_);
         if (h != -1) models_.emplace(path, h);
-    }).detach();
+    });
+
+    // store worker so destructor can join it
+    {
+        std::lock_guard<std::mutex> wlk(workersMutex_);
+        workers_.push_back(std::move(worker));
+    }
 }

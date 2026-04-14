@@ -126,8 +126,13 @@ int RunApp()
     // 終了時にカーソルのクリッピングを必ず解除
     ReleaseCursorClip();
 
-    
-    // グローバルにEffectManagerが設定されている場合、デバイス関連の終了時クラッシュを避けるためにここで削除する
+    // 重要: 描画が停止した後、まずシーンを解放する（MV1DeleteModel 等がここで走っても DxLib はまだ有効）
+    if (scene) {
+        delete scene;
+        scene = nullptr;
+    }
+
+    // 次にグローバルな EffectManager を削除する（DeleteEffekseerEffect 等がここで走っても DxLib はまだ有効）
     {
         EffectManager* gm = GetGlobalEffectManager();
         if (gm) {
@@ -135,9 +140,9 @@ int RunApp()
             delete gm;
         }
     }
-    delete scene;
 
-	DxLib_End();
+    // 最後に DxLib の終了処理を行う
+    DxLib_End();
     return 0;
 }
 
