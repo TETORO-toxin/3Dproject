@@ -1,10 +1,12 @@
 #include "DxLib.h"
+#include "EffekseerForDXLib.h"
 #include "../main.h"
 #include <Windows.h>
 
 //プロトタイプ宣言
 void UpdateGameMain();
 int InitDxLib();
+
 
 int InitDxLib()
 {
@@ -58,6 +60,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     UpdateGameMain();
 
     // DxLibの終了処理
+    Effkseer_End();
     DxLib_End();
     return 0;
 }

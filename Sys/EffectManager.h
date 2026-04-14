@@ -35,4 +35,6 @@ private:
     int playCount;               // 周期的に再生するためのカウント
     // debug: last spawned effect positions (cleared each frame)
     std::vector<VECTOR> debugSpawnPoints;
+
+    bool initialized_ = false;
 };

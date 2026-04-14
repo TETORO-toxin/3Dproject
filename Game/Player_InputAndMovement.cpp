@@ -7,6 +7,7 @@
 #include "../Sys/Input.h"
 #include "../Sys/DebugPrint.h"
 #include "CameraRig.h"
+#include "../Sys/GlobalEffects.h"
 #include <cmath>
 
 // UpdateLogic: ゲームロジックのみを更新する（描画は行わない）
@@ -152,6 +153,17 @@ void Player::UpdateLogic()
             lastAttackTimeMs_ = now;
             // Play upper-body attack while keeping lower-body state (move/idle)
             PlayAnimation("attack", false, AnimLayer::Upper);
+            // spawn an attack effect slightly in front of the player
+            EffectManager* gem = GetGlobalEffectManager();
+            if (gem) {
+                VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
+                if (camera_) forward = camera_->GetForwardXZ();
+                float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+                if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
+                // place effect a bit in front and at approx chest/head height
+                VECTOR pos = VAdd(GetPosition(), VAdd(VScale(forward, 1.0f), VGet(0.0f, 1.2f, 0.0f)));
+                gem->PlayEffectAt(pos, nullptr, 1.0f);
+            }
         }
     }
     prevAttackBtnDown_ = attackBtnComposite;

@@ -30,8 +30,13 @@ void EffectManager::Initialize()
     SetUseDirect3DVersion(DX_DIRECT3D_11);
 
     // 引数には画面に表示する最大パーティクル数を設定する。
-    if (Effkseer_Init(EffectParticleLimit) == -1) { DxLib_End(); }
+    if (Effkseer_Init(EffectParticleLimit) == -1) {
+        initialized_ = false;
+        effectResourceHandle = -1;
+        return; // 絶対に DxLib_End() しない
+    }
 
+    initialized_ = true;
     // フルスクリーンウインドウの切り替えでリソースが消えるのを防ぐ。
     // Effekseerを使用する場合は必ず設定する。
     SetChangeScreenModeGraphicsSystemResetFlag(FALSE);
@@ -62,6 +67,8 @@ void EffectManager::Load()
 /// <param name="playPosition">再生座標</param>
 void EffectManager::Update(VECTOR playPosition)
 {
+    if (!initialized_) return;
+
     // 定期的にエフェクトを再生する
     if (!(playCount % EffectPlayInterval))
     {
@@ -82,6 +89,7 @@ void EffectManager::Update(VECTOR playPosition)
 // 描画
 void EffectManager::Draw()
 {
+    if (!initialized_) return;
     // Effekseerにより再生中のエフェクトを描画する。
     DrawEffekseer3D();
 }
@@ -89,11 +97,13 @@ void EffectManager::Draw()
 // Simple PlayEffectAt implementations to satisfy header (optional usage)
 void EffectManager::PlayEffectAt(const VECTOR& pos, const char* filePath)
 {
+    if (!initialized_) return;
     PlayEffectAt(pos, filePath, 1.0f);
 }
 
 void EffectManager::PlayEffectAt(const VECTOR& pos, const char* filePath, float scale)
 {
+    if (!initialized_) return;
     int res = effectResourceHandle;
     if (filePath) {
         int h = LoadEffekseerEffect(filePath, EffectSize * scale);
