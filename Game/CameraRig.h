@@ -10,10 +10,10 @@ public:
     void SetTarget(float x, float y, float z);
     void SetGroundPlane(const VECTOR& point, const VECTOR& normal);
 
-    // Returns the camera forward direction projected onto the XZ plane (normalized).
+    // カメラの前方向を XZ 平面へ投影して正規化したベクトルを返す。
     VECTOR GetForwardXZ() const;
 
-    // Added getters for camera position and full forward vector
+    // カメラ位置とフルフォワードベクトルの取得（ヘルパー）
     VECTOR GetCameraPosition() const;
     VECTOR GetForward() const;
 

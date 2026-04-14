@@ -36,18 +36,18 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
 
     VECTOR desired;
 
-    // time step for controller integration and spring
+    // コントローラの入力統合とスプリング計算のタイムステップ
     float dt = 1.0f / 60.0f;
 
     // Poll inputs
     PadState pad = PollPad(0);
     InputState in = PollInput(0);
 
-    // Determine controller presence (same heuristic as PollInput)
+    // コントローラが接続されているか判定する（PollInput と同じヒューリスティック）
     bool controllerPresent = (pad.pad != 0) || (pad.xi.ThumbLX != 0) || (pad.xi.ThumbLY != 0) || (pad.xi.ThumbRX != 0) || (pad.xi.ThumbRY != 0) || (pad.xi.LeftTrigger != 0) || (pad.xi.RightTrigger != 0);
 
     if (lockedOn) {
-        // locked on: keep previous behavior (behind player, look at target)
+        // ロックオン時: 以前の挙動を維持（プレイヤーの背後からターゲットを見る）
         VECTOR forward = VSub(targetPos, playerPos);
         float len = VSize(forward);
         if (len > 0.0001f) forward = VScale(forward, 1.0f / len);
@@ -58,13 +58,13 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         target_ = targetPos;
         frozenAbove_ = false; // allow movement when returning to normal
     } else {
-        // If camera is frozen above player, skip input-driven orbiting to prevent jitter
+        // カメラがプレイヤーの真上で固定されている場合、入力によるオービット処理をスキップしてジャダーを防ぐ
         if (frozenAbove_) {
-            // Keep desired at current camPos projected relative to player so spring doesn't fight the freeze
+            // スプリングが固定状態と争わないよう、player に対する現在の camPos を維持する
             desired = camPos_;
         } else {
-            // Orbit controls: update yaw/pitch from controller right stick or mouse movement
-            // Controller: use right stick axes (RX, RY). Mouse: use delta movement in pixels.
+            // オービット操作: コントローラ右スティックまたはマウス移動から yaw/pitch を更新
+            // コントローラ: 右スティック軸 (RX, RY)。マウス: ピクセルベースの差分。
             if (controllerPresent) {
                 // right stick gives -1..1 per axis; integrate over dt
                 yaw_ += pad.RX * controllerYawSpeed_ * dt;
@@ -83,7 +83,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                 pitch_ += -dy * mouseSensitivity_;
             }
 
-            // clamp pitch to avoid flipping
+            // 反転を避けるためピッチをクランプ
             const float maxPitch = 1.4f; // ~80 degrees
             const float minPitch = -1.2f; // allow looking slightly up
             if (pitch_ > maxPitch) pitch_ = maxPitch;
@@ -99,15 +99,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                                  orbitRadius_ * sp,
                                  orbitRadius_ * cp * cy);
 
-            // desired is target (player) plus offset; raise target a bit so camera looks at upper body
+            // desired = プレイヤー + オフセット。ターゲットは上半身寄りに少し上げる
             desired = VAdd(playerPos, VGet(offset.x, offset.y + 3.0f, offset.z));
             target_ = VAdd(playerPos, VGet(0.0f, 3.0f, 0.0f));
         }
     }
 
-    // Prevent camera from approaching player if the desired position would place the camera
-    // below the player's minimum signed height above the ground. In that case stop reducing
-    // the camera's distance to the player (keep current radial distance) to avoid digging into ground.
+    // desired がプレイヤーの基準面よりも低くなる場合、カメラが地面にめり込まないよう接近を防ぐ。
+    // その場合、プレイヤーへの半径距離を縮めない（現行の半径を維持）ようにする。
     {
         // compute signed distances to plane
         VECTOR pToPlane = VSub(playerPos, groundPoint_);
@@ -138,7 +137,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         }
     }
 
-    // simple spring integration: F = -k(x - x_desired) - c v
+    // 単純なスプリング積分: F = -k(x - x_desired) - c v
     VECTOR displacement = VSub(camPos_, desired);
     VECTOR springF = VScale(displacement, -springStiffness_);
     VECTOR dampingF = VScale(camVel_, -springDamping_);
@@ -148,9 +147,9 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     camVel_ = VAdd(camVel_, VScale(acc, dt));
     camPos_ = VAdd(camPos_, VScale(camVel_, dt));
 
-    // Ground collision/clamping using plane: project camera position onto plane normal and ensure camera's distance from plane is >= minAboveGround.
-    // Use a larger collision margin so the camera doesn't penetrate the ground.
-    // This is the minimum signed distance from the ground plane the camera should maintain.
+    // 平面との衝突/クランプ処理: カメラ位置を平面法線へ投影し、平面からの signed 距離が minAboveGround 以上になるようにする。
+    // カメラが地面を貫通しないように余裕を持たせる。
+    // これはカメラが保つべき地面に対する最小 signed 距離である。
     const float minAboveGround = 1.0f; // meters above ground to keep (increased from 0.5f)
     // compute signed distance from plane: d = dot(camPos - groundPoint, groundNormal)
     VECTOR camToPlane = VSub(camPos_, groundPoint_);
@@ -166,13 +165,13 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         camPos_.y += groundNormal_.y * diff * lerp;
         camPos_.z += groundNormal_.z * diff * lerp;
 
-        // Smoothly move XZ toward player's XZ projected onto plane (move along plane tangent)
-        // compute player's nearest point on plane
+        // XZ を滑らかにプレイヤーの平面上投影位置へ移動（平面接線方向へ移動）
+        // プレイヤーの平面上の最近傍点を計算
         VECTOR playerToPlane = VSub(playerPos, groundPoint_);
         float playerDist = Dot(playerToPlane, groundNormal_);
         VECTOR playerOnPlane = VSub(playerPos, VScale(groundNormal_, playerDist));
 
-        // Immediately correct vertical penetration so camera never goes below the ground plane.
+        // 垂直方向の貫通を即座に補正し、カメラが地面より下に行かないようにする。
         float camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
         if (camSignedNow < minAboveGround) {
             float pushUp = minAboveGround - camSignedNow;
@@ -196,7 +195,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         if (planeDist > 0.001f) {
             VECTOR planeDirN = VScale(planeDir, 1.0f / planeDist);
 
-            // Desired speed proportional to distance (soft attractor)
+            // 距離に比例した望ましい速度（ソフトな吸着）
             const float maxSlideSpeed = 1.6f;
             float desiredSpeed = planeDist * 0.5f;
             if (desiredSpeed < 0.02f) desiredSpeed = 0.02f;
@@ -204,7 +203,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
 
             VECTOR desiredVelPlane = VScale(planeDirN, desiredSpeed);
 
-            // velocity component along plane (remove normal component)
+            // 平面に沿った速度成分（法線成分を取り除く）
             float velAlongNormal = Dot(camVel_, groundNormal_);
             VECTOR camVelPlane = VSub(camVel_, VScale(groundNormal_, velAlongNormal));
 
@@ -221,10 +220,10 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             // reconstruct full velocity keeping normal component
             camVel_ = VAdd(VScale(groundNormal_, velAlongNormal), camVelPlane);
 
-            // advance along-plane position using the new plane velocity (small dt step)
+            // 新しい平面速度で平面上の位置を進める（小さな dt ステップ）
             camPos_ = VAdd(camPos_, VScale(camVelPlane, dt));
 
-            // ensure we didn't sink below ground due to numerical issues
+            // 数値誤差で地面より下に沈んでいないかを保証
             camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
             if (camSignedNow < minAboveGround) {
                 camPos_ = VAdd(camPos_, VScale(groundNormal_, (minAboveGround - camSignedNow)));
@@ -233,7 +232,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                 if (vn < 0.0f) camVel_ = VSub(camVel_, VScale(groundNormal_, vn * 0.5f));
             }
         } else {
-            // very near above player: remove plane velocity gently and snap XZ
+            // プレイヤーの真上に非常に近い場合: 平面速度を穏やかに除去し、XZ をスナップ
             float velAlongNormal = Dot(camVel_, groundNormal_);
             VECTOR camVelPlane = VSub(camVel_, VScale(groundNormal_, velAlongNormal));
             camVelPlane = VScale(camVelPlane, 0.2f);
@@ -242,14 +241,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camPos_.z = playerOnPlane.z;
         }
 
-        // Damp velocities smoothly rather than zeroing to avoid abrupt stops
+        // 突然の停止を避けるため速度をゼロにせず滑らかに減衰させる
         camVel_.x *= 0.6f;
         camVel_.y *= 0.25f;
         camVel_.z *= 0.6f;
         // Slide camera along plane toward player to avoid digging into ground
         // (previous position-based slide replaced by velocity-based sliding)
 
-        // recompute camera's projection and distance to player's plane-point for snap test
+        // スナップ判定のためにカメラの投影とプレイヤー平面点への距離を再計算
         camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
         camOnPlane = VSub(camPos_, VScale(groundNormal_, camSignedNow));
         VECTOR diffPlane = VSub(camOnPlane, playerOnPlane);
@@ -259,7 +258,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         const float minAbovePlayer = 1.8f; // keep camera at least this above player's origin when centered
 
         if (diffPlaneDist < snapThreshold) {
-            // place camera directly above player at signed height (playerDist + minAbovePlayer)
+            // プレイヤーの上に直接カメラを配置（signed 高さ playerDist + minAbovePlayer）
             float targetSigned = playerDist + minAbovePlayer;
             camPos_ = VAdd(playerOnPlane, VScale(groundNormal_, targetSigned));
 
@@ -275,13 +274,13 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camVel_.y *= 0.01f;
             camVel_.z *= 0.05f;
 
-            // look straight down at the player
+            // プレイヤーを真下に見る
             target_ = playerPos;
 
-            // freeze camera to prevent further movement/jitter while looking straight down
+            // 真上を向いたままの不要な移動/ジャダーを防ぐためカメラを固定する
             frozenAbove_ = true;
         } else {
-            // Smoothly damp velocities while sliding
+            // スライド中は速度を滑らかに減衰
             camVel_.x *= 0.8f;
             camVel_.y *= 0.5f;
             camVel_.z *= 0.8f;
@@ -289,12 +288,12 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             // When sliding, ensure camera looks toward player's upper body so it's aligned
             target_ = VAdd(playerPos, VGet(0.0f, 2.0f, 0.0f));
 
-            // if previously frozen but moved away beyond threshold, unfreeze
+            // 以前固定されていたが閾値以上に離れたら固定を解除
             frozenAbove_ = false;
         }
     }
 
-    // Additional safeguard: if camera is very close in plane-projected XZ to player, ensure it's kept above player's head to avoid clipping into ground/player
+    // 追加の保護: カメラが平面投影でプレイヤーに非常に近い場合、地面/プレイヤーへクリッピングしないよう頭上に保つ
     // compute vector in plane tangent from player to camera
     VECTOR playerToCam = VSub(camPos_, playerPos);
     // remove normal component
@@ -307,7 +306,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     VECTOR pToPlane = VSub(playerPos, groundPoint_);
     float playerSigned = Dot(pToPlane, groundNormal_);
     if (distXZ < closeThreshold) {
-        // ensure camera has enough signed height over player
+        // カメラがプレイヤーの上に十分な signed 高さを持つようにする
         if ( (signedDist) < (playerSigned + minAbovePlayer) ) {
             float targetSigned = playerSigned + minAbovePlayer;
             float push = targetSigned - signedDist;
@@ -317,7 +316,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camPos_.z += groundNormal_.z * push * pushLerp;
             camVel_.y *= 0.2f;
 
-            // also nudge along tangent outward
+            // また接線方向に外側へ軽く押し出す
             float nudge = (closeThreshold - distXZ) * 0.5f;
             if (distXZ > 0.0001f) {
                 camPos_.x += (tangent.x / distXZ) * -nudge;
@@ -326,14 +325,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             } else {
                 camPos_.x += 0.01f; camPos_.y += 0.01f; camPos_.z += 0.01f;
             }
-            // look at player's upper body
+            // プレイヤーの上半身を注視する
             target_ = VAdd(playerPos, VGet(0.0f, 2.2f, 0.0f));
         }
     }
 
-    // If frozen above, ensure camera position/velocity remain stable (prevent spring from moving it)
+    // frozenAbove の場合、スプリングが位置を動かさないようカメラ位置/速度を安定させる
     if (frozenAbove_) {
-        // zero small velocities and lock position to prevent jitter
+        // 小さな速度をゼロにし位置をロックしてジャダーを防ぐ
         if (VSize(camVel_) < 0.01f) {
             camVel_.x = camVel_.y = camVel_.z = 0.0f;
         } else {

@@ -5,8 +5,8 @@ class Enemy;
 class ProjectileManager;
 
 struct AuxUnit {
-    int type = 0; // 0:MG,1:Laser,2:Missile...
-    float cdMax = 0.5f; // seconds
+    int type = 0; // 0: MG（機関銃）, 1: Laser（レーザー）, 2: Missile（ミサイル）...
+    float cdMax = 0.5f; // 秒
     float cd = 0.0f;
     float dmg = 5.0f;
     float speed = 30.0f;
@@ -21,6 +21,6 @@ struct AuxUnit {
 
     bool Ready() const { return cd <= 0.0f; }
 
-    // try to fire at target; returns true if fired
+    // ターゲットに発射を試みる。発射に成功したら true を返す。
     bool Fire(const VECTOR& origin, Enemy* target, ProjectileManager& pm, bool consumeGauge, float& gauge, float cost);
 };

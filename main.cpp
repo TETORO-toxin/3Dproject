@@ -3,7 +3,7 @@
 #include "App/SceneMgr.h"
 #include "Sys/GlobalEffects.h"
 
-// Helper: confine cursor to the current active window's client area
+// ヘルパー: フォアグラウンドウィンドウのクライアント領域にカーソルを制限する
 static bool ConfineCursorToActiveWindow()
 {
     HWND hwnd = GetForegroundWindow();
@@ -12,14 +12,14 @@ static bool ConfineCursorToActiveWindow()
     if (!GetClientRect(hwnd, &rcClient)) return false;
     POINT tl = { rcClient.left, rcClient.top };
     POINT br = { rcClient.right, rcClient.bottom };
-    // convert client coords to screen coords
+    // クライアント座標をスクリーン座標に変換
     MapWindowPoints(hwnd, NULL, &tl, 1);
     MapWindowPoints(hwnd, NULL, &br, 1);
     RECT r = { tl.x, tl.y, br.x, br.y };
     return (ClipCursor(&r) == TRUE);
 }
 
-// Helper: release cursor clipping
+// ヘルパー: カーソルのクリッピングを解除する
 static void ReleaseCursorClip()
 {
     ClipCursor(NULL);
@@ -43,7 +43,7 @@ static void ReleaseCursorClip()
 /// </summary>
 int RunApp()
 {
-    // Choose monitor to fullscreen: use the monitor containing the mouse cursor.
+    // フルスクリーンにするモニターの選択: マウスカーソルがあるモニターを使用
     POINT pt;
     if (GetCursorPos(&pt)) {
         HMONITOR hMon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
@@ -52,18 +52,18 @@ int RunApp()
         if (GetMonitorInfo(hMon, &mi)) {
             int monitorW = mi.rcMonitor.right - mi.rcMonitor.left;
             int monitorH = mi.rcMonitor.bottom - mi.rcMonitor.top;
-            // Set DxLib graph mode to the monitor resolution and request fullscreen exclusive
+            // DxLibのグラフモードをモニター解像度に設定し、フルスクリーンを要求する
             SetGraphMode(monitorW, monitorH, 32);
-            ChangeWindowMode(FALSE); // fullscreen
+            ChangeWindowMode(FALSE); // フルスクリーン
         } else {
-            // fallback to primary display size if monitor info failed
+            // モニター情報が取得できなかった場合はプライマリ表示をフォールバック
             int pw = GetSystemMetrics(SM_CXSCREEN);
             int ph = GetSystemMetrics(SM_CYSCREEN);
             SetGraphMode(pw, ph, 32);
             ChangeWindowMode(FALSE);
         }
     } else {
-        // fallback to primary display
+        // プライマリ表示をフォールバック
         int pw = GetSystemMetrics(SM_CXSCREEN);
         int ph = GetSystemMetrics(SM_CYSCREEN);
         SetGraphMode(pw, ph, 32);
@@ -78,29 +78,29 @@ int RunApp()
     SceneMgr* scene = new SceneMgr();
     scene->Init();
 
-    // track scene changes
+    // シーンの変更を追跡
     auto prevScene = scene->GetCurrentScene();
 
-    // If starting in gameplay scene, confine cursor immediately
+    // ゲームプレイシーンで開始する場合は即座にカーソルを制限
     if (prevScene == SceneMgr::Scene::Base) {
         ConfineCursorToActiveWindow();
     }
 
-    // Main loop
+    // メインループ
     while (ProcessMessage() == 0 && ClearDrawScreen() == 0)
     {
         scene->Update();
 
-        // detect scene transition
+        // シーン遷移を検出
         auto currScene = scene->GetCurrentScene();
         if (currScene != prevScene) {
-            // simple on-change handling (could play SFX, reset timers, etc.)
+            // シンプルな遷移時処理（SFX再生やタイマーリセットなど）
             const char* names[] = { "Title", "Base", "Mission", "Result" };
             const char* from = names[(int)prevScene];
             const char* to = names[(int)currScene];
             DrawFormatString(10, 560, GetColor(255,255,0), "Scene changed: %s -> %s", from, to);
 
-            // When entering gameplay (Base) confine cursor to game window; otherwise release it
+            // ゲームプレイ（Base）に入るときはカーソルをゲームウィンドウに制限し、それ以外は解除
             if (currScene == SceneMgr::Scene::Base) {
                 ConfineCursorToActiveWindow();
             } else {
@@ -110,7 +110,7 @@ int RunApp()
             prevScene = currScene;
         }
 
-        // Example high-level handling: if reached Result, wait for Enter to return to Title
+        // 高レベルな例: Resultに達したらEnterでTitleに戻る
         if (currScene == SceneMgr::Scene::Result) {
             DrawFormatString(300, 560, GetColor(255,180,100), "Press Enter to return to Title");
             if (CheckHitKey(KEY_INPUT_RETURN)) {
@@ -119,17 +119,15 @@ int RunApp()
         }
 
         ScreenFlip();
-        // simple frame limiter (~60fps)
+        // シンプルなフレーム制限（約60fps）
         WaitTimer(16);
     }
 
-    // ensure cursor clipping is released on exit
+    // 終了時にカーソルのクリッピングを必ず解除
     ReleaseCursorClip();
 
-    delete scene;
-    // Shutdown DXLib first, then clean up any global systems that may rely on graphics device.
-    DxLib_End();
-    // If an EffectManager was set globally, delete it now to avoid device-related teardown crashes.
+    
+    // グローバルにEffectManagerが設定されている場合、デバイス関連の終了時クラッシュを避けるためにここで削除する
     {
         EffectManager* gm = GetGlobalEffectManager();
         if (gm) {
@@ -137,6 +135,9 @@ int RunApp()
             delete gm;
         }
     }
+    delete scene;
+
+	DxLib_End();
     return 0;
 }
 

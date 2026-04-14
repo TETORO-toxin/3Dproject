@@ -7,7 +7,7 @@ public:
     Enemy(const VECTOR& pos);
     ~Enemy();
 
-    // Update only game logic (physics/state). Drawing is moved to Draw() so caller can control render order.
+    // ゲームロジック（物理/状態）だけを更新する。描画は Draw() に分離し、呼び出し側で描画順を制御できるようにする。
     void Update();
     void Draw();
 

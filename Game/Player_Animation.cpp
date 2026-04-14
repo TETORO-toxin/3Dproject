@@ -1,8 +1,8 @@
 // Player_Animation.cpp
-// サマリー:
-//  - アニメーション再生/管理に関する実装を分離したファイルです。
-//  - アニメーションの再生（レイヤー対応）、イベント登録、アニメ時間進行、ブレンド処理などを担当します。
-//  - 各レイヤー（lower/upper/full）ごとにアタッチ、ブレンド、時間更新のロジックが含まれます。
+// 概要:
+//  - アニメーション再生と管理の処理を切り出したファイルです。
+//  - レイヤー対応（全身/下半身/上半身）の再生、イベント登録、時間進行、ブレンド処理を担当します。
+//  - 各レイヤーごとにアタッチ、ブレンド、時間更新ロジックを含みます。
 
 #include "Player.h"
 #include "CameraRig.h"
@@ -10,10 +10,10 @@
 #include "../Sys/GlobalEffects.h"
 #include <algorithm>
 
-// PlayAnimation now supports an optional layer parameter to target full, lower or upper body animation slots.
+// PlayAnimation は、全身・下半身・上半身のアニメーションスロットを指定するオプションのレイヤーパラメータに対応しました。
 void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 {
-    // find anim model
+    // アニメーションモデルを検索
     auto it = animModelHandles_.find(name);
     if (it == animModelHandles_.end()) {
         DebugPrint("PlayAnimation: animation '%s' not found in animModelHandles_.\n", name.c_str());
@@ -22,9 +22,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 
     int animModel = it->second;
 
-    // If full-body requested, treat as lower-body play and clear upper layer
+    // 全身指定の場合は下半身として扱い、上半身レイヤーをクリアする
     if (layer == AnimLayer::Full) {
-        // clear upper layer
+        // 上半身レイヤーをクリア
         if (upperAttachedAnimAttachIndex_ != -1) {
             MV1DetachAnim(baseModelHandle_, upperAttachedAnimAttachIndex_);
             upperAttachedAnimAttachIndex_ = -1;
@@ -38,9 +38,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         }
     }
 
-    // Helper lambda to attach to a slot (used for both lower and upper)
+    // スロットにアタッチするためのヘルパーラムダ（下半身・上半身の両方で使用）
     auto attachForLayer = [&](bool isUpper) {
-        // Choose state references
+        // 状態参照を選択
         int &attachIndex = isUpper ? upperAttachedAnimAttachIndex_ : attachedAnimAttachIndex_;
         int &prevAttachIndex = isUpper ? prevUpperAttachedAnimAttachIndex_ : prevAttachedAnimAttachIndex_;
         float &attachTotal = isUpper ? upperAttachedAnimTotalTime_ : attachedAnimTotalTime_;
@@ -52,9 +52,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         bool &curLoop = isUpper ? upperAnimLoop_ : animLoop_;
         bool &prevLoop = isUpper ? prevUpperAnimLoop_ : prevAnimLoop_;
         float &blendRate = isUpper ? upperAnimBlendRate_ : animBlendRate_;
-        float &blendSpeed = animBlendSpeed_; // same speed for both
+        float &blendSpeed = animBlendSpeed_; // 両方で同じ速度
 
-        // Detach old prev (if any) then move current->prev
+        // 古い prev をデタッチ（存在する場合）し、current を prev に移動
         if (prevAttachIndex != -1) {
             MV1DetachAnim(baseModelHandle_, prevAttachIndex);
             prevAttachIndex = -1;
@@ -72,7 +72,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         attachIndex = -1;
         attachTotal = 0.0f;
 
-        // determine anim index in anim model (if stored)
+        // アニメモデル内のアニメインデックスを決定（保存されていれば）
         int animIndex = 0;
         auto idxIt = animModelAnimIndex_.find(name);
         if (idxIt != animModelAnimIndex_.end()) {
@@ -118,7 +118,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         }
 #endif
 
-        // Attach to base model
+        // ベースモデルにアタッチ
         int attachIdx = MV1AttachAnim(baseModelHandle_, 0, animModel, FALSE);
         DebugPrint("MV1AttachAnim -> attachIndex=%d baseModel=%d animModel=%d animIndex=%d\n", attachIdx, baseModelHandle_, animModel, animIndex);
         if (attachIdx >= 0) {
@@ -127,23 +127,23 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
             attachTotal = total > 0.0f ? total : 0.0f;
         }
 
-        // set metadata
+        // メタデータを設定
         curName = name;
         curLoop = loop;
         timeSec = 0.0f;
         prevTimeSec = 0.0f;
 
-        // reset events if lower layer
+        // 下半身レイヤーの場合はイベントをリセット
         if (!isUpper) {
             auto evIt = animEvents_.find(curName);
             if (evIt != animEvents_.end()) { for (auto &ev : evIt->second) ev.fired = false; }
         }
 
-        // blending init
+        // ブレンド初期化
         blendRate = (prevAttachIndex == -1) ? 1.0f : 0.0f;
-        if (prevAttachIndex != -1) blendRate = 0.0f; // start from 0 when blending
+        if (prevAttachIndex != -1) blendRate = 0.0f; // ブレンド中は 0 から開始
 
-        // decide visible model handle: prefer base when attach successful
+        // 表示するモデルハンドルを決定：アタッチ成功時はベースを優先
         if (attachIndex != -1) {
             if (baseModelHandle_ != -1) modelHandle_ = baseModelHandle_;
         } else {
@@ -153,7 +153,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 
     if (layer == AnimLayer::Upper) {
         attachForLayer(true);
-        // register effect event for attack on upper layer
+        // 上半身レイヤーで攻撃用のエフェクトイベントを登録
         if (name == "attack") {
             ClearAnimEvents("attack");
             AddAnimEvent("attack", 0.05f, [this]() {
@@ -161,12 +161,12 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
                 EffectManager* em = GetGlobalEffectManager();
                 if (em) {
                     VECTOR p = GetPosition();
-                    // prefer camera forward on XZ plane, fallback to +Z
+                    // カメラのXZ平面の前方向を優先し、無ければ +Z を利用
                     VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
                     if (camera_) forward = camera_->GetForwardXZ();
                     float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
                     if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
-                    // place effect slightly in front of player and above
+                    // プレイヤーの前方かつ上方に少し離してエフェクトを配置
                     VECTOR pos = VAdd(p, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
                     DebugPrint("Player attack effect pos=%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
                     em->PlayEffectAt(pos, "assets/VFX/03_Hanmado01/hit_hanmado_0409.efkefc");
@@ -179,7 +179,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         attachForLayer(false);
         return;
     }
-    else { // Full
+    else { // 全身指定
         attachForLayer(false);
         if (name == "attack") {
             ClearAnimEvents("attack");
@@ -202,19 +202,19 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
     }
 }
 
-// register effect event when attack played
-// We place this after implementations to avoid forward decl issues
+// 攻撃時にエフェクトイベントを登録
+// 実装の後に置くことで前方宣言の問題を避ける
 #include "../Sys/GlobalEffects.h"
 
-// attach small helper to PlayAnimation: if attack started, add an event at 0.05s
-// We add this by hooking into AddAnimEvent here (one-shot per PlayAnimation call).
-// Note: this is a simple approach suitable for this project.
+// PlayAnimation に小さなヘルパーを付加：attack が開始された場合、0.05 秒のイベントを追加
+// ここで AddAnimEvent を呼び出してフックする（PlayAnimation ごとにワンショット）。
+// 注意: 本プロジェクトに適した簡易的な実装です。
 
 
-// If attack animation is played, register a small event at time 0.05s to spawn effect
-// This keeps effect playback close to the animation without changing many other systems.
-// Requires global effect manager to be set by application.
-// Note: duplicate events for the same anim name will accumulate, so we only add here when name=="attack" and layer is upper/full.
+// attack アニメが再生された場合、0.05 秒のタイミングでエフェクトを発生させる小さなイベントを登録します。
+// 他のシステムを大きく変えずにアニメとエフェクトを近づけるための処理です。
+// アプリ側でグローバルエフェクトマネージャが設定されていることが必要です。
+// 注意: 同じアニメ名に対してイベントが重複して蓄積されるため、ここでは name=="attack" かつレイヤーが上半身/全身のときのみ追加します。
 
 void Player::AddAnimEvent(const std::string& animName, float timeSec, std::function<void()> cb)
 {
@@ -229,9 +229,9 @@ void Player::ClearAnimEvents(const std::string& animName)
 
 void Player::UpdateAnimation(float dt)
 {
-    // LOWER LAYER (original logic, adapted to member names)
+    // 下半身レイヤー（元のロジック、メンバ名に合わせて調整）
     if (!currentAnim_.empty()) {
-        // advance blend
+        // ブレンドを進行
         if (animBlendRate_ < 1.0f) {
             animBlendRate_ += animBlendSpeed_;
             if (animBlendRate_ > 1.0f) animBlendRate_ = 1.0f;
@@ -256,7 +256,7 @@ void Player::UpdateAnimation(float dt)
                 if (animTime_ > configLen) animTime_ = configLen;
             }
 
-            // events
+            // イベント処理
             auto evIt = animEvents_.find(currentAnim_);
             if (evIt != animEvents_.end()) {
                 for (auto &ev : evIt->second) {
@@ -303,7 +303,7 @@ void Player::UpdateAnimation(float dt)
             }
         }
 
-        // prev lower
+        // 前の下半身アニメーション
         if (prevAttachedAnimAttachIndex_ != -1 && prevAttachedAnimTotalTime_ > 0.0f) {
             prevAnimTimeSeconds_ += dt;
 
@@ -338,7 +338,7 @@ void Player::UpdateAnimation(float dt)
             }
         }
 
-        // if no attach, advance time and fire events and optionally drive anim model time
+        // アタッチがない場合は時間を進め、イベントを発火し、必要ならアニメモデル時間を更新
         if (attachedAnimAttachIndex_ == -1) {
             prevAnimTime_ = animTime_;
             animTime_ += dt;
@@ -389,7 +389,7 @@ void Player::UpdateAnimation(float dt)
         }
     }
 
-    // UPPER LAYER: separate attach slot and blending
+    // 上半身レイヤー：アタッチスロットとブレンドを分離
     if (!upperAnim_.empty()) {
         if (upperAnimBlendRate_ < 1.0f) {
             upperAnimBlendRate_ += animBlendSpeed_;
@@ -421,10 +421,10 @@ void Player::UpdateAnimation(float dt)
             MV1SetAttachAnimTime(baseModelHandle_, upperAttachedAnimAttachIndex_, dxTime);
             MV1SetAttachAnimBlendRate(baseModelHandle_, upperAttachedAnimAttachIndex_, upperAnimBlendRate_);
 
-            // when upper non-loop finishes, simply clear to allow lower to show through
+            // 上半身が非ループで終了したら単純にクリアして下のアニメが見えるようにする
             const float finishEps = 1e-3f;
-            if (!upperAnimLoop_ && upperAnimTime_ + finishEps >= configLen) {
-                // detach upper and clear
+            if (!upperAnimLoop_ && upperAnimTime_ + finishEps >= configLen) {   
+                // 上半身をデタッチしてクリア
                 if (prevUpperAttachedAnimAttachIndex_ != -1) {
                     MV1DetachAnim(baseModelHandle_, prevUpperAttachedAnimAttachIndex_);
                     prevUpperAttachedAnimAttachIndex_ = -1;
@@ -443,7 +443,7 @@ void Player::UpdateAnimation(float dt)
             }
         }
 
-        // prev upper blending
+        // 前の上半身ブレンド
         if (prevUpperAttachedAnimAttachIndex_ != -1 && prevUpperAttachedAnimTotalTime_ > 0.0f) {
             prevUpperAnimTimeSeconds_ += dt;
 

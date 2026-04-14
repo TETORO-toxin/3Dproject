@@ -4,7 +4,7 @@
 void Projectile::Update(float dt)
 {
     pos = VAdd(pos, VScale(dir, speed * dt));
-    // simple lifetime or world bounds check
+    // 単純な寿命またはワールド境界チェック
     if (pos.x < -2000 || pos.x > 2000 || pos.z < -2000 || pos.z > 2000) alive = false;
 }
 

@@ -21,16 +21,16 @@ public:
     ~Player();
     void Update();
 
-    // Split update into logic and draw so scene manager can control draw order
+    // ロジック更新と描画を分離: シーン側で描画順を制御できるようにする
     void UpdateLogic();
     void Draw();
 
     VECTOR GetPosition() const;
 
-    // allow Scene/Camera to inform player about the camera for camera-relative movement/facing
+    // Scene/Camera がカメラ情報を通知して、カメラ基準の移動/向き設定に利用できるようにする
     void SetCamera(CameraRig* cam);
 
-    // Combat API
+    // 戦闘関連 API
     void OnIncomingAttack(); // notify an incoming attack for just-dodge timing
     bool IsInvulnerable() const;
 
@@ -44,36 +44,36 @@ public:
     void Heal(float amount);
     float GetHP() const { return hp; }
 
-    // Animation (uses separate MV1 models per animation for compatibility)
-    // NOTE: animations are played against the original/base model instead of swapping the active model handle.
-    // layer parameter selects whether to play as full-body, or only lower/upper body.
+    // アニメーション（互換性のためアニメごとに別MV1モデルを使用）
+    // 注意: アクティブなモデルハンドルを差し替えるのではなく、元のベースモデルに対してアニメを適用して再生する。
+    // layer パラメータは全身再生か下半身/上半身のみかを選択する。
     void PlayAnimation(const std::string& name, bool loop = false, AnimLayer layer = AnimLayer::Full);
     void UpdateAnimation(float dt);
 
-    // Animation event helpers: call cb when animation time (seconds) is reached
+    // アニメーションイベントヘルパー: 指定秒数に達したらコールバックを呼ぶ
     void AddAnimEvent(const std::string& animName, float timeSec, std::function<void()> cb);
     void ClearAnimEvents(const std::string& animName);
 
 private:
-    // original base MV1 model handle (the visible model). Animation models are kept separately and should be applied to this base model.
-    int baseModelHandle_ = -1; // original model (do not swap this out)
+    // 元のベース MV1 モデルハンドル（表示に使うモデル）。アニメーション用のモデルは別途保持し、ここにアタッチして再生する。
+    int baseModelHandle_ = -1; // 元のモデル（ここを差し替えない）
 
-    // current active MV1 model handle (kept equal to baseModelHandle_ in the new approach)
-    int modelHandle_ = -1; // active model handle
+    // 現在描画に使う MV1 モデルハンドル（新方式では baseModelHandle_ と同じ値になる）
+    int modelHandle_ = -1; // アクティブなモデルハンドル
     std::unordered_map<std::string,int> animModelHandles_; // map animation name -> MV1 model handle
-    // map animation name -> motion index inside the animation MV1 (helps avoid calling MV1GetAnimIndex at runtime)
+    // アニメ名 -> アニメモデル内のモーションインデックス（ランタイムで MV1GetAnimIndex を呼ばずに済むようにする）
     std::unordered_map<std::string,int> animModelAnimIndex_;
 
     float x_ = 0.0f, y_ = 0.0f, z_ = 0.0f;
 
-    // visual scale for the player
-    float visualScale_ = 0.04f; // further reduced size
+    // 描画スケール
+    float visualScale_ = 0.04f; // さらに縮小したサイズ
 
     // HP
     float hp = 100.0f;
     float maxHp = 100.0f;
 
-    // Mode
+    // モード
     Mode mode_ = Mode::Melee;
     unsigned int lastModeSwitchTimeMs_ = 0;
 
@@ -84,7 +84,7 @@ private:
 
     unsigned int lastDodgeTimeMs_ = 0;
     unsigned int dodgeCooldownMs_ = 800;
-    unsigned int dodgeDurationMs_ = 300; // iframe duration
+    unsigned int dodgeDurationMs_ = 300; // 無敵時間（ミリ秒）
 
     // Just dodge detection
     unsigned int lastIncomingTimeMs_ = 0;
@@ -98,13 +98,13 @@ private:
     AuxUnit* auxLeft = nullptr;
     AuxUnit* auxRight = nullptr;
 
-    // gauge for aux firing / awakening
-    float auxGauge = 100.0f; // 0..100, natural regen
-    float baseAuxGaugeRegenRate = 5.0f; // per second
-    float auxGaugeRegenRate = 5.0f; // current rate
-    bool  awakened = false; // awakened = no cost to fire
+    // 補助装備用ゲージ / 覚醒
+    float auxGauge = 100.0f; // 0..100 自然回復
+    float baseAuxGaugeRegenRate = 5.0f; // 秒あたり
+    float auxGaugeRegenRate = 5.0f; // 現在の回復速度
+    bool  awakened = false; // 覚醒中は発射コストが不要
 
-    // Animation timing and events (per-animation duration is configurable)
+    // アニメーションの長さとイベント（アニメごとに秒数を設定可能）
     std::unordered_map<std::string, float> animDurations_; // seconds
 
     // Lower-body (original) animation state
@@ -116,13 +116,13 @@ private:
     std::unordered_map<std::string, std::vector<AnimEvent>> animEvents_;
     float prevAnimTime_ = 0.0f;
 
-    // camera reference for camera-relative movement/facing
+    // カメラ参照（カメラ基準の移動/向き計算に使用）
     CameraRig* camera_ = nullptr;
 
-    // Smoothed facing (yaw) state: target and current yaw in radians and tuning speed (rad/s)
-    float currentYaw_ = 0.0f; // current applied yaw (radians)
-    float targetYaw_ = 0.0f;  // desired yaw computed from input
-    float yawTurnSpeed_ = 8.0f; // radians per second (how fast player turns toward input)
+    // 向き（ヨー）の平滑化状態: 目標/現在のヨー（ラジアン）と回転速度（ラジアン/秒）
+    float currentYaw_ = 0.0f; // 現在適用されているヨー（ラジアン）
+    float targetYaw_ = 0.0f;  // 入力から計算した目標ヨー
+    float yawTurnSpeed_ = 8.0f; // プレイヤーが目標方向へ向く速度（ラジアン/秒）
 
     // currently attached animation attach index (returned by MV1AttachAnim), or -1 if none (lower-body)
     int attachedAnimAttachIndex_ = -1;
@@ -162,11 +162,11 @@ private:
     // whether this object owns the base model handle (loaded directly instead of via AssetsMgr)
     bool ownsBaseModel_ = false;
 
-    // --- new: simple vertical physics for jump support ---
-    float velY_ = 0.0f;           // vertical velocity (units/sec)
-    bool onGround_ = true;        // whether player is on ground
-    float gravity_ = -20.0f;      // gravity accel (units/sec^2)
-    float jumpVelocity_ = 8.0f;   // initial jump velocity (units/sec)
+    // --- 新規: ジャンプ対応の簡易垂直物理 ---
+    float velY_ = 0.0f;           // 垂直速度（単位: 単位/秒）
+    bool onGround_ = true;        // 地上にいるか
+    float gravity_ = -20.0f;      // 重力加速度（単位/秒^2）
+    float jumpVelocity_ = 8.0f;   // ジャンプ開始時の初速（単位/秒）
 
     // timing helper for jump input (debounce)
     unsigned int lastJumpTimeMs_ = 0;
