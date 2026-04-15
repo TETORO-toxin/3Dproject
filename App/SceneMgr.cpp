@@ -131,7 +131,10 @@ void SceneMgr::Update()
     prevTimeMs_ = now;
 
     if (currentScene_ == Scene::Title) {
-        if (titleScene_->Update()) {
+        // update and draw title scene
+        bool start = titleScene_->Update();
+        titleScene_->Draw();
+        if (start) {
             ChangeScene(Scene::Base);
         }
         return;
