@@ -70,17 +70,44 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                 yaw_ += pad.RX * controllerYawSpeed_ * dt;
                 pitch_ += -pad.RY * controllerPitchSpeed_ * dt; // invert Y
             } else {
+                // マウスの入力を画面中央を原点として扱う方式に変更する。
+                // 目的: マウス座標の積算／前回差分ではなく、常に画面中央からの偏差を利用して視点を回転させる。
+                // 手順:
+                //  1) 現在のマウス座標を取得する。
+                //  2) 画面中央 (screenW/2, screenH/2) との偏差 dx,dy を計算する。
+                //  3) 偏差に感度を掛けて yaw/pitch を更新する。
+                //  4) 毎フレームマウスを再び画面中央に戻すことで、次フレームも同様に中央からの偏差を得られる。
+                // 初回は prevMouseX_/prevMouseY_ が -1 になっているのでそのときだけ強制的に中央に戻す。
+
+                const int screenW = 800; // ゲーム描画解像度に合わせる（必要なら共有定数へ移動）
+                const int screenH = 600;
+
                 int mx = 0, my = 0;
                 GetMousePoint(&mx, &my);
-                if (prevMouseX_ == -1 && prevMouseY_ == -1) {
-                    prevMouseX_ = mx; prevMouseY_ = my;
-                }
-                int dx = mx - prevMouseX_;
-                int dy = my - prevMouseY_;
-                prevMouseX_ = mx; prevMouseY_ = my;
 
-                yaw_ += -dx * mouseSensitivity_; // negative so moving mouse right rotates camera right
+                int centerX = screenW / 2;
+                int centerY = screenH / 2;
+
+                // 初回利用時はカーソルを中央に配置して基準を作る
+                if (prevMouseX_ == -1 && prevMouseY_ == -1) {
+                    SetMousePoint(centerX, centerY);
+                    prevMouseX_ = centerX;
+                    prevMouseY_ = centerY;
+                    // 今フレームは移動量0として扱う
+                    mx = centerX; my = centerY;
+                }
+
+                // 画面中央からの偏差を計算
+                int dx = mx - centerX;
+                int dy = my - centerY;
+
+                // 偏差に感度を掛けて回転量を決める（ここでは既存の mouseSensitivity_ のスケールを尊重）
+                yaw_ += -dx * mouseSensitivity_; // 右方向へのマウス→カメラ右回転
                 pitch_ += -dy * mouseSensitivity_;
+
+                // 次フレームも中央からの偏差を得るためにマウスを再センタリングする
+                SetMousePoint(centerX, centerY);
+                prevMouseX_ = centerX; prevMouseY_ = centerY;
             }
 
             // 反転を避けるためピッチをクランプ

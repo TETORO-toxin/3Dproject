@@ -169,7 +169,10 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
                     // プレイヤーの前方かつ上方に少し離してエフェクトを配置
                     VECTOR pos = VAdd(p, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
                     DebugPrint("Player attack effect pos=%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
-                    em->PlayEffectAt(pos, "assets/VFX/03_Hanmado01/hit_hanmado_0409.efkefc");
+                    // Use the global default effect resource (configured by SceneMgr)
+                    // to avoid relying on asset path differences. Pass nullptr to use
+                    // the preloaded effect and an explicit scale.
+                    em->PlayEffectAt(pos, nullptr, 1.0f);
                 }
             });
         }
@@ -194,7 +197,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
                     if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
                     VECTOR pos = VAdd(p, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
                     DebugPrint("Player attack effect pos=%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
-                    em->PlayEffectAt(pos, "assets/VFX/03_Hanmado01/hit_hanmado_0409.efkefc");
+                    // Use the application's default effect resource rather than
+                    // a hard-coded asset path which may not match the working dir.
+                    em->PlayEffectAt(pos, nullptr, 1.0f);
                 }
             });
         }

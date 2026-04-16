@@ -2,6 +2,8 @@
 #include "main.h"
 #include "App/SceneMgr.h"
 #include "Sys/GlobalEffects.h"
+// フレームレート固定用ユーティリティ
+#include "Sys/FrameLimiter.h"
 
 // ヘルパー: フォアグラウンドウィンドウのクライアント領域にカーソルを制限する
 static bool ConfineCursorToActiveWindow()
@@ -78,6 +80,10 @@ int RunApp()
     SceneMgr* scene = new SceneMgr();
     scene->Init();
 
+    // フレームレート固定: ここで FrameLimiter を作成します。
+    // どのスクリーン（解像度/モニタ）でも同じ FPS になるよう高精度タイマーで制御します。
+    FrameLimiter limiter(60); // 60 FPS 固定
+
     // シーンの変更を追跡
     auto prevScene = scene->GetCurrentScene();
 
@@ -89,6 +95,10 @@ int RunApp()
     // メインループ
     while (ProcessMessage() == 0 && ClearDrawScreen() == 0)
     {
+        // フレーム先頭のタイムスタンプを取得
+        limiter.FrameStart();
+
+        // 更新処理
         scene->Update();
 
         // シーン遷移を検出
@@ -119,8 +129,9 @@ int RunApp()
         }
 
         ScreenFlip();
-        // シンプルなフレーム制限（約60fps）
-        WaitTimer(16);
+
+        // フレーム末尾で次フレーム開始まで待機します
+        limiter.FrameEndWait();
     }
 
     // 終了時にカーソルのクリッピングを必ず解除

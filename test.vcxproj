@@ -37,6 +37,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Sys\Assets.cpp" />
     <ClCompile Include="Sys\EffectManager.cpp" />
+    <ClCompile Include="Sys\FrameLimiter.cpp" />
     <ClCompile Include="Sys\GlobalEffects.cpp" />
     <ClCompile Include="Sys\Lighting.cpp" />
     <ClCompile Include="Sys\ResourceHandles.cpp" />
@@ -56,6 +57,7 @@
     <ClInclude Include="Sys\Assets.h" />
     <ClInclude Include="Sys\DebugPrint.h" />
     <ClInclude Include="Sys\EffectManager.h" />
+    <ClInclude Include="Sys\FrameLimiter.h" />
     <ClInclude Include="Sys\GlobalEffects.h" />
     <ClInclude Include="Sys\Input.h" />
     <ClInclude Include="Sys\Lighting.h" />

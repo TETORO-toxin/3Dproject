@@ -13,6 +13,36 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="ソース ファイル\App">
+      <UniqueIdentifier>{9b86b90c-1a4c-4597-9e9f-07f63d222018}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys">
+      <UniqueIdentifier>{cffa57d5-877e-42e3-8a96-05c0bb7d8719}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Game">
+      <UniqueIdentifier>{db154b23-c04c-42e5-8240-b5901c5a71be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\Aseets">
+      <UniqueIdentifier>{2178eb85-9007-42a7-b9d8-0df6b461a68c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\DebugPrint">
+      <UniqueIdentifier>{d70000d0-d306-4d0b-8370-a2a8749f6f72}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\EffectManager">
+      <UniqueIdentifier>{d51eb77c-ebc2-4da1-82b0-da66c7332839}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\GlobalEffects">
+      <UniqueIdentifier>{ac449544-1532-4de4-b9db-afb9b8b74782}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\Input">
+      <UniqueIdentifier>{5dbaafbe-31c7-490d-b484-8f7fea88f8f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\Lighting">
+      <UniqueIdentifier>{f2d53db8-708b-471c-82ac-e56e0048086e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\ResourceHandles">
+      <UniqueIdentifier>{2b52509e-7d8d-42d8-b729-3128afe99cf1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -30,13 +60,7 @@
     <ClCompile Include="Game\CameraRig.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Sys\Assets.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Game\Enemy.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Sys\ResourceHandles.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Game\AuxUnit.cpp">
@@ -54,9 +78,6 @@
     <ClCompile Include="App\TitleScene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="Sys\Lighting.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Game\Player_Init.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -72,10 +93,22 @@
     <ClCompile Include="Game\Player_AuxAndCombat.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Sys\Assets.cpp">
+      <Filter>ソース ファイル\Sys\Aseets</Filter>
+    </ClCompile>
     <ClCompile Include="Sys\EffectManager.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\Sys\EffectManager</Filter>
     </ClCompile>
     <ClCompile Include="Sys\GlobalEffects.cpp">
+      <Filter>ソース ファイル\Sys\GlobalEffects</Filter>
+    </ClCompile>
+    <ClCompile Include="Sys\Lighting.cpp">
+      <Filter>ソース ファイル\Sys\Lighting</Filter>
+    </ClCompile>
+    <ClCompile Include="Sys\ResourceHandles.cpp">
+      <Filter>ソース ファイル\Sys\ResourceHandles</Filter>
+    </ClCompile>
+    <ClCompile Include="Sys\FrameLimiter.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -92,16 +125,7 @@
     <ClInclude Include="Game\CameraRig.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Sys\Assets.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Sys\Input.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Enemy.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Sys\ResourceHandles.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Game\AuxUnit.h">
@@ -122,16 +146,28 @@
     <ClInclude Include="App\TitleScene.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="Sys\Lighting.h">
-      <Filter>ヘッダー ファイル</Filter>
+    <ClInclude Include="Sys\Assets.h">
+      <Filter>ソース ファイル\Sys\Aseets</Filter>
     </ClInclude>
     <ClInclude Include="Sys\DebugPrint.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ソース ファイル\Sys\DebugPrint</Filter>
     </ClInclude>
     <ClInclude Include="Sys\EffectManager.h">
-      <Filter>ヘッダー ファイル</Filter>
+      <Filter>ソース ファイル\Sys\EffectManager</Filter>
     </ClInclude>
     <ClInclude Include="Sys\GlobalEffects.h">
+      <Filter>ソース ファイル\Sys\GlobalEffects</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys\Input.h">
+      <Filter>ソース ファイル\Sys\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys\Lighting.h">
+      <Filter>ソース ファイル\Sys\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys\ResourceHandles.h">
+      <Filter>ソース ファイル\Sys\ResourceHandles</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys\FrameLimiter.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
