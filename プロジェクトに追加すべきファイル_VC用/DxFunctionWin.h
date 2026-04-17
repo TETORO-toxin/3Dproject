@@ -2,7 +2,7 @@
 // 
 // 		ＤＸライブラリ		Windows専用関数プロトタイプ宣言用ヘッダファイル
 // 
-// 				Ver 3.24f
+// 				Ver 3.24b
 // 
 // -------------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ extern	int			GetMonitorDpi(					int *XDpi, int *YDpi, int MonitorIndex DEFAULTPA
 extern	int			GetNoActiveState(				int ResetFlag DEFAULTPARAM( = TRUE ) ) ;				// メインウインドウが非アクティブになり、処理が一時停止していたかどうかを取得する(引数 ResetFlag=TRUE:状態をリセット FALSE:状態をリセットしない    戻り値: 0=一時停止はしていない  1=一時停止していた )
 extern	int			GetMouseDispFlag(				void ) ;												// マウスポインタを表示するかどうかの設定を取得する( 戻り値  TRUE:表示する  FALSE:表示しない )
 extern	int			GetAlwaysRunFlag(				void ) ;												// メインウインドウが非アクティブになっても処理を実行し続けるかどうかの設定を取得する( TRUE:実行する  FALSE:停止する )
-extern	int			GetSystemInfo_(					int *DxLibVer , int *DirectXVer , int *WindowsVer ) ;	// ＤＸライブラリと DirectX のバージョンと Windows のバージョン番号を取得する
+extern	int			_GetSystemInfo(					int *DxLibVer , int *DirectXVer , int *WindowsVer ) ;	// ＤＸライブラリと DirectX のバージョンと Windows のバージョン番号を取得する
 extern	int			GetPcInfo(						TCHAR *OSString , TCHAR *DirectXString , TCHAR *CPUString , int *CPUSpeed /* 単位MHz */ , double *FreeMemorySize /* 単位MByte */ , double *TotalMemorySize , TCHAR *VideoDriverFileName , TCHAR *VideoDriverString , double *FreeVideoMemorySize /* 単位MByte */ , double *TotalVideoMemorySize ) ;	// ＰＣの情報を取得する
 extern	int			GetWindowOSVersion(				void ) ;												// WindowsOSのバージョンを取得する( 戻り値 : DX_WINDOWSVERSION_10 など )
 extern	int			GetUseMMXFlag(					void ) ;												// ＭＭＸが使えるかどうかの情報を得る
@@ -124,7 +124,6 @@ extern	int			SetUseMouseEventTransparentWindowFlag(	int Flag ) ;																
 extern	int			SetResourceModule(						HMODULE ResourceModule ) ;															// リソースを読み込む際に使用するモジュールを設定する( NULL を指定すると初期状態に戻ります、デフォルトでは NULL )
 extern	int			SetUseDxLibWM_PAINTProcess(				int Flag ) ;																		// WM_PAINT メッセージが来た際に『ＤＸライブラリの WM_PAINTメッセージが来た際の処理』を行うかどうかを設定する( 別スレッドで描画処理を行う場合などで使用 )
 extern	int			SetWindows10_WM_CHAR_CancelTime(		int MilliSecond ) ;																	// Windows10 で WM_CHAR で短時間に連続して同じ文字が入力された場合の無効扱いにする時間を設定する( MilliSecond のミリ秒以内に連続して同じ文字が入力された場合に無効にする、MilliSecond の値をマイナスにするとデフォルトの設定に戻る )
-extern	int			SetUseWindows10_WM_CHAR_CancelTime(		int Flag ) ;																		// Windows10 で WM_CHAR で短時間に連続して同じ文字が入力された場合の無効扱いにするかどうかを設定する( TRUE:短時間連続入力は無効扱いにする(デフォルト)  FALSE:短時間連続入力も無効にしない )
 
 // ドラッグ＆ドロップされたファイル関係
 extern	int			SetDragFileValidFlag(		int Flag ) ;																	// ファイルのメインウインドウへのドラッグ＆ドロップ機能を有効にするかどうかのフラグをセットする
@@ -341,8 +340,6 @@ extern	int			SetUseDirect3DVersion(							int Version /* DX_DIRECT3D_9 など */ )
 extern	int			GetUseDirect3DVersion(							void ) ;										// 使用している Direct3D のバージョンを取得する( DX_DIRECT3D_9 など )
 extern	int			GetUseDirect3D11FeatureLevel(					void ) ;										// 使用している Direct3D11 の FeatureLevel ( DX_DIRECT3D_11_FEATURE_LEVEL_9_1 等 )を取得する( 戻り値　-1：エラー　-1以外：Feature Level )
 extern	int			SetUseDirect3D11AdapterIndex(					int Index ) ;									// 使用するグラフィックスデバイスのアダプターのインデックスを設定する
-extern	int			SetUseDirect3D11AdapterLUID(					LUID *UseLUID ) ;								// 使用する IDXGIAdapter の LUID を設定する
-extern	LUID		GetUseDirect3D11AdapterLUID(					void ) ;										// 使用する IDXGIAdapter の LUID を取得する
 extern	int			SetUseDirect3D11BGRASupport(					int Flag ) ;									// D3D11Device 作成時に D3D11_CREATE_DEVICE_BGRA_SUPPORT を指定するかどうかを設定する( TRUE:指定する  FALSE:指定しない( デフォルト ) )
 extern	int			GetUseDirect3D11BGRASupport(					void ) ;										// D3D11Device 作成時に D3D11_CREATE_DEVICE_BGRA_SUPPORT を指定するかどうかを取得する
 extern	int			SetUseDirectDrawFlag(							int Flag ) ;									// ( 同効果のSetUseSoftwareRenderModeFlag を使用して下さい )DirectDrawを使用するかどうかを設定する
@@ -362,7 +359,6 @@ extern	const void*	GetUseDirect3D11BackBufferRenderTargetView(		void ) ;								
 extern	const void*	GetUseDirect3D11DepthStencilTexture2D(			void ) ;										// 使用中の深度ステンシルバッファのID3D11Texture2Dオブジェクトを取得する( 戻り値を ID3D11Texture2D * にキャストしてください )
 extern	int			SetDrawScreen_ID3D11RenderTargetView(			const void *pID3D11RenderTargetView, const void *pID3D11DepthStencilView DEFAULTPARAM( = NULL ) ) ;		// 指定の ID3D11RenderTargetView を描画対象にする( pID3D11DepthStencilView が NULL の場合はデフォルトの深度ステンシルバッファを使用する )
 extern	int			RefreshDxLibDirect3DSetting(					void ) ;										// ＤＸライブラリが行ったDirect3Dの設定を再度行う( 特殊用途 )
-extern	int			SetUseDirect3D11SwapEffect(						int SwapEffect /* DX_SWAP_EFFECT_DISCARD 等 */ ) ;	// Direct3D11 を使用した場合の SwapEffect を指定する( DxLib_Init の前でのみ有効 )
 
 #ifndef DX_NON_MEDIA_FOUNDATION
 extern	int			SetUseMediaFoundationFlag(						int Flag ) ;									// Media Foundation を使用するかどうかを設定する( TRUE:使用する( デフォルト )  FALSE:使用しない )
