@@ -1,6 +1,6 @@
 #pragma once
-#include <DxLib.h>
-#include <EffekseerForDXLib.h>
+#include "DxLib.h"
+#include "EffekseerForDXLib.h"
 #include <vector>
 
 // エフェクト管理クラス
