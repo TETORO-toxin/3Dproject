@@ -54,22 +54,35 @@ int RunApp()
         if (GetMonitorInfo(hMon, &mi)) {
             int monitorW = mi.rcMonitor.right - mi.rcMonitor.left;
             int monitorH = mi.rcMonitor.bottom - mi.rcMonitor.top;
-            // DxLibのグラフモードをモニター解像度に設定し、フルスクリーンを要求する
-            SetGraphMode(monitorW, monitorH, 32);
-            ChangeWindowMode(FALSE); // フルスクリーン
+            // ウィンドウモードで起動する場合は、モニター全体サイズではなく適度なウィンドウサイズにする
+            int winW = (monitorW > 1280) ? 1280 : monitorW;
+            int winH = (monitorH > 720) ? 720 : monitorH;
+            SetGraphMode(winW, winH, 32);
+            ChangeWindowMode(TRUE); // ウィンドウモード
+            // 明示的にウィンドウサイズと位置を指定してフルスクリーン化を防ぐ
+            SetWindowSize(winW, winH);
+            SetWindowPosition(mi.rcMonitor.left + (monitorW - winW) / 2, mi.rcMonitor.top + (monitorH - winH) / 2);
         } else {
             // モニター情報が取得できなかった場合はプライマリ表示をフォールバック
             int pw = GetSystemMetrics(SM_CXSCREEN);
             int ph = GetSystemMetrics(SM_CYSCREEN);
-            SetGraphMode(pw, ph, 32);
-            ChangeWindowMode(FALSE);
+            int winW = (pw > 1280) ? 1280 : pw;
+            int winH = (ph > 720) ? 720 : ph;
+            SetGraphMode(winW, winH, 32);
+            ChangeWindowMode(TRUE);
+            SetWindowSize(winW, winH);
+            SetWindowPosition((pw - winW) / 2, (ph - winH) / 2);
         }
     } else {
         // プライマリ表示をフォールバック
         int pw = GetSystemMetrics(SM_CXSCREEN);
         int ph = GetSystemMetrics(SM_CYSCREEN);
-        SetGraphMode(pw, ph, 32);
-        ChangeWindowMode(FALSE);
+        int winW = (pw > 1280) ? 1280 : pw;
+        int winH = (ph > 720) ? 720 : ph;
+        SetGraphMode(winW, winH, 32);
+        ChangeWindowMode(TRUE);
+        SetWindowSize(winW, winH);
+        SetWindowPosition((pw - winW) / 2, (ph - winH) / 2);
     }
 
     SetMainWindowText("GameProgramming - DXLib");

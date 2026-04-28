@@ -147,7 +147,13 @@ void SceneMgr::Update()
     // Update global effect manager (logic) with player position so playback positions follow player
     EffectManager* gem = GetGlobalEffectManager();
     if (gem) {
-        gem->Update(ppos);
+        // compute forward direction for player effects: prefer camera forward XZ, fallback to +Z
+        VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
+        if (camera_) forward = camera_->GetForwardXZ();
+        float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
+        if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
+        else forward = VGet(0.0f, 0.0f, 1.0f);
+        gem->Update(ppos, forward);
     }
 
     // Debug: press F1 to spawn an effect in front of player to validate effect playback/visibility

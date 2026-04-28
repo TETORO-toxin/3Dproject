@@ -112,7 +112,7 @@ private:
     float animTime_ = 0.0f; // seconds
     bool animLoop_ = true;
 
-    struct AnimEvent { float time; bool fired; std::function<void()> cb; };
+    struct AnimEvent { float time = 0.0f; bool fired = false; std::function<void()> cb; };
     std::unordered_map<std::string, std::vector<AnimEvent>> animEvents_;
     float prevAnimTime_ = 0.0f;
 

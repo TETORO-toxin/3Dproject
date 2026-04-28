@@ -32,6 +32,11 @@ void CameraRig::Update()
 
 void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn)
 {
+    // この更新関数は毎フレーム呼び出され、カメラの位置・向きを計算します。
+    // playerPos: プレイヤーのワールド座標
+    // targetPos: ロックオン対象などのターゲット座標
+    // lockedOn: ロックオン中かどうかのフラグ
+
     SetCameraNearFar(0.1f, 1200.0f);
 
     VECTOR desired;
@@ -48,6 +53,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
 
     if (lockedOn) {
         // ロックオン時: 以前の挙動を維持（プレイヤーの背後からターゲットを見る）
+        // ターゲットの方向に基づいてカメラをプレイヤーの背後に配置し、少し上方を見る
         VECTOR forward = VSub(targetPos, playerPos);
         float len = VSize(forward);
         if (len > 0.0001f) forward = VScale(forward, 1.0f / len);
@@ -58,26 +64,22 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         target_ = targetPos;
         frozenAbove_ = false; // allow movement when returning to normal
     } else {
-        // カメラがプレイヤーの真上で固定されている場合、入力によるオービット処理をスキップしてジャダーを防ぐ
+        // 通常時: オービット処理やマウス/スティック入力による回転を行う
+        // frozenAbove_ が true のときは、プレイヤーの真上に固定されているので回転処理をスキップ
         if (frozenAbove_) {
             // スプリングが固定状態と争わないよう、player に対する現在の camPos を維持する
             desired = camPos_;
         } else {
             // オービット操作: コントローラ右スティックまたはマウス移動から yaw/pitch を更新
-            // コントローラ: 右スティック軸 (RX, RY)。マウス: ピクセルベースの差分。
+            // コントローラ: 右スティック軸 (RX, RY)。マウス: 画面中心からの偏差を用いる方式
             if (controllerPresent) {
                 // right stick gives -1..1 per axis; integrate over dt
                 yaw_ += pad.RX * controllerYawSpeed_ * dt;
                 pitch_ += -pad.RY * controllerPitchSpeed_ * dt; // invert Y
             } else {
-                // マウスの入力を画面中央を原点として扱う方式に変更する。
-                // 目的: マウス座標の積算／前回差分ではなく、常に画面中央からの偏差を利用して視点を回転させる。
-                // 手順:
-                //  1) 現在のマウス座標を取得する。
-                //  2) 画面中央 (screenW/2, screenH/2) との偏差 dx,dy を計算する。
-                //  3) 偏差に感度を掛けて yaw/pitch を更新する。
-                //  4) 毎フレームマウスを再び画面中央に戻すことで、次フレームも同様に中央からの偏差を得られる。
-                // 初回は prevMouseX_/prevMouseY_ が -1 になっているのでそのときだけ強制的に中央に戻す。
+                // マウス入力処理:
+                // 画面中央を原点として常に中央からの偏差で回転量を決める（FPS 操作に近い方式）。
+                // 毎フレーム SetMousePoint で中央に戻すことで、絶対座標の積算を避ける。
 
                 const int screenW = 800; // ゲーム描画解像度に合わせる（必要なら共有定数へ移動）
                 const int screenH = 600;
@@ -110,7 +112,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                 prevMouseX_ = centerX; prevMouseY_ = centerY;
             }
 
-            // 反転を避けるためピッチをクランプ
+            // ピッチ角の上限・下限をクランプして視点反転を防止
             const float maxPitch = 1.4f; // ~80 degrees
             const float minPitch = -1.2f; // allow looking slightly up
             if (pitch_ > maxPitch) pitch_ = maxPitch;
@@ -126,14 +128,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                                  orbitRadius_ * sp,
                                  orbitRadius_ * cp * cy);
 
-            // desired = プレイヤー + オフセット。ターゲットは上半身寄りに少し上げる
+            // 球面座標からオフセットを計算し、プレイヤーの周りにカメラを配置
             desired = VAdd(playerPos, VGet(offset.x, offset.y + 3.0f, offset.z));
             target_ = VAdd(playerPos, VGet(0.0f, 3.0f, 0.0f));
         }
     }
 
     // desired がプレイヤーの基準面よりも低くなる場合、カメラが地面にめり込まないよう接近を防ぐ。
-    // その場合、プレイヤーへの半径距離を縮めない（現行の半径を維持）ようにする。
+    // ここではプレイヤー基準面（groundPlane）に対する signed 距離を比較して補正を行う。
     {
         // compute signed distances to plane
         VECTOR pToPlane = VSub(playerPos, groundPoint_);
@@ -143,13 +145,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         const float minAbovePlayer = 1.8f; // keep camera at least this above player's origin when centered
 
         if (desiredSigned < playerSigned + minAbovePlayer) {
-            // if desired would be too low, and it would reduce radial distance, prevent approaching
+            // desired がプレイヤーの上方閾値より低い場合、
+            // かつ半径距離を縮めるようであれば現在の半径を維持して近づかないようにする
             VECTOR curDir = VSub(camPos_, playerPos);
             VECTOR wantDir = VSub(desired, playerPos);
             float curDist = VSize(curDir);
             float wantDist = VSize(wantDir);
             if (wantDist < curDist && curDist > 0.0001f && wantDist > 0.0001f) {
-                // keep desired at current radial distance from player along the desired direction
+                // プレイヤーからの現在の距離を維持したまま、向きを desired の方向に向ける
                 VECTOR wantDirN = VScale(wantDir, 1.0f / wantDist);
                 desired = VAdd(playerPos, VScale(wantDirN, curDist));
                 // also nudge desired up along normal so it's at least the minimum signed height
@@ -174,16 +177,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     camVel_ = VAdd(camVel_, VScale(acc, dt));
     camPos_ = VAdd(camPos_, VScale(camVel_, dt));
 
-    // 平面との衝突/クランプ処理: カメラ位置を平面法線へ投影し、平面からの signed 距離が minAboveGround 以上になるようにする。
-    // カメラが地面を貫通しないように余裕を持たせる。
-    // これはカメラが保つべき地面に対する最小 signed 距離である。
+    // 平面との衝突/クランプ処理:
+    // カメラが地面にめり込まないように、地面法線方向の signed 距離が minAboveGround 以上になるよう補正する。
     const float minAboveGround = 1.0f; // meters above ground to keep (increased from 0.5f)
     // compute signed distance from plane: d = dot(camPos - groundPoint, groundNormal)
     VECTOR camToPlane = VSub(camPos_, groundPoint_);
     float signedDist = Dot(camToPlane, groundNormal_);
     if (signedDist < minAboveGround) {
-        // desired signed distance
-        // raise camera smoothly to at least minAboveGround
+        // 地面より低ければ滑らかに押し上げる処理
         float desiredDist = minAboveGround;
         float diff = desiredDist - signedDist;
         // move camera along normal by diff smoothly
@@ -192,8 +193,8 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         camPos_.y += groundNormal_.y * diff * lerp;
         camPos_.z += groundNormal_.z * diff * lerp;
 
-        // XZ を滑らかにプレイヤーの平面上投影位置へ移動（平面接線方向へ移動）
-        // プレイヤーの平面上の最近傍点を計算
+        // XZ 平面上でプレイヤーの投影点へ滑らかに寄せる処理
+        // まずプレイヤーの平面上の最近傍点を求める
         VECTOR playerToPlane = VSub(playerPos, groundPoint_);
         float playerDist = Dot(playerToPlane, groundNormal_);
         VECTOR playerOnPlane = VSub(playerPos, VScale(groundNormal_, playerDist));
@@ -215,14 +216,14 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         // Project current camera position onto plane
         VECTOR camOnPlane = VSub(camPos_, VScale(groundNormal_, camSignedNow));
 
-        // Direction along plane from camera to player
+        // 平面上でのカメラからプレイヤーへの方向と距離を計算
         VECTOR planeDir = VSub(playerOnPlane, camOnPlane);
         float planeDist = sqrtf(planeDir.x*planeDir.x + planeDir.y*planeDir.y + planeDir.z*planeDir.z);
 
         if (planeDist > 0.001f) {
             VECTOR planeDirN = VScale(planeDir, 1.0f / planeDist);
 
-            // 距離に比例した望ましい速度（ソフトな吸着）
+            // プレイヤー方向へ滑らかに移動させるための望ましい速度を決定
             const float maxSlideSpeed = 1.6f;
             float desiredSpeed = planeDist * 0.5f;
             if (desiredSpeed < 0.02f) desiredSpeed = 0.02f;
@@ -230,7 +231,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
 
             VECTOR desiredVelPlane = VScale(planeDirN, desiredSpeed);
 
-            // 平面に沿った速度成分（法線成分を取り除く）
+            // 現在の速度から法線成分を取り除いて平面上の速度を計算
             float velAlongNormal = Dot(camVel_, groundNormal_);
             VECTOR camVelPlane = VSub(camVel_, VScale(groundNormal_, velAlongNormal));
 
@@ -244,13 +245,13 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             float spd = sqrtf(camVelPlane.x*camVelPlane.x + camVelPlane.y*camVelPlane.y + camVelPlane.z*camVelPlane.z);
             if (spd > maxSlideSpeed) camVelPlane = VScale(camVelPlane, maxSlideSpeed / spd);
 
-            // reconstruct full velocity keeping normal component
+            // 法線成分を保持しつつ平面上速度を再構成
             camVel_ = VAdd(VScale(groundNormal_, velAlongNormal), camVelPlane);
 
             // 新しい平面速度で平面上の位置を進める（小さな dt ステップ）
             camPos_ = VAdd(camPos_, VScale(camVelPlane, dt));
 
-            // 数値誤差で地面より下に沈んでいないかを保証
+            // 数値誤差で地面より下に沈んでいないかを保証する追加補正
             camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
             if (camSignedNow < minAboveGround) {
                 camPos_ = VAdd(camPos_, VScale(groundNormal_, (minAboveGround - camSignedNow)));
@@ -259,7 +260,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                 if (vn < 0.0f) camVel_ = VSub(camVel_, VScale(groundNormal_, vn * 0.5f));
             }
         } else {
-            // プレイヤーの真上に非常に近い場合: 平面速度を穏やかに除去し、XZ をスナップ
+            // プレイヤーの真上に非常に近い場合: 平面速度を穏やかに除去し、XZ をプレイヤー上にスナップ
             float velAlongNormal = Dot(camVel_, groundNormal_);
             VECTOR camVelPlane = VSub(camVel_, VScale(groundNormal_, velAlongNormal));
             camVelPlane = VScale(camVelPlane, 0.2f);
@@ -285,7 +286,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         const float minAbovePlayer = 1.8f; // keep camera at least this above player's origin when centered
 
         if (diffPlaneDist < snapThreshold) {
-            // プレイヤーの上に直接カメラを配置（signed 高さ playerDist + minAbovePlayer）
+            // プレイヤーの上に直接カメラを配置（一定の signed 高さを保つスナップ）
             float targetSigned = playerDist + minAbovePlayer;
             camPos_ = VAdd(playerOnPlane, VScale(groundNormal_, targetSigned));
 
@@ -301,13 +302,13 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camVel_.y *= 0.01f;
             camVel_.z *= 0.05f;
 
-            // プレイヤーを真下に見る
+            // スナップ時はプレイヤーを真下に見るようにターゲットを設定
             target_ = playerPos;
 
             // 真上を向いたままの不要な移動/ジャダーを防ぐためカメラを固定する
             frozenAbove_ = true;
         } else {
-            // スライド中は速度を滑らかに減衰
+            // スライド中は速度を滑らかに減衰させる
             camVel_.x *= 0.8f;
             camVel_.y *= 0.5f;
             camVel_.z *= 0.8f;
@@ -315,12 +316,13 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             // When sliding, ensure camera looks toward player's upper body so it's aligned
             target_ = VAdd(playerPos, VGet(0.0f, 2.0f, 0.0f));
 
-            // 以前固定されていたが閾値以上に離れたら固定を解除
+            // 以前 frozenAbove_ だった場合でも閾値以上離れたら固定を解除する
             frozenAbove_ = false;
         }
     }
 
-    // 追加の保護: カメラが平面投影でプレイヤーに非常に近い場合、地面/プレイヤーへクリッピングしないよう頭上に保つ
+    // 追加の保護: カメラがプレイヤーに非常に近い場合、プレイヤーや地面へクリッピングしないよう
+    // カメラを上方へ押し上げ、軽く外側に押し出す処理
     // compute vector in plane tangent from player to camera
     VECTOR playerToCam = VSub(camPos_, playerPos);
     // remove normal component
@@ -333,7 +335,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     VECTOR pToPlane = VSub(playerPos, groundPoint_);
     float playerSigned = Dot(pToPlane, groundNormal_);
     if (distXZ < closeThreshold) {
-        // カメラがプレイヤーの上に十分な signed 高さを持つようにする
+        // カメラがプレイヤーに近すぎる場合の高さ確保
         if ( (signedDist) < (playerSigned + minAbovePlayer) ) {
             float targetSigned = playerSigned + minAbovePlayer;
             float push = targetSigned - signedDist;
@@ -343,7 +345,7 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camPos_.z += groundNormal_.z * push * pushLerp;
             camVel_.y *= 0.2f;
 
-            // また接線方向に外側へ軽く押し出す
+            // 接線方向に軽く外側へ押し出してプレイヤーとの接触を避ける
             float nudge = (closeThreshold - distXZ) * 0.5f;
             if (distXZ > 0.0001f) {
                 camPos_.x += (tangent.x / distXZ) * -nudge;
@@ -352,12 +354,12 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             } else {
                 camPos_.x += 0.01f; camPos_.y += 0.01f; camPos_.z += 0.01f;
             }
-            // プレイヤーの上半身を注視する
+            // プレイヤーの上半身（若干上）を注視するようターゲットを調整
             target_ = VAdd(playerPos, VGet(0.0f, 2.2f, 0.0f));
         }
     }
 
-    // frozenAbove の場合、スプリングが位置を動かさないようカメラ位置/速度を安定させる
+    // frozenAbove_ の場合、位置変化を最小化してジャダーを避けるため速度を強く減衰
     if (frozenAbove_) {
         // 小さな速度をゼロにし位置をロックしてジャダーを防ぐ
         if (VSize(camVel_) < 0.01f) {
