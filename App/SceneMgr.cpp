@@ -130,6 +130,10 @@ void SceneMgr::Update()
     float dt = (now - prevTimeMs_) / 1000.0f;
     prevTimeMs_ = now;
 
+    // clamp dt to avoid large jumps (e.g. when paused or dragging window)
+    if (dt < 0.0f) dt = 0.0f;
+    if (dt > 0.05f) dt = 0.05f; // max 50ms
+
     if (currentScene_ == Scene::Title) {
         // update and draw title scene
         bool start = titleScene_->Update();
@@ -141,7 +145,7 @@ void SceneMgr::Update()
     }
 
     // Update player logic only (rendering will be done after other draws so player occludes them)
-    player_->UpdateLogic();
+    player_->UpdateLogic(dt);
     VECTOR ppos = player_->GetPosition();
 
     // Update global effect manager (logic) with player position so playback positions follow player
@@ -210,9 +214,9 @@ void SceneMgr::Update()
 
     // update camera
     if (locked && best) {
-        camera_->Update(ppos, best->GetPosition(), true);
+        camera_->Update(ppos, best->GetPosition(), true, dt);
     } else {
-        camera_->Update(ppos, VGet(0,0,0), false);
+        camera_->Update(ppos, VGet(0,0,0), false, dt);
     }
 
     // Build list of enemies with camera-space depth so we can order draws relative to player
@@ -227,7 +231,7 @@ void SceneMgr::Update()
 
     for (auto e : enemies_) {
         // update enemy logic
-        e->Update();
+        e->Update(dt);
 
         VECTOR epos = e->GetPosition();
         VECTOR camTo = VSub(epos, camPos);

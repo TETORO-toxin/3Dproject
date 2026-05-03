@@ -22,7 +22,8 @@ public:
     void Update();
 
     // ロジック更新と描画を分離: シーン側で描画順を制御できるようにする
-    void UpdateLogic();
+    // dt: delta time in seconds
+    void UpdateLogic(float dt);
     void Draw();
 
     VECTOR GetPosition() const;

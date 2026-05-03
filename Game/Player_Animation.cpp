@@ -457,7 +457,7 @@ void Player::UpdateAnimation(float dt)
             if (pit != animDurations_.end() && pit->second > 0.0f) {
                 prevConfigLen = pit->second;
             } else if (prevUpperAttachedAnimAttachIndex_ != -1 && prevUpperAttachedAnimTotalTime_ > 0.0f) {
-                prevConfigLen = prevUpperAttachedAnimAttachIndex_;
+                prevConfigLen = prevUpperAttachedAnimTotalTime_;
             }
             if (prevConfigLen <= 0.0f) prevConfigLen = 1.0f;
 

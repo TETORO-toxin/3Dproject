@@ -49,30 +49,33 @@
     <Filter Include="ソース ファイル\App\Scene">
       <UniqueIdentifier>{30f7249d-70e7-4723-8eb1-9bcf228d8ff8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\Game\AuxUnit">
+      <UniqueIdentifier>{dd891dad-9c4a-467e-a81d-0b8033c66645}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Game\Enemy">
+      <UniqueIdentifier>{18e3b026-9acd-4fac-985d-aa699225d46a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Game\Projectile">
+      <UniqueIdentifier>{430e562f-9dd1-4cd8-9a99-5754740d4421}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Game\Support">
+      <UniqueIdentifier>{98871353-1bb7-40b8-a57b-3002c9a207d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Game\UI">
+      <UniqueIdentifier>{62560e15-862c-4695-bd26-ae408383f9b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Sys\FrameLimiter">
+      <UniqueIdentifier>{0d9ae2ff-3cc0-4a20-8adf-8dc7c6e85627}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\Game\CameraRig">
+      <UniqueIdentifier>{01c2c99b-cd51-455c-9b60-623275e84e9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Code\DxLibMain.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\CameraRig.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Enemy.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\AuxUnit.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Projectile.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\SupportSystem.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\UI3D2D.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Sys\Assets.cpp">
@@ -89,9 +92,6 @@
     </ClCompile>
     <ClCompile Include="Sys\ResourceHandles.cpp">
       <Filter>ソース ファイル\Sys\ResourceHandles</Filter>
-    </ClCompile>
-    <ClCompile Include="Sys\FrameLimiter.cpp">
-      <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="Game\Player.cpp">
       <Filter>ソース ファイル\Game\Player</Filter>
@@ -117,30 +117,30 @@
     <ClCompile Include="App\TitleScene.cpp">
       <Filter>ソース ファイル\App\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="Game\AuxUnit.cpp">
+      <Filter>ソース ファイル\Game\AuxUnit</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Enemy.cpp">
+      <Filter>ソース ファイル\Game\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Projectile.cpp">
+      <Filter>ソース ファイル\Game\Projectile</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\SupportSystem.cpp">
+      <Filter>ソース ファイル\Game\Support</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\UI3D2D.cpp">
+      <Filter>ソース ファイル\Game\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Sys\FrameLimiter.cpp">
+      <Filter>ソース ファイル\Sys\FrameLimiter</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\CameraRig.cpp">
+      <Filter>ソース ファイル\Game\CameraRig</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\CameraRig.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Enemy.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\AuxUnit.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Projectile.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Support.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\SupportSystem.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\UI3D2D.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Sys\Assets.h">
@@ -164,9 +164,6 @@
     <ClInclude Include="Sys\ResourceHandles.h">
       <Filter>ソース ファイル\Sys\ResourceHandles</Filter>
     </ClInclude>
-    <ClInclude Include="Sys\FrameLimiter.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Player.h">
       <Filter>ソース ファイル\Game\Player</Filter>
     </ClInclude>
@@ -175,6 +172,30 @@
     </ClInclude>
     <ClInclude Include="App\TitleScene.h">
       <Filter>ソース ファイル\App\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\AuxUnit.h">
+      <Filter>ソース ファイル\Game\AuxUnit</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Enemy.h">
+      <Filter>ソース ファイル\Game\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Projectile.h">
+      <Filter>ソース ファイル\Game\Projectile</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Support.h">
+      <Filter>ソース ファイル\Game\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\SupportSystem.h">
+      <Filter>ソース ファイル\Game\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\UI3D2D.h">
+      <Filter>ソース ファイル\Game\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys\FrameLimiter.h">
+      <Filter>ソース ファイル\Sys\FrameLimiter</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\CameraRig.h">
+      <Filter>ソース ファイル\Game\CameraRig</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

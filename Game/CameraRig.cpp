@@ -32,6 +32,12 @@ void CameraRig::Update()
 
 void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn)
 {
+    // legacy: assume 60fps
+    Update(playerPos, targetPos, lockedOn, 1.0f/60.0f);
+}
+
+void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn, float dt)
+{
     // この更新関数は毎フレーム呼び出され、カメラの位置・向きを計算します。
     // playerPos: プレイヤーのワールド座標
     // targetPos: ロックオン対象などのターゲット座標
@@ -40,9 +46,6 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     SetCameraNearFar(0.1f, 1200.0f);
 
     VECTOR desired;
-
-    // コントローラの入力統合とスプリング計算のタイムステップ
-    float dt = 1.0f / 60.0f;
 
     // Poll inputs
     PadState pad = PollPad(0);

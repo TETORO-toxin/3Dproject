@@ -13,12 +13,12 @@ Enemy::~Enemy()
     // モデルは所有していないため削除処理は不要
 }
 
-void Enemy::Update()
+void Enemy::Update(float dt)
 {
     // 簡易的な空中物理（重力・着地判定）
     if (airborne) {
-        velY -= 9.8f * (1.0f/60.0f); // 重力
-        pos_.y += velY * (1.0f/60.0f);
+        velY -= 9.8f * dt; // 重力
+        pos_.y += velY * dt;
         if (pos_.y <= 0.0f) {
             pos_.y = 0.0f;
             airborne = false;
@@ -28,7 +28,7 @@ void Enemy::Update()
     }
 }
 
-void Enemy::Draw()
+void Enemy::Draw() const
 {
     // World 空間にワイヤーフレームの直方体として描画する。投影の反転アーティファクトを避けるため DrawLine3D を使用。
     const float halfX = 0.5f;
@@ -36,7 +36,7 @@ void Enemy::Draw()
     const float height = 2.0f;
 
     VECTOR base = pos_; // base center
-    VECTOR corners[8];
+    VECTOR corners[8]{};
     // bottom face
     corners[0] = VAdd(base, VGet(-halfX, 0.0f, -halfZ));
     corners[1] = VAdd(base, VGet( halfX, 0.0f, -halfZ));

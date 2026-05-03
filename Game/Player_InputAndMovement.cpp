@@ -14,10 +14,9 @@
 //  - 固定タイムステップで入力をポーリングし、モード切替、回避、補助発射判定、攻撃/ジャンプ入力の処理を行う。
 //  - カメラ基準の移動ベクトルをワールドXZに変換し位置と向きを更新する。
 //  - ジャンプや着地の垂直物理を統合し、適切なアニメーションへ遷移させる。
-void Player::UpdateLogic()
+void Player::UpdateLogic(float dt)
 {
-    // 固定タイムステップ
-    float dt = 1.0f / 60.0f;
+    // dt passed from SceneMgr (seconds)
 
     // コントローラまたはキーボード+マウスの統一入力
     InputState in = PollInput();

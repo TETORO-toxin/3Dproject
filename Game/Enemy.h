@@ -8,8 +8,8 @@ public:
     ~Enemy();
 
     // ゲームロジック（物理/状態）だけを更新する。描画は Draw() に分離し、呼び出し側で描画順を制御できるようにする。
-    void Update();
-    void Draw();
+    void Update(float dt);
+    void Draw() const;
 
     VECTOR GetPosition() const;
 

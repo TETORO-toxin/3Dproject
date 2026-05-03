@@ -7,6 +7,7 @@ public:
     CameraRig();
     void Update(); // default
     void Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn);
+    void Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn, float dt);
     void SetTarget(float x, float y, float z);
     void SetGroundPlane(const VECTOR& point, const VECTOR& normal);
 

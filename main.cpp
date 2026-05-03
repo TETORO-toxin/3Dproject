@@ -43,7 +43,7 @@ static void ReleaseCursorClip()
 /// アプリケーションを起動する補助関数（WinMainはDXLibが提供するため重複定義を避ける）
 /// ビルド／実行はDxLibが提供するエントリポイントから行われます。
 /// </summary>
-int RunApp()
+static int RunApp()
 {
     // フルスクリーンにするモニターの選択: マウスカーソルがあるモニターを使用
     POINT pt;

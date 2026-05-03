@@ -14,6 +14,7 @@
 // 下位互換: Updateはロジック->描画を呼ぶ
 void Player::Update()
 {
-    UpdateLogic();
+    // legacy: assume 60fps
+    UpdateLogic(1.0f/60.0f);
     Draw();
 }
