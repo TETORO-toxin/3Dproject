@@ -19,13 +19,24 @@ Game::WeaponType Player::GetEquippedWeapon() const
     return equippedWeapon_;
 }
 
+// `newWeapon` を装備しようとする。交換が発生した場合は true を返し、
+// 以前の装備を `oldOut` に書き込む（nullptr でなければ）。
+// `newWeapon` が現在の装備と同じで変更がなかった場合は false を返す。
+bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut)
+{
+    if (newWeapon == equippedWeapon_) return false;
+    if (oldOut) *oldOut = equippedWeapon_;
+    equippedWeapon_ = newWeapon;
+    return true;
+}
+
+// 後方互換用のヘルパー: 交換が行われた場合は以前の武器を返し、
+// そうでない場合は `Game::WeaponType::None` を返す。
 Game::WeaponType Player::EquipWeapon(Game::WeaponType newWeapon)
 {
-    // 同じ武器なら何もしない
-    if (newWeapon == equippedWeapon_) return equippedWeapon_;
-    Game::WeaponType old = equippedWeapon_;
-    equippedWeapon_ = newWeapon;
-    return old;
+    Game::WeaponType old = Game::WeaponType::None;
+    if (TryEquipWeapon(newWeapon, &old)) return old;
+    return Game::WeaponType::None;
 }
 
 void Player::SetCamera(CameraRig* cam)

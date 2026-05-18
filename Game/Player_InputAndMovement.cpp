@@ -16,19 +16,13 @@
 //  - ジャンプや着地の垂直物理を統合し、適切なアニメーションへ遷移させる。
 void Player::UpdateLogic(float dt, const InputState& in)
 {
-    // dt passed from SceneMgr (seconds)
+    // dt は SceneMgr から渡された値（秒）
 
-    // モード切替（例: A / space/Z）
-    if (in.btnA) {
-        unsigned int now = GetNowCount();
-        if (now - lastModeSwitchTimeMs_ > 200) {
-            lastModeSwitchTimeMs_ = now;
-            mode_ = (mode_ == Mode::Melee) ? Mode::Ranged : Mode::Melee;
-        }
-    }
+    // 現状は近接武器のみのためモード切替は無効化されています。
+    // 将来の射撃武器実装に向けた TODO として残しています。
 
-    // 回避（例: B / X）
-    if (in.btnB) {
+    // 回避（意味ベースのフラグを使用）
+    if (in.dodgePressed || (in.dodgeDown && !in.dodgePressed && false)) {
         unsigned int now = GetNowCount();
         if (now - lastDodgeTimeMs_ > dodgeCooldownMs_) {
             // ジャスト回避か判定
@@ -41,24 +35,17 @@ void Player::UpdateLogic(float dt, const InputState& in)
         }
     }
 
-    // 補助攻撃（左/右トリガーやマウスボタン）
-    if (in.leftTrigger > 0.5f) {
+    // 補助攻撃（左/右トリガーやマウスボタン） - 意味ベースの閾値を使用
+    if (in.leftTrigger > 0.5f || in.leftTriggerHoldTime > 0.0f) {
         // 左補助発射 - 外部呼び出しを期待
     }
-    if (in.rightTrigger > 0.5f) {
+    if (in.rightTrigger > 0.5f || in.rightTriggerHoldTime > 0.0f) {
         // 右補助発射 - 外部呼び出しを期待
     }
 
-    // 攻撃とジャンプ入力
-    bool attackInput = false;
-    bool jumpInput = false;
-    // コントローラ割当
-    if (in.btnX) attackInput = true;
-    // Use semantic jump action from InputState to avoid keyboard key conflicts (e.g. E mapped to btnY)
-    if (in.jumpPressed || in.jumpDown) jumpInput = true;
-    // マウス/キーボードの代替割当
-    if (in.mouseLeft) attackInput = true;
-    // legacy: do not read raw keys here; use InputState mapping instead
+    // 攻撃とジャンプ入力: InputState の意味的アクションフラグを使用
+    bool attackInput = in.attackLightPressed || in.attackLightDown || in.attackHeavyPressed || in.attackHeavyDown;
+    bool jumpInput = in.jumpPressed || in.jumpDown;
 
     // 左スティック/キーボードによる単純移動
     // 移動はカメラ基準: 前方入力でプレイヤーがカメラから遠ざかる（プレイヤーの背がカメラ向き）ように移動
@@ -85,11 +72,11 @@ void Player::UpdateLogic(float dt, const InputState& in)
               if (fabsf(faceDX) > 0.0001f || fabsf(faceDZ) > 0.0001f) {
                   float desiredYaw = atan2f(faceDX, faceDZ);
                   targetYaw_ = desiredYaw;
-                  // step toward desired yaw using shortest angular distance
+                  // 最短の角距離で目標ヨーへ刻み移動する
                   float a = currentYaw_;
                   float b = desiredYaw;
                   float diff = b - a;
-                  // wrap to [-pi, pi]
+                  // 巻き込みを行い角差を [-pi, pi] に正規化
                   while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
                   while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
                   float maxStep = yawTurnSpeed_ * dt;
@@ -114,6 +101,7 @@ void Player::UpdateLogic(float dt, const InputState& in)
                   float a = currentYaw_;
                   float b = desiredYaw;
                   float diff = b - a;
+                  // 巻き込みを行い角差を [-pi, pi] に正規化
                   while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
                   while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
                   float maxStep = yawTurnSpeed_ * dt;
@@ -141,13 +129,13 @@ void Player::UpdateLogic(float dt, const InputState& in)
      // 攻撃入力の処理（移動より優先、ジャンプよりは劣後）
     unsigned int now = GetNowCount();
 
-    // Edge-detect attack input so a single press triggers only one attack
+    // 攻撃入力をエッジ検出して、1 回の押下で 1 回だけ攻撃が発動するようにする
     bool attackBtnComposite = attackInput;
     if (attackBtnComposite && !prevAttackBtnDown_) {
-        // newly pressed
+        // 押下開始（エッジ）
         if (now - lastAttackTimeMs_ > (unsigned int)attackCooldownMs_) {
             lastAttackTimeMs_ = now;
-            // Play upper-body attack while keeping lower-body state (move/idle)
+            // 下半身状態（move/idle）を維持しつつ上半身攻撃アニメを再生
             PlayAnimation("attack", false, AnimLayer::Upper);
             // spawn an attack effect slightly in front of the player
             // 変更点: 装備武器 (equippedWeapon_) に合わせてエフェクトのファイル/スケール/オフセットを選択する
@@ -187,7 +175,7 @@ void Player::UpdateLogic(float dt, const InputState& in)
             // ジャンプ開始
             velY_ = jumpVelocity_;
             onGround_ = false;
-            // Jump is full-body, so play full animation (clears upper)
+            // ジャンプは全身アニメなのでフルレイヤー再生（上半身アニメをクリア）
             PlayAnimation("jump", false, AnimLayer::Full);
         }
     }

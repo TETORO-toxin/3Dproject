@@ -3,7 +3,20 @@
 #include <cmath>
 #include "InputActions.h"
 
-// XInput / Joypad helper with deadzone normalization and simple helpers
+// 入力ラッパー (XInput / Joypad / Keyboard+Mouse)
+//
+// このファイルは低レイヤーの物理入力（XInput 経由のコントローラ、DXLib の
+// GetJoypadInputState / GetMouseInput / CheckHitKey 等）を読み取り、ゲーム側が
+// 使いやすい形（アナログ値や意味ベースのアクションフラグ）へ変換するための
+// ヘルパー群を提供します。
+//
+// 目的:
+//  - スティックのデッドゾーン正規化やトリガー正規化を集中管理する。
+//  - 物理ボタン（A/B/X/Y、マウスボタン、キー）を一旦互換フィールドに格納し、
+//    さらにゲーム側で意味を持つアクション（Jump / Dodge / Attack 等）へと
+//    マッピングする役割を担います。
+//  - 将来的には `Sys/InputActions.h` の `InputAction` を利用して外部設定化
+//    できるようにする予定です（現在は暫定的なコード内マッピング）。
 struct PadState {
     XINPUT_STATE xi{}; // raw XInput state
     int          pad;  // DXLib pad bitflags (GetJoypadInputState)
@@ -70,10 +83,14 @@ struct InputState {
     float leftTrigger = 0.0f;
     float rightTrigger = 0.0f;
     // buttons
-    bool btnA = false; // action / switch
-    bool btnB = false; // dodge
-    bool btnX = false;
-    bool btnY = false;
+    // 物理ボタン互換フィールド (legacy)
+    // 注意: これらは将来的に意味ベースアクションへ移行するための互換用であり、
+    //       新規コードは意味ベースのフラグ (jumpDown / interactDown 等) を参照
+    //       するべきです。ここでは後方互換のために残しています。
+    bool btnA = false; // legacy (主に Jump にマップされる)
+    bool btnB = false; // legacy (主に Dodge にマップされる)
+    bool btnX = false; // legacy
+    bool btnY = false; // legacy
     bool mouseLeft = false;
     bool mouseRight = false;
 
@@ -139,74 +156,83 @@ inline InputState PollInput(int padIndex = 0)
 {
     InputState out;
 
+    // -------------------------
+    // 物理入力の読み取りフェーズ
+    // -------------------------
     PadState pad = PollPad(padIndex);
-    // Detect controller presence by checking any significant input or pad flags
+    // コントローラの存在判定: 何か入力があるか、パッドフラグが立っているかで判定
     bool controllerPresent = (pad.pad != 0) || (pad.xi.ThumbLX != 0) || (pad.xi.ThumbLY != 0) || (pad.xi.ThumbRX != 0) || (pad.xi.ThumbRY != 0) || (pad.xi.LeftTrigger != 0) || (pad.xi.RightTrigger != 0);
 
-    if (controllerPresent) {
-        out.moveX = pad.LX;
-        out.moveY = pad.LY;
-        out.aimX = pad.RX;
-        out.aimY = pad.RY;
-        out.leftTrigger = pad.LT;
-        out.rightTrigger = pad.RT;
-        out.btnA = IsButtonDown(pad, PAD_INPUT_1);
-        out.btnB = IsButtonDown(pad, PAD_INPUT_2);
-        out.btnX = IsButtonDown(pad, PAD_INPUT_3);
-        out.btnY = IsButtonDown(pad, PAD_INPUT_4);
-        // D-pad を意味的なフラグとして設定 (将来の武器切替等に利用予定)
-        out.dpadLeftDown = IsButtonDown(pad, PAD_INPUT_LEFT);
-        out.dpadRightDown = IsButtonDown(pad, PAD_INPUT_RIGHT);
-        out.dpadUpDown = IsButtonDown(pad, PAD_INPUT_UP);
-        out.dpadDownDown = IsButtonDown(pad, PAD_INPUT_DOWN);
+    // readPhysical: controllerPresent に応じて out の物理系フィールドを埋める
+    auto readPhysical = [&]() {
+        if (controllerPresent) {
+            out.moveX = pad.LX;
+            out.moveY = pad.LY;
+            out.aimX = pad.RX;
+            out.aimY = pad.RY;
+            out.leftTrigger = pad.LT;
+            out.rightTrigger = pad.RT;
+            out.btnA = IsButtonDown(pad, PAD_INPUT_1);
+            out.btnB = IsButtonDown(pad, PAD_INPUT_2);
+            out.btnX = IsButtonDown(pad, PAD_INPUT_3);
+            out.btnY = IsButtonDown(pad, PAD_INPUT_4);
+            // D-pad を意味的なフラグとして設定 (将来の武器切替等に利用予定)
+            out.dpadLeftDown = IsButtonDown(pad, PAD_INPUT_LEFT);
+            out.dpadRightDown = IsButtonDown(pad, PAD_INPUT_RIGHT);
+            out.dpadUpDown = IsButtonDown(pad, PAD_INPUT_UP);
+            out.dpadDownDown = IsButtonDown(pad, PAD_INPUT_DOWN);
 
-        // 修飾ボタンの暫定マッピング: 物理ボタンに割当てる想定
-        out.modifierL1 = IsButtonDown(pad, PAD_INPUT_5); // 暫定: L1
-        out.modifierR1 = IsButtonDown(pad, PAD_INPUT_6); // 暫定: R1
-        // L2/R2 はトリガーを修飾として扱うことも多いため modifierL2/modifierR2 はトリガー値閾値で解釈される想定
-    } else {
-        // keyboard WASD / arrows for movement
-        float mx = 0.0f, my = 0.0f;
-        if (CheckHitKey(KEY_INPUT_D) || CheckHitKey(KEY_INPUT_RIGHT)) mx += 1.0f;
-        if (CheckHitKey(KEY_INPUT_A) || CheckHitKey(KEY_INPUT_LEFT)) mx -= 1.0f;
-        if (CheckHitKey(KEY_INPUT_W) || CheckHitKey(KEY_INPUT_UP)) my -= 1.0f; // up reduces y for screen coords
-        if (CheckHitKey(KEY_INPUT_S) || CheckHitKey(KEY_INPUT_DOWN)) my += 1.0f;
-        // normalize
-        float mag = std::hypot(mx, my);
-        if (mag > 1.0f) { mx /= mag; my /= mag; }
-        out.moveX = mx;
-        out.moveY = my;
+            // 修飾ボタンの暫定マッピング: 物理ボタンに割当てる想定
+            out.modifierL1 = IsButtonDown(pad, PAD_INPUT_5); // 暫定: L1
+            out.modifierR1 = IsButtonDown(pad, PAD_INPUT_6); // 暫定: R1
+            // L2/R2 はトリガーを修飾として扱うことも多いため modifierL2/modifierR2 はトリガー値閾値で解釈される想定
+        } else {
+            // keyboard WASD / arrows for movement
+            float mx = 0.0f, my = 0.0f;
+            if (CheckHitKey(KEY_INPUT_D) || CheckHitKey(KEY_INPUT_RIGHT)) mx += 1.0f;
+            if (CheckHitKey(KEY_INPUT_A) || CheckHitKey(KEY_INPUT_LEFT)) mx -= 1.0f;
+            if (CheckHitKey(KEY_INPUT_W) || CheckHitKey(KEY_INPUT_UP)) my -= 1.0f; // up reduces y for screen coords
+            if (CheckHitKey(KEY_INPUT_S) || CheckHitKey(KEY_INPUT_DOWN)) my += 1.0f;
+            // normalize
+            float mag = std::hypot(mx, my);
+            if (mag > 1.0f) { mx /= mag; my /= mag; }
+            out.moveX = mx;
+            out.moveY = my;
 
-        // mouse aiming: convert mouse pos to -1..1 around screen centre
-        int mxp = 0, myp = 0;
-        GetMousePoint(&mxp, &myp);
-        const int screenW = 800, screenH = 600; // match TitleScene default; adapt if needed
-        out.aimX = clamp((mxp - screenW * 0.5f) / (screenW * 0.5f), -1.0f, 1.0f);
-        out.aimY = clamp((myp - screenH * 0.5f) / (screenH * 0.5f), -1.0f, 1.0f);
+            // mouse aiming: convert mouse pos to -1..1 around screen centre
+            int mxp = 0, myp = 0;
+            GetMousePoint(&mxp, &myp);
+            const int screenW = 800, screenH = 600; // match TitleScene default; adapt if needed
+            out.aimX = clamp((mxp - screenW * 0.5f) / (screenW * 0.5f), -1.0f, 1.0f);
+            out.aimY = clamp((myp - screenH * 0.5f) / (screenH * 0.5f), -1.0f, 1.0f);
 
-        int mouseInput = GetMouseInput();
-        out.mouseLeft = (mouseInput & MOUSE_INPUT_LEFT) != 0;
-        out.mouseRight = (mouseInput & MOUSE_INPUT_RIGHT) != 0;
+            int mouseInput = GetMouseInput();
+            out.mouseLeft = (mouseInput & MOUSE_INPUT_LEFT) != 0;
+            out.mouseRight = (mouseInput & MOUSE_INPUT_RIGHT) != 0;
 
-        // map keyboard buttons (物理->意味の暫定マッピング)
-        // Jump should be triggered by Space or Z
-        out.btnA = CheckHitKey(KEY_INPUT_SPACE) || CheckHitKey(KEY_INPUT_Z);
-        out.btnB = CheckHitKey(KEY_INPUT_X);
-        out.btnX = CheckHitKey(KEY_INPUT_C); // 仮: C を X 相当に割当（ジャンプ等の代替）
-        out.btnY = CheckHitKey(KEY_INPUT_E); // 仮: E を Y 相当に割当（インタラクト）
-        out.leftTrigger = out.mouseLeft ? 1.0f : 0.0f;
-        out.rightTrigger = out.mouseRight ? 1.0f : 0.0f;
+            // map keyboard buttons (物理->意味の暫定マッピング)
+            // Jump should be triggered by Space or Z
+            out.btnA = CheckHitKey(KEY_INPUT_SPACE) || CheckHitKey(KEY_INPUT_Z);
+            out.btnB = CheckHitKey(KEY_INPUT_X);
+            out.btnX = CheckHitKey(KEY_INPUT_C); // 仮: C を X 相当に割当（ジャンプ等の代替）
+            out.btnY = CheckHitKey(KEY_INPUT_E); // 仮: E を Y 相当に割当（インタラクト）
+            out.leftTrigger = out.mouseLeft ? 1.0f : 0.0f;
+            out.rightTrigger = out.mouseRight ? 1.0f : 0.0f;
 
-        // Keyboard による D-pad 的操作も予約 (左/右/上下矢印キー)
-        out.dpadLeftDown = CheckHitKey(KEY_INPUT_LEFT);
-        out.dpadRightDown = CheckHitKey(KEY_INPUT_RIGHT);
-        out.dpadUpDown = CheckHitKey(KEY_INPUT_UP);
-        out.dpadDownDown = CheckHitKey(KEY_INPUT_DOWN);
+            // Keyboard による D-pad 的操作も予約 (左/右/上下矢印キー)
+            out.dpadLeftDown = CheckHitKey(KEY_INPUT_LEFT);
+            out.dpadRightDown = CheckHitKey(KEY_INPUT_RIGHT);
+            out.dpadUpDown = CheckHitKey(KEY_INPUT_UP);
+            out.dpadDownDown = CheckHitKey(KEY_INPUT_DOWN);
 
-        // 修飾キーの暫定例: Shift/Ctrl を modifier として扱う (将来はコントローラとの統合を行う)
-        out.modifierL1 = (GetKeyState(KEY_INPUT_LSHIFT) & 0x8000) != 0;
-        out.modifierR1 = (GetKeyState(KEY_INPUT_RSHIFT) & 0x8000) != 0;
-    }
+            // 修飾キーの暫定例: Shift/Ctrl を modifier として扱う (将来はコントローラとの統合を行う)
+            out.modifierL1 = (GetKeyState(KEY_INPUT_LSHIFT) & 0x8000) != 0;
+            out.modifierR1 = (GetKeyState(KEY_INPUT_RSHIFT) & 0x8000) != 0;
+        }
+    };
+
+    // 物理入力を読み取り
+    readPhysical();
 
     // ---------------------------
     // Action mapping (意味ベース)

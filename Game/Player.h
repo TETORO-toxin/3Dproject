@@ -63,6 +63,14 @@ public:
     // 装備中の武器管理: 最小実装 (WeaponType を Game/WeaponTypes.h で定義)
     // EquipWeapon は旧装備を返す。EquipWeapon により同じ武器の再装備は行わない。
     Game::WeaponType GetEquippedWeapon() const;
+    // `newWeapon` を装備しようとする。装備が変更された場合は true を返し、
+    // 以前の装備を `oldOut` に書き込む（未装備の場合は `Game::WeaponType::None`）。
+    // 同一の武器を装備しようとした場合は何もせず false を返し、`oldOut` は変更しない。
+    // これにより戻り値の曖昧さを排し、不要な再ドロップを防ぐ。
+    bool TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut);
+
+    // 後方互換のヘルパー。実際に交換が発生した場合は以前の武器を返し、
+    // 交換が行われなかった場合は `Game::WeaponType::None` を返す。
     Game::WeaponType EquipWeapon(Game::WeaponType newWeapon);
 
 private:
