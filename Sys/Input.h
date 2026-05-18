@@ -1,6 +1,7 @@
 #pragma once
 #include "DxLib.h"
 #include <cmath>
+#include "InputActions.h"
 
 // XInput / Joypad helper with deadzone normalization and simple helpers
 struct PadState {
@@ -51,6 +52,13 @@ inline float LeftTrigger(const PadState& s) { return s.LT; }
 inline float RightTrigger(const PadState& s) { return s.RT; }
 
 // Unified input state combining controller and keyboard+mouse
+//
+// この構造体は2つの目的を兼ねます:
+//  1) アナログ的な入力値 (移動やエイム、トリガー) を保持する
+//  2) 意味ベースのアクション状態 (押下中 / 押下開始 / リリース) を保持する
+//
+// 将来的に入力処理をアクション中心に扱うための基盤で、物理的なボタン名
+// (btnA/btnB 等) は後方互換のために残してあります。
 struct InputState {
     // movement -1..1
     float moveX = 0.0f;
@@ -68,9 +76,39 @@ struct InputState {
     bool btnY = false;
     bool mouseLeft = false;
     bool mouseRight = false;
+
+    // --- 意味ベースのアクションフラグ ---
+    // Down = 押下中 (毎フレーム)
+    // Pressed = 今フレーム押下が開始された (エッジ検出)
+    // Released = 今フレーム離された
+    // 将来的には holdTime 等も追加し、長押し判定に対応できるようにする予定
+    bool interactDown = false;    // 汎用コンテキスト操作 (拾う / 調べる 等)
+    bool interactPressed = false;
+    bool interactReleased = false;
+
+    bool jumpDown = false;
+    bool jumpPressed = false;
+    bool jumpReleased = false;
+
+    bool dodgeDown = false;
+    bool dodgePressed = false;
+    bool dodgeReleased = false;
+
+    bool attackLightDown = false;
+    bool attackLightPressed = false;
+    bool attackLightReleased = false;
+
+    bool attackHeavyDown = false;
+    bool attackHeavyPressed = false;
+    bool attackHeavyReleased = false;
 };
 
 // Poll unified input. Uses controller if present, otherwise keyboard+mouse.
+// Poll unified input. Uses controller if present, otherwise keyboard+mouse.
+//
+// ここでは物理入力 (キー/パッド) を「ゲーム内アクション」へマッピングし、
+// 前フレーム状態との差分から Pressed / Released を算出します。
+// PollInput はフレームごとに1回だけ呼ぶことを想定しています。
 inline InputState PollInput(int padIndex = 0)
 {
     InputState out;
@@ -114,12 +152,62 @@ inline InputState PollInput(int padIndex = 0)
         out.mouseLeft = (mouseInput & MOUSE_INPUT_LEFT) != 0;
         out.mouseRight = (mouseInput & MOUSE_INPUT_RIGHT) != 0;
 
-        // map keyboard buttons
+        // map keyboard buttons (物理->意味の暫定マッピング)
         out.btnA = CheckHitKey(KEY_INPUT_SPACE) || CheckHitKey(KEY_INPUT_Z);
         out.btnB = CheckHitKey(KEY_INPUT_X);
+        out.btnX = CheckHitKey(KEY_INPUT_C); // 仮: C を X 相当に割当（ジャンプ等の代替）
+        out.btnY = CheckHitKey(KEY_INPUT_E); // 仮: E を Y 相当に割当（インタラクト）
         out.leftTrigger = out.mouseLeft ? 1.0f : 0.0f;
         out.rightTrigger = out.mouseRight ? 1.0f : 0.0f;
     }
+
+    // ---------------------------
+    // Action mapping (意味ベース)
+    // ---------------------------
+    // 暫定のマッピング: 将来的に Sys/InputActions.h を使って外部設定可能にする
+    // Move / Look はアナログ値をそのまま利用
+
+    // Jump: controller A / keyboard C or Space
+    bool jumpDown = out.btnA || CheckHitKey(KEY_INPUT_C);
+    // Dodge: controller B / keyboard X
+    bool dodgeDown = out.btnB;
+    // AttackLight: controller X or mouse left
+    bool attackLightDown = out.btnX || out.mouseLeft;
+    // AttackHeavy: right trigger or mouse right
+    bool attackHeavyDown = (out.rightTrigger > 0.5f) || out.mouseRight;
+    // Interact: Y or E
+    bool interactDown = out.btnY || CheckHitKey(KEY_INPUT_E);
+
+    // Static previous state to compute pressed/released edges. PollInput is expected to be
+    // called once per frame, so this simple static approach works for now.
+    static InputState prev{};
+
+    out.jumpDown = jumpDown;
+    out.jumpPressed = jumpDown && !prev.jumpDown;
+    out.jumpReleased = !jumpDown && prev.jumpDown;
+
+    out.dodgeDown = dodgeDown;
+    out.dodgePressed = dodgeDown && !prev.dodgeDown;
+    out.dodgeReleased = !dodgeDown && prev.dodgeDown;
+
+    out.attackLightDown = attackLightDown;
+    out.attackLightPressed = attackLightDown && !prev.attackLightDown;
+    out.attackLightReleased = !attackLightDown && prev.attackLightDown;
+
+    out.attackHeavyDown = attackHeavyDown;
+    out.attackHeavyPressed = attackHeavyDown && !prev.attackHeavyDown;
+    out.attackHeavyReleased = !attackHeavyDown && prev.attackHeavyDown;
+
+    out.interactDown = interactDown;
+    out.interactPressed = interactDown && !prev.interactDown;
+    out.interactReleased = !interactDown && prev.interactDown;
+
+    // Save some of the action-raw mapping back into compatibility fields
+    out.btnA = jumpDown; // keep semantic relation
+    out.btnB = dodgeDown;
+
+    // store for next frame
+    prev = out;
 
     return out;
 }

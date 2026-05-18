@@ -197,5 +197,8 @@
     <ClInclude Include="Game\CameraRig.h">
       <Filter>ソース ファイル\Game\CameraRig</Filter>
     </ClInclude>
+    <ClInclude Include="Sys\InputActions.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

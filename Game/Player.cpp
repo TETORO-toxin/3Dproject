@@ -10,11 +10,15 @@
 //  - このファイルには最低限のラッパー実装のみを置き、各責務ファイルを呼び出します。
 
 #include "Player.h"
+#include "../Sys/Input.h"
 
 // 下位互換: Updateはロジック->描画を呼ぶ
 void Player::Update()
 {
     // legacy: assume 60fps
-    UpdateLogic(1.0f/60.0f);
+    // Poll input once per frame here to maintain legacy behavior while migrating to
+    // the new design where SceneMgr will become the single owner of PollInput.
+    InputState in = PollInput();
+    UpdateLogic(1.0f/60.0f, in);
     Draw();
 }

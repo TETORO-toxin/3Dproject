@@ -60,6 +60,7 @@
     <ClInclude Include="Sys\FrameLimiter.h" />
     <ClInclude Include="Sys\GlobalEffects.h" />
     <ClInclude Include="Sys\Input.h" />
+    <ClInclude Include="Sys\InputActions.h" />
     <ClInclude Include="Sys\Lighting.h" />
     <ClInclude Include="Sys\ResourceHandles.h" />
   </ItemGroup>

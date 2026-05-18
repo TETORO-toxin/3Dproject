@@ -122,7 +122,10 @@ SceneMgr::~SceneMgr()
 
 void SceneMgr::Update()
 {
-    // simple polling
+    // Poll input once at the start of the frame and distribute to systems.
+    // This centralizes input handling so Player / UI / Pickup “™‚Å‹£‡‚ð§Œä‚Å‚«‚Ü‚·.
+    InputState in = PollInput();
+    // Still allow raw pad queries for debug/lock-on example if needed
     PadState pad = PollPad();
     bool lockButton = IsButtonDown(pad, PAD_INPUT_4); // example button
 
@@ -145,7 +148,7 @@ void SceneMgr::Update()
     }
 
     // Update player logic only (rendering will be done after other draws so player occludes them)
-    player_->UpdateLogic(dt);
+    player_->UpdateLogic(dt, in);
     VECTOR ppos = player_->GetPosition();
 
     // Update global effect manager (logic) with player position so playback positions follow player

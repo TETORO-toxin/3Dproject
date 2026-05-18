@@ -5,6 +5,7 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include "../Sys/Input.h"
 
 class AssetsMgr;
 class ProjectileManager;
@@ -23,7 +24,10 @@ public:
 
     // ロジック更新と描画を分離: シーン側で描画順を制御できるようにする
     // dt: delta time in seconds
-    void UpdateLogic(float dt);
+    // 入力状態は外部で1回だけ Poll して渡す設計に変更しました。
+    // これにより SceneMgr がフレーム単位で入力を一元的に取得・配布でき、
+    // プレイヤー／UI／ピックアップなどで入力の競合を制御しやすくなります。
+    void UpdateLogic(float dt, const InputState& in);
     void Draw();
 
     VECTOR GetPosition() const;
