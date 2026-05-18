@@ -150,15 +150,30 @@ void Player::UpdateLogic(float dt, const InputState& in)
             // Play upper-body attack while keeping lower-body state (move/idle)
             PlayAnimation("attack", false, AnimLayer::Upper);
             // spawn an attack effect slightly in front of the player
+            // 変更点: 装備武器 (equippedWeapon_) に合わせてエフェクトのファイル/スケール/オフセットを選択する
+            // - WeaponTypes のヘルパー GetWeaponEffectFile/Scale/Offset を使う
+            // - 装備なし (None) でも攻撃は行えるが、エフェクトは弱めにする
             EffectManager* gem = GetGlobalEffectManager();
             if (gem) {
                 VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
                 if (camera_) forward = camera_->GetForwardXZ();
                 float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
                 if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
-                // place effect a bit in front and at approx chest/head height
-                VECTOR pos = VAdd(GetPosition(), VAdd(VScale(forward, 1.0f), VGet(0.0f, 1.2f, 0.0f)));
-                gem->PlayEffectAt(pos, nullptr, 1.0f);
+
+                // WeaponTypes ヘルパーから差分を取得
+                const char* efFile = Game::GetWeaponEffectFile(equippedWeapon_);
+                float efScale = Game::GetWeaponEffectScale(equippedWeapon_);
+                VECTOR efOffset = Game::GetWeaponEffectOffset(equippedWeapon_);
+
+                // オフセットの z 成分は前方に乗算して扱う (forward を正規化しているため、z 成分だけを使うのではなく
+                // forward ベクトルに対して efOffset.z を掛ける)
+                VECTOR pos = GetPosition();
+                // 高さを efOffset.y、左右は efOffset.x、前方方向に efOffset.z
+                pos = VAdd(pos, VGet(efOffset.x, efOffset.y, 0.0f));
+                pos = VAdd(pos, VScale(forward, efOffset.z));
+
+                // PlayEffectAt はファイルパスとスケールを受け取れるためそれらを渡す。
+                gem->PlayEffectAt(pos, efFile, efScale);
             }
         }
     }
