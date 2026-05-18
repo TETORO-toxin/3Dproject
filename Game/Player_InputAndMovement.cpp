@@ -148,10 +148,11 @@ void Player::UpdateLogic(float dt, const InputState& in)
                 float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
                 if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
 
-                // WeaponTypes ヘルパーから差分を取得
-                const char* efFile = Game::GetWeaponEffectFile(equippedWeapon_);
-                float efScale = Game::GetWeaponEffectScale(equippedWeapon_);
-                VECTOR efOffset = Game::GetWeaponEffectOffset(equippedWeapon_);
+                // WeaponSpec から差分を取得
+                const Game::WeaponSpec& wspec = Game::GetWeaponSpec(equippedWeapon_);
+                const char* efFile = wspec.effectFile;
+                float efScale = wspec.effectScale;
+                VECTOR efOffset = wspec.effectOffset;
 
                 // オフセットの z 成分は前方に乗算して扱う (forward を正規化しているため、z 成分だけを使うのではなく
                 // forward ベクトルに対して efOffset.z を掛ける)
