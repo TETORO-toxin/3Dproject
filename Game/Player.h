@@ -185,5 +185,14 @@ private:
     // Track previous frame's attack button composite state to detect press edges (one attack per press)
     bool prevAttackBtnDown_ = false;
     // 装備武器
+    // equippedWeapon_ は現在の最小実装: 将来は左右手のスロットや両手持ちモードへ置き換えます。
+    // 将来の構造案:
+    // int leftHandWeaponIndex;
+    // int rightHandWeaponIndex;
+    // bool twoHandMode;
+    // std::vector<Game::WeaponType> leftHandSlots;
+    // std::vector<Game::WeaponType> rightHandSlots;
+    // 今は単一の equippedWeapon_ を利用しますが、メンバ名とアクセスは将来の置換を容易にするため
+    // Game::WeaponType 型のまま残します。
     Game::WeaponType equippedWeapon_ = Game::WeaponType::None;
 };

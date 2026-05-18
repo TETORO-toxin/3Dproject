@@ -77,6 +77,23 @@ struct InputState {
     bool mouseLeft = false;
     bool mouseRight = false;
 
+    // --- 将来拡張用: D-Pad / 十字キー (意味的ボタンとして予約) ---
+    // 目的: D-pad を武器スロット切替やアイテム操作に割り当てる想定。
+    // このフラグは PollInput で設定され、SceneMgr 等が解釈して処理を行います。
+    // Left/Right は左右の武器スロット切替、Up はアイテム使用、Down はアイテム切替等に割当予定。
+    bool dpadLeftDown = false;   // ← 押下中
+    bool dpadRightDown = false;  // → 押下中
+    bool dpadUpDown = false;     // ↑ 押下中
+    bool dpadDownDown = false;   // ↓ 押下中
+
+    // --- 将来拡張用: modifier (修飾ボタン) の予約 ---
+    // 例: L1/L2/R1/R2 を modifier として持ち、SceneMgr や CombatController 側で解釈して
+    // 例えば "L2 + face button" のような複合入力を実現します。
+    bool modifierL1 = false;
+    bool modifierL2 = false;
+    bool modifierR1 = false;
+    bool modifierR2 = false;
+
     // --- 意味ベースのアクションフラグ ---
     // Down = 押下中 (毎フレーム)
     // Pressed = 今フレーム押下が開始された (エッジ検出)
@@ -85,6 +102,15 @@ struct InputState {
     bool interactDown = false;    // 汎用コンテキスト操作 (拾う / 調べる 等)
     bool interactPressed = false;
     bool interactReleased = false;
+
+    // --- 長押し対応: 各アクションの hold 時間を保存 ---
+    // PollInput はフレーム単位で呼ばれる前提なので、ここでは秒単位の累積時間を保持します。
+    // 長押し判定 (例: R2 長押しで溜め攻撃) は SceneMgr / CombatController 側で holdTime を参照して行います。
+    float interactHoldTime = 0.0f;    // 秒
+    float attackLightHoldTime = 0.0f; // 秒
+    float attackHeavyHoldTime = 0.0f; // 秒
+    float leftTriggerHoldTime = 0.0f; // 秒 (アナログトリガー用)
+    float rightTriggerHoldTime = 0.0f; // 秒
 
     bool jumpDown = false;
     bool jumpPressed = false;
@@ -128,6 +154,16 @@ inline InputState PollInput(int padIndex = 0)
         out.btnB = IsButtonDown(pad, PAD_INPUT_2);
         out.btnX = IsButtonDown(pad, PAD_INPUT_3);
         out.btnY = IsButtonDown(pad, PAD_INPUT_4);
+        // D-pad を意味的なフラグとして設定 (将来の武器切替等に利用予定)
+        out.dpadLeftDown = IsButtonDown(pad, PAD_INPUT_LEFT);
+        out.dpadRightDown = IsButtonDown(pad, PAD_INPUT_RIGHT);
+        out.dpadUpDown = IsButtonDown(pad, PAD_INPUT_UP);
+        out.dpadDownDown = IsButtonDown(pad, PAD_INPUT_DOWN);
+
+        // 修飾ボタンの暫定マッピング: 物理ボタンに割当てる想定
+        out.modifierL1 = IsButtonDown(pad, PAD_INPUT_5); // 暫定: L1
+        out.modifierR1 = IsButtonDown(pad, PAD_INPUT_6); // 暫定: R1
+        // L2/R2 はトリガーを修飾として扱うことも多いため modifierL2/modifierR2 はトリガー値閾値で解釈される想定
     } else {
         // keyboard WASD / arrows for movement
         float mx = 0.0f, my = 0.0f;
@@ -160,6 +196,16 @@ inline InputState PollInput(int padIndex = 0)
         out.btnY = CheckHitKey(KEY_INPUT_E); // 仮: E を Y 相当に割当（インタラクト）
         out.leftTrigger = out.mouseLeft ? 1.0f : 0.0f;
         out.rightTrigger = out.mouseRight ? 1.0f : 0.0f;
+
+        // Keyboard による D-pad 的操作も予約 (左/右/上下矢印キー)
+        out.dpadLeftDown = CheckHitKey(KEY_INPUT_LEFT);
+        out.dpadRightDown = CheckHitKey(KEY_INPUT_RIGHT);
+        out.dpadUpDown = CheckHitKey(KEY_INPUT_UP);
+        out.dpadDownDown = CheckHitKey(KEY_INPUT_DOWN);
+
+        // 修飾キーの暫定例: Shift/Ctrl を modifier として扱う (将来はコントローラとの統合を行う)
+        out.modifierL1 = (GetKeyState(KEY_INPUT_LSHIFT) & 0x8000) != 0;
+        out.modifierR1 = (GetKeyState(KEY_INPUT_RSHIFT) & 0x8000) != 0;
     }
 
     // ---------------------------
@@ -203,6 +249,15 @@ inline InputState PollInput(int padIndex = 0)
     out.interactDown = interactDown;
     out.interactPressed = interactDown && !prev.interactDown;
     out.interactReleased = !interactDown && prev.interactDown;
+
+    // --- Hold time 更新 (簡易実装: フレーム長は60FPS 想定で 1/60 秒を加算) ---
+    // 将来的には外部から正確な dt を渡して更新する方針が望ましい。
+    const float assumedDt = 1.0f / 60.0f;
+    out.interactHoldTime = prev.interactHoldTime + (out.interactDown ? assumedDt : 0.0f);
+    out.attackLightHoldTime = prev.attackLightHoldTime + (out.attackLightDown ? assumedDt : 0.0f);
+    out.attackHeavyHoldTime = prev.attackHeavyHoldTime + (out.attackHeavyDown ? assumedDt : 0.0f);
+    out.leftTriggerHoldTime = prev.leftTriggerHoldTime + (out.leftTrigger > 0.001f ? assumedDt : 0.0f);
+    out.rightTriggerHoldTime = prev.rightTriggerHoldTime + (out.rightTrigger > 0.001f ? assumedDt : 0.0f);
 
     // Save some of the action-raw mapping back into compatibility fields
     out.btnA = jumpDown; // keep semantic relation
