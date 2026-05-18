@@ -7,6 +7,8 @@
 #include "../Sys/EffectManager.h"
 #include "../Sys/GlobalEffects.h"
 #include "../Sys/DebugPrint.h"
+#include "../Game/WeaponPickup.h"
+#include "../Game/WeaponTypes.h"
 
 #include "../Sys/Input.h"
 #include "../Game/UI3D2D.h"
@@ -96,6 +98,13 @@ void SceneMgr::Init()
     groundPoint_ = VGet(0.0f, 0.0f, 0.0f);
     groundNormal_ = VGet(0.0f, 1.0f, 0.0f);
     camera_->SetGroundPlane(groundPoint_, groundNormal_);
+
+    // フィールドに鉄パイプを配置する (プレイヤーの前方にいくつか)
+    VECTOR ppos = player_->GetPosition();
+    // 1つ目: 少し前
+    weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(0.0f, 0.0f, 3.0f))));
+    // 2つ目: 右前
+    weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(2.0f, 0.0f, 4.0f))));
 }
 
 SceneMgr::~SceneMgr()
@@ -300,6 +309,51 @@ void SceneMgr::Update()
 
     // draw HUD / debug text after draws
     DrawFormatString(10, 10, GetColor(255,255,255), "Enemies: %d  Best: %s", (int)enemies_.size(), best ? "Yes" : "No");
+
+    // --- ピックアップ更新 / 描画 ---
+    // 単純な最寄り未取得ピックアップ探索 (XZ距離)
+    int nearestIdx = -1;
+    float nearestDist2 = 1e9f;
+    for (size_t i = 0; i < weaponPickups_.size(); ++i) {
+        const auto &wp = weaponPickups_[i];
+        if (wp.IsPicked()) continue;
+        float dx = wp.GetPosition().x - ppos.x;
+        float dz = wp.GetPosition().z - ppos.z;
+        float d2 = dx*dx + dz*dz;
+        if (d2 < nearestDist2) { nearestDist2 = d2; nearestIdx = (int)i; }
+    }
+
+    // Interact 入力で取得
+    if (nearestIdx != -1) {
+        const auto &wp = weaponPickups_[nearestIdx];
+        float range2 = pickupRange_ * pickupRange_;
+        if (nearestDist2 <= range2) {
+            // 案内 UI: E で拾う
+            DrawFormatString(10, 30, GetColor(255,255,0), "E で拾う: %s", Game::GetWeaponName(wp.GetType()));
+            if (in.interactPressed) {
+                // プレイヤーに装備させる
+                Game::WeaponType newW = wp.GetType();
+                Game::WeaponType old = player_->EquipWeapon(newW);
+                // Picked フラグを立てる
+                // weaponPickups_ は値オブジェクトなので取り出して MarkPicked()
+                weaponPickups_[nearestIdx].MarkPicked();
+                // もし以前の武器があれば、その場にドロップする
+                if (old != Game::WeaponType::None) {
+                    VECTOR dropPos = wp.GetPosition();
+                    weaponPickups_.push_back(Game::WeaponPickup(old, dropPos));
+                }
+            }
+        }
+    }
+
+    // Draw pickups
+    for (auto &wp : weaponPickups_) {
+        wp.Draw();
+    }
+
+    // HUD: 現在装備
+    const char* eq = Game::GetWeaponName(player_->GetEquippedWeapon());
+    DrawFormatString(10, 50, GetColor(200,200,255), "装備: %s", eq);
 }
 
 void SceneMgr::ChangeScene(Scene s)

@@ -7,10 +7,25 @@
 #include "AuxUnit.h"
 #include "Enemy.h"
 #include "Projectile.h"
+#include "WeaponTypes.h"
 
 VECTOR Player::GetPosition() const
 {
     return VGet(x_, y_, z_);
+}
+
+Game::WeaponType Player::GetEquippedWeapon() const
+{
+    return equippedWeapon_;
+}
+
+Game::WeaponType Player::EquipWeapon(Game::WeaponType newWeapon)
+{
+    // ìØÇ∂ïêäÌÇ»ÇÁâΩÇ‡ÇµÇ»Ç¢
+    if (newWeapon == equippedWeapon_) return equippedWeapon_;
+    Game::WeaponType old = equippedWeapon_;
+    equippedWeapon_ = newWeapon;
+    return old;
 }
 
 void Player::SetCamera(CameraRig* cam)

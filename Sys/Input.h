@@ -153,6 +153,7 @@ inline InputState PollInput(int padIndex = 0)
         out.mouseRight = (mouseInput & MOUSE_INPUT_RIGHT) != 0;
 
         // map keyboard buttons (物理->意味の暫定マッピング)
+        // Jump should be triggered by Space or Z
         out.btnA = CheckHitKey(KEY_INPUT_SPACE) || CheckHitKey(KEY_INPUT_Z);
         out.btnB = CheckHitKey(KEY_INPUT_X);
         out.btnX = CheckHitKey(KEY_INPUT_C); // 仮: C を X 相当に割当（ジャンプ等の代替）
@@ -167,8 +168,9 @@ inline InputState PollInput(int padIndex = 0)
     // 暫定のマッピング: 将来的に Sys/InputActions.h を使って外部設定可能にする
     // Move / Look はアナログ値をそのまま利用
 
-    // Jump: controller A / keyboard C or Space
-    bool jumpDown = out.btnA || CheckHitKey(KEY_INPUT_C);
+    // Jump: controller A / keyboard (Space or Z)
+    // Avoid using C here to prevent conflicts with other keyboard mappings (C is mapped to btnX).
+    bool jumpDown = out.btnA;
     // Dodge: controller B / keyboard X
     bool dodgeDown = out.btnB;
     // AttackLight: controller X or mouse left

@@ -9,6 +9,8 @@ class Enemy;
 class TitleScene;
 class EffectManager;
 
+#include "../Game/WeaponPickup.h"
+
 class SceneMgr
 {
 public:
@@ -46,4 +48,7 @@ private:
     TitleScene* titleScene_ = nullptr;
     // owned effect manager (registered as global)
     EffectManager* effects_ = nullptr;
+    // --- 武器ピックアップ管理 ---
+    std::vector<Game::WeaponPickup> weaponPickups_;
+    float pickupRange_ = 2.0f; // プレイヤーからの取得可能距離 (XZ平面)
 };

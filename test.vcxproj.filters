@@ -138,6 +138,9 @@
     <ClCompile Include="Game\CameraRig.cpp">
       <Filter>ソース ファイル\Game\CameraRig</Filter>
     </ClCompile>
+    <ClCompile Include="Game\WeaponPickup.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -198,6 +201,12 @@
       <Filter>ソース ファイル\Game\CameraRig</Filter>
     </ClInclude>
     <ClInclude Include="Sys\InputActions.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\WeaponPickup.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\WeaponTypes.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,6 +6,7 @@
 #include <functional>
 #include <vector>
 #include "../Sys/Input.h"
+#include "WeaponTypes.h"
 
 class AssetsMgr;
 class ProjectileManager;
@@ -58,6 +59,11 @@ public:
     // アニメーションイベントヘルパー: 指定秒数に達したらコールバックを呼ぶ
     void AddAnimEvent(const std::string& animName, float timeSec, std::function<void()> cb);
     void ClearAnimEvents(const std::string& animName);
+
+    // 装備中の武器管理: 最小実装 (WeaponType を Game/WeaponTypes.h で定義)
+    // EquipWeapon は旧装備を返す。EquipWeapon により同じ武器の再装備は行わない。
+    Game::WeaponType GetEquippedWeapon() const;
+    Game::WeaponType EquipWeapon(Game::WeaponType newWeapon);
 
 private:
     // 元のベース MV1 モデルハンドル（表示に使うモデル）。アニメーション用のモデルは別途保持し、ここにアタッチして再生する。
@@ -178,4 +184,6 @@ private:
 
     // Track previous frame's attack button composite state to detect press edges (one attack per press)
     bool prevAttackBtnDown_ = false;
+    // 装備武器
+    Game::WeaponType equippedWeapon_ = Game::WeaponType::None;
 };

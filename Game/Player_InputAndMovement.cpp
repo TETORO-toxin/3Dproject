@@ -54,11 +54,11 @@ void Player::UpdateLogic(float dt, const InputState& in)
     bool jumpInput = false;
     // コントローラ割当
     if (in.btnX) attackInput = true;
-    if (in.btnY) jumpInput = true;
+    // Use semantic jump action from InputState to avoid keyboard key conflicts (e.g. E mapped to btnY)
+    if (in.jumpPressed || in.jumpDown) jumpInput = true;
     // マウス/キーボードの代替割当
     if (in.mouseLeft) attackInput = true;
-    // キーボードジャンプ: モード切替と競合しないようCキーに割当
-    if (CheckHitKey(KEY_INPUT_C)) jumpInput = true;
+    // legacy: do not read raw keys here; use InputState mapping instead
 
     // 左スティック/キーボードによる単純移動
     // 移動はカメラ基準: 前方入力でプレイヤーがカメラから遠ざかる（プレイヤーの背がカメラ向き）ように移動
