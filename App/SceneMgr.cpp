@@ -101,10 +101,10 @@ void SceneMgr::Init()
 
     // フィールドに鉄パイプを配置する (プレイヤーの前方にいくつか)
     VECTOR ppos = player_->GetPosition();
-    // 1つ目: 少し前
-    weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(0.0f, 0.0f, 3.0f))));
+    // 1つ目: 少し前 (AssetsMgr を渡してモデル共有)
+    weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(0.0f, 0.0f, 3.0f)), assets_));
     // 2つ目: 右前
-    weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(2.0f, 0.0f, 4.0f))));
+    weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(2.0f, 0.0f, 4.0f)), assets_));
 }
 
 SceneMgr::~SceneMgr()

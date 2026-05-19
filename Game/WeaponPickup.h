@@ -17,12 +17,16 @@
 #include "DxLib.h"
 #include "WeaponTypes.h"
 
+class AssetsMgr; // forward
+
 namespace Game {
 
 class WeaponPickup
 {
 public:
-    WeaponPickup(WeaponType type = WeaponType::None, const VECTOR& pos = VGet(0,0,0));
+    // assets: optional pointer to AssetsMgr to obtain shared model handles.
+    // If assets is nullptr the pickup will render the legacy cross marker.
+    WeaponPickup(WeaponType type = WeaponType::None, const VECTOR& pos = VGet(0,0,0), AssetsMgr* assets = nullptr);
 
     WeaponType GetType() const { return type_; }
     VECTOR GetPosition() const { return pos_; }
@@ -39,6 +43,7 @@ private:
     WeaponType type_;
     VECTOR pos_;
     bool picked_ = false;
+    AssetsMgr* assets_ = nullptr;
 };
 
 } // namespace Game

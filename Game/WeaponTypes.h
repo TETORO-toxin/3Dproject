@@ -104,9 +104,9 @@ inline const WeaponSpec& GetWeaponSpec(WeaponType t)
         // equipModelPath: 装備表示用モデル
         "assets/models/RustyPipe_Normal_DirectX.mv1",
         // pickupScale: 地面上の見た目を少し大きめに
-        1.0f,
+        0.05f,
         // pickupRotation: モデル原点の向きに合わせて回転補正（度）
-        VGet(0.0f, 90.0f, 0.0f),
+        VGet(0.0f, 90.0f, 90.0f),
         // equipScale: プレイヤーに装備したときのスケール
         1.0f,
         // equipOffset: プレイヤー基準のローカル座標。x=左右, y=高さ, z=前方

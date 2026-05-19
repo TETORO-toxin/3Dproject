@@ -5,13 +5,14 @@
 
 #include "WeaponPickup.h"
 #include "WeaponTypes.h"
+#include "../Sys/Assets.h"
 #include "../Sys/DebugPrint.h"
 #include <cmath>
 
 namespace Game {
 
-WeaponPickup::WeaponPickup(WeaponType type, const VECTOR& pos)
-    : type_(type), pos_(pos), picked_(false)
+WeaponPickup::WeaponPickup(WeaponType type, const VECTOR& pos, AssetsMgr* assets)
+    : type_(type), pos_(pos), picked_(false), assets_(assets)
 {
 }
 
@@ -26,12 +27,31 @@ bool WeaponPickup::CanPickupBy(const VECTOR& playerPos, float range) const
 void WeaponPickup::Draw() const
 {
     if (picked_) return;
-    unsigned int col = GetColor(200, 180, 120);
-    // Draw a simple 3D cross as a pickup marker (avoid DrawSphere3D overload issues)
-    const float s = 0.5f;
-    DrawLine3D(VAdd(pos_, VGet(-s,0,0)), VAdd(pos_, VGet(s,0,0)), col);
-    DrawLine3D(VAdd(pos_, VGet(0,-s,0)), VAdd(pos_, VGet(0,s,0)), col);
-    DrawLine3D(VAdd(pos_, VGet(0,0,-s)), VAdd(pos_, VGet(0,0,s)), col);
+    // Try to obtain a model handle from AssetsMgr. If unavailable or load failed,
+    // fall back to the legacy cross marker drawing.
+    int modelHandle = -1;
+    if (assets_) {
+        modelHandle = assets_->GetWeaponModelHandle(type_, /*equip=*/false);
+    }
+
+    if (modelHandle != -1) {
+        // Apply pickup-specific transform from WeaponSpec
+        const WeaponSpec& spec = GetWeaponSpec(type_);
+        MV1SetPosition(modelHandle, pos_);
+        MV1SetScale(modelHandle, VGet(spec.pickupScale, spec.pickupScale, spec.pickupScale));
+        // pickupRotation stored as degrees in VECTOR; convert to radians for DXLib rotation API
+        VECTOR rotDeg = spec.pickupRotation;
+        float deg2rad = DX_PI_F / 180.0f;
+        MV1SetRotationXYZ(modelHandle, VGet(rotDeg.x * deg2rad, rotDeg.y * deg2rad, rotDeg.z * deg2rad));
+        MV1DrawModel(modelHandle);
+    } else {
+        unsigned int col = GetColor(200, 180, 120);
+        // Draw a simple 3D cross as a pickup marker (avoid DrawSphere3D overload issues)
+        const float s = 0.5f;
+        DrawLine3D(VAdd(pos_, VGet(-s,0,0)), VAdd(pos_, VGet(s,0,0)), col);
+        DrawLine3D(VAdd(pos_, VGet(0,-s,0)), VAdd(pos_, VGet(0,s,0)), col);
+        DrawLine3D(VAdd(pos_, VGet(0,0,-s)), VAdd(pos_, VGet(0,0,s)), col);
+    }
 
     // Draw name above the pickup
     const char* name = GetWeaponName(type_);
