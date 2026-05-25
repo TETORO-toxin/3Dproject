@@ -11,16 +11,18 @@
 // 右手フレーム探索候補名（優先順）
 // モデル差し替え時にここだけを編集すればよいように一覧にまとめる。
 static const char* const kRightHandFrameCandidates[] = {
-    // 優先順: モデルの違いに応じてここを変更すればよい
+    // 優先順: モデルにより命名が異なるため複数候補を列挙する
     "WeaponAttach_R",
     "Hand_R",
     "R_Hand",
     "RightHand",
+    // Unity/FBX の一般的なボーン名として mixamorig 系も候補に入れる
+    "mixamorig:RightHand",
     "r_hand",
     "hand_r",
     "hand.R",
-    "手_右",
     "Right",
+    "手_右",
     "右手",
     nullptr
 };

@@ -45,13 +45,14 @@ Player::Player(AssetsMgr* assets)
     // ベースモデルのロード直後に右手フレームを探索してキャッシュする
     // MV1SearchFrame がない環境でもフレーム列挙 API があれば名前を照合して解決する。
     rightHandFrameIndex_ = -1;
+#if 1
     if (baseModelHandle_ != -1) {
 #ifdef MV1SearchFrame
         for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
             int fi = MV1SearchFrame(baseModelHandle_, *p);
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
-                DebugPrint("Player: Cached right-hand frame '%s' -> index=%d\n", *p, fi);
+                DebugPrint("Player: Cached right-hand frame via MV1SearchFrame: name='%s' index=%d\n", *p, fi);
                 break;
             }
         }
@@ -66,7 +67,7 @@ Player::Player(AssetsMgr* assets)
             for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
                 if (std::string(fname) == std::string(*p)) {
                     rightHandFrameIndex_ = i;
-                    DebugPrint("Player: Cached right-hand frame '%s' -> index=%d\n", *p, i);
+                    DebugPrint("Player: Cached right-hand frame via frame-enumeration: candidate='%s' matched frameName='%s' index=%d\n", *p, fname, i);
                     break;
                 }
             }
@@ -76,8 +77,14 @@ Player::Player(AssetsMgr* assets)
 #endif
         if (rightHandFrameIndex_ == -1) {
             DebugPrint("Player: right-hand frame not found in base model\n");
+            DebugPrint("右手フレーム未検出\n");
+            DebugPrint("フォールバック描画になる\n");
         }
+    } else {
+        DebugPrint("Player: base model failed to load (handle == -1) - skipping right-hand frame search\n");
+        DebugPrint("ベースモデル未ロードのため右手フレーム検索をスキップ\n");
     }
+#endif
 
     // いくつかのアニメーションを登録（慣例: mirai_anim_<name>.mv1）
     std::vector<std::pair<std::string, std::string>> animFiles = {
@@ -116,16 +123,20 @@ Player::Player(AssetsMgr* assets)
 #ifdef MV1SearchFrame
     // ベースモデルから右手フレームを探索してキャッシュ
     if (baseModelHandle_ != -1) {
+        // 再検索前に必ず未解決状態へ戻す
+        rightHandFrameIndex_ = -1;
         for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
             int fi = MV1SearchFrame(baseModelHandle_, *p);
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
-                DebugPrint("Player: Cached right-hand frame '%s' -> index=%d\n", *p, fi);
+                DebugPrint("Player: Cached right-hand frame via MV1SearchFrame: name='%s' index=%d\n", *p, fi);
                 break;
             }
         }
         if (rightHandFrameIndex_ == -1) {
             DebugPrint("Player: right-hand frame not found in base model\n");
+            DebugPrint("右手フレーム未検出\n");
+            DebugPrint("フォールバック描画になる\n");
         }
     }
 #endif
