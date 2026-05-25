@@ -52,10 +52,23 @@ void Player::Draw()
     // コンストラクタで`modelHandle_`はベースに初期化されているため、これを主要な描画ハンドルとして使う。
     if (modelHandle_ != -1)
     {
+        // Restore transform (position/scale/rotation) before drawing the model so
+        // the MV1 model is placed correctly in world space.
+        VECTOR pos = VGet(x_, y_, z_);
+        ::MV1SetPosition(modelHandle_, pos);
+        ::MV1SetScale(modelHandle_, VGet(visualScale_, visualScale_, visualScale_));
+        // Apply yaw rotation (currentYaw_ is in radians)
+        // Model's forward vector is rotated 180 degrees relative to yaw; add PI to match orientation.
+        ::MV1SetRotationXYZ(modelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
         ::MV1DrawModel(modelHandle_); // グローバル名前空間を明示
     }
     else if (baseModelHandle_ != -1)
     {
+        // Ensure base model also has correct transform applied
+        VECTOR pos = VGet(x_, y_, z_);
+        ::MV1SetPosition(baseModelHandle_, pos);
+        ::MV1SetScale(baseModelHandle_, VGet(visualScale_, visualScale_, visualScale_));
+        ::MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
         ::MV1DrawModel(baseModelHandle_);
     }
     // 装備武器の描画は下部で一元的に行うためここでは何もしない
@@ -122,9 +135,30 @@ void Player::Draw()
                 VECTOR up = VGet(fm.m[1][0], fm.m[1][1], fm.m[1][2]);
                 VECTOR forward = VGet(fm.m[2][0], fm.m[2][1], fm.m[2][2]);
 
+                // Remove any scale encoded in the frame basis by normalizing the basis
+                // vectors. This ensures weapon world matrix does not inherit player's
+                // scale (avoids double-scaling when frame matrix already includes it).
+                auto safeNormalize = [](VECTOR v)->VECTOR{
+                    float len = sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
+                    if (len > 1e-6f) return VGet(v.x/len, v.y/len, v.z/len);
+                    return VGet(0.0f, 0.0f, 0.0f);
+                };
+                VECTOR nRight = safeNormalize(right);
+                VECTOR nUp = safeNormalize(up);
+                VECTOR nForward = safeNormalize(forward);
+                // Build a frame matrix without scale
+                MATRIX fmNoScale = fm;
+                fmNoScale.m[0][0] = nRight.x; fmNoScale.m[0][1] = nRight.y; fmNoScale.m[0][2] = nRight.z; fmNoScale.m[0][3] = 0.0f;
+                fmNoScale.m[1][0] = nUp.x;    fmNoScale.m[1][1] = nUp.y;    fmNoScale.m[1][2] = nUp.z;    fmNoScale.m[1][3] = 0.0f;
+                fmNoScale.m[2][0] = nForward.x; fmNoScale.m[2][1] = nForward.y; fmNoScale.m[2][2] = nForward.z; fmNoScale.m[2][3] = 0.0f;
+                fmNoScale.m[3][0] = framePos.x; fmNoScale.m[3][1] = framePos.y; fmNoScale.m[3][2] = framePos.z; fmNoScale.m[3][3] = 1.0f;
+
                 // Build local offset and rotate it by weapon local rotation (equipRotation)
-                // Build local offset and rotated offset by equip rotation
-                VECTOR localOff = VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_);
+                // Note: do NOT multiply offsets/scales by `visualScale_` here. The frame matrix `fm`
+                // returned by MV1GetFrameLocalWorldMatrix may already include the player's scale.
+                // Weapon sizing is controlled solely by `spec.equipScale` and weapon-local offsets
+                // are taken from `spec.equipOffset` in world units relative to the frame.
+                VECTOR localOff = VGet(spec.equipOffset.x, spec.equipOffset.y, spec.equipOffset.z);
 
                 // Convert equip rotation (degrees) to radians
                 float d2r = DX_PI_F / 180.0f;
@@ -205,18 +239,19 @@ void Player::Draw()
                     return C;
                 };
 
-                MATRIX localMat = MakeLocalMatrix(localOffRot, rx, ry, rz, spec.equipScale * visualScale_);
-                // Final world matrix = frameMatrix * localMatrix
-                MATRIX finalMat = MulM(fm, localMat);
+                MATRIX localMat = MakeLocalMatrix(localOffRot, rx, ry, rz, spec.equipScale);
+                // Final world matrix = frameMatrix_without_scale * localMatrix
+                MATRIX finalMat = MulM(fmNoScale, localMat);
                 MV1SetMatrix(wh, &finalMat);
                 ::MV1DrawModel(wh);
             } else
 #endif
             {
                 // フォールバック: プレイヤー位置からの相対オフセットで配置
-                VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_));
+                // Use spec.equipOffset directly (world-relative) and spec.equipScale for weapon size.
+                VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x, spec.equipOffset.y, spec.equipOffset.z));
                 MV1SetPosition(wh, wpos);
-                MV1SetScale(wh, VGet(spec.equipScale * visualScale_, spec.equipScale * visualScale_, spec.equipScale * visualScale_));
+                MV1SetScale(wh, VGet(spec.equipScale, spec.equipScale, spec.equipScale));
                 float d2r = DX_PI_F / 180.0f;
                 VECTOR rotDeg = spec.equipRotation;
                 MV1SetRotationXYZ(wh, VGet(rotDeg.x * d2r, rotDeg.y * d2r, rotDeg.z * d2r));

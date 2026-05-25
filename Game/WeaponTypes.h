@@ -108,9 +108,8 @@ inline const WeaponSpec& GetWeaponSpec(WeaponType t)
         // pickupRotation: モデル原点の向きに合わせて回転補正（度）
         VGet(0.0f, 90.0f, 90.0f),
         // equipScale: 右手フレーム基準でのスケール。フレームに対するローカル補正として扱います。
-        1.0f,
+        0.05f,
         // equipOffset: 右手フレーム基準のローカル座標。x=左右, y=高さ, z=前方
-        // NOTE: 元データに誤記(90.0f)があったため実表示に合わせて修正しました。
         VGet(0.15f, 0.9f, 0.25f),
         // equipRotation: 装備時に向きを合わせるための回転補正（右手フレーム基準、度）
         VGet(0.0f, -10.0f, 85.0f),

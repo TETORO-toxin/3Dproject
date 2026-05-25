@@ -83,8 +83,8 @@ void Player::UpdateLogic(float dt, const InputState& in)
                   if (fabsf(diff) <= maxStep) currentYaw_ = b;
                   else currentYaw_ += (diff > 0.0f ? 1.0f : -1.0f) * maxStep;
 
-                  if (modelHandle_ != -1) MV1SetRotationXYZ(modelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
-                  if (baseModelHandle_ != -1 && baseModelHandle_ != modelHandle_) MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
+                  // Rotation applied during Draw() to keep transform updates centralized.
+                  // Avoid setting MV1 model rotation here to prevent inconsistent orientation.
               }
           }
       } else {
@@ -108,8 +108,8 @@ void Player::UpdateLogic(float dt, const InputState& in)
                   if (fabsf(diff) <= maxStep) currentYaw_ = b;
                   else currentYaw_ += (diff > 0.0f ? 1.0f : -1.0f) * maxStep;
 
-                  if (modelHandle_ != -1) MV1SetRotationXYZ(modelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
-                  if (baseModelHandle_ != -1 && baseModelHandle_ != modelHandle_) MV1SetRotationXYZ(baseModelHandle_, VGet(0.0f, currentYaw_ + DX_PI_F, 0.0f));
+                  // Rotation applied during Draw() to keep transform updates centralized.
+                  // Avoid setting MV1 model rotation here to prevent inconsistent orientation.
               }
           }
       }
