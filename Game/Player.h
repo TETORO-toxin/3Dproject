@@ -203,4 +203,12 @@ private:
     // 今は単一の equippedWeapon_ を利用しますが、メンバ名とアクセスは将来の置換を容易にするため
     // Game::WeaponType 型のまま残します。
     Game::WeaponType equippedWeapon_ = Game::WeaponType::None;
+    // アセットマネージャ参照（モデルの取得に利用）
+    AssetsMgr* assets_ = nullptr;
+
+    // 右手フレーム番号のキャッシュ (-1 = 未検出)
+    int rightHandFrameIndex_ = -1;
+
+    // 装備中の武器モデルハンドル（AssetsMgr のキャッシュ先を参照する）
+    int equippedWeaponModelHandle_ = -1;
 };

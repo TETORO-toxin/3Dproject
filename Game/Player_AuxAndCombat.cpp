@@ -4,6 +4,7 @@
 //  - Aux の発射、ゲージ回復、覚醒状態の管理などの API を提供します。
 
 #include "Player.h"
+#include "../Sys/Assets.h"
 #include "AuxUnit.h"
 #include "Enemy.h"
 #include "Projectile.h"
@@ -26,7 +27,12 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
 {
     if (newWeapon == equippedWeapon_) return false;
     if (oldOut) *oldOut = equippedWeapon_;
+    // 装備を更新し、アセットマネージャから装備用モデルを取得してハンドルを保持する
     equippedWeapon_ = newWeapon;
+    equippedWeaponModelHandle_ = -1;
+    if (assets_) {
+        equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/true);
+    }
     return true;
 }
 

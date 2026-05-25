@@ -72,7 +72,7 @@ struct WeaponSpec {
     float effectScale;
     VECTOR effectOffset;
     const char* effectFile;
-    unsigned int effectColor; // DxLib::GetColor 形式
+    unsigned int effectColor;
 };
 
 // GetWeaponSpec:
@@ -110,7 +110,7 @@ inline const WeaponSpec& GetWeaponSpec(WeaponType t)
         // equipScale: プレイヤーに装備したときのスケール
         1.0f,
         // equipOffset: プレイヤー基準のローカル座標。x=左右, y=高さ, z=前方
-        VGet(0.15f, 0.9f, 0.25f),
+        VGet(0.15f, 90.0f, 0.25f),
         // equipRotation: 装備時に向きを合わせるための回転補正（度）
         VGet(0.0f, -10.0f, 85.0f),
         // effectScale: 鉄パイプはやや大きめのエフェクト

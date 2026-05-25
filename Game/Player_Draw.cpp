@@ -7,6 +7,8 @@
 #include "Player.h"
 #include "CameraRig.h"
 #include "../Sys/DebugPrint.h"
+#include "../Sys/Assets.h"
+#include <cmath>
 
 void Player::Draw()
 {
@@ -62,6 +64,63 @@ void Player::Draw()
         MV1SetScale(baseModelHandle_, VGet(visualScale_, visualScale_, visualScale_));
         MV1DrawModel(baseModelHandle_);
     }
+    // 装備武器の描画: WeaponSpec の補正を使って手元に描く（簡易実装）
+    // 右手ボーンに正確に取り付ける代わりに、プレイヤー位置に対して equipOffset を加算して描画します。
+    using namespace Game;
+    if (GetEquippedWeapon() != WeaponType::None) {
+        int wh = -1;
+        // Try to use cached handle if present
+        // equippedWeaponModelHandle_ may be managed elsewhere; fall back to AssetsMgr if available
+        // (assets_ is a member initialized in Player ctor)
+        if (/* member exists */ false) {}
+        // The class exposes equippedWeaponModelHandle_ at runtime; attempt to use it via this-> (safe if present)
+        // Use pointer-to-member trick not needed: attempt to read the member if it exists in this translation unit.
+        // Simpler: ask AssetsMgr for the equip model handle when available.
+        if (assets_) {
+            wh = assets_->GetWeaponModelHandle(GetEquippedWeapon(), /*equip=*/true);
+        }
+            if (wh != -1) {
+                const WeaponSpec& spec = GetWeaponSpec(GetEquippedWeapon());
+                // If we have a valid right-hand frame on the base model, transform the equipOffset
+                // by the frame's basis vectors so the weapon follows the bone orientation.
+                int fh = rightHandFrameIndex_;
+                if (fh != -1 && baseModelHandle_ != -1) {
+                    MATRIX fm = MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh);
+                    VECTOR framePos = VGet(fm.m[3][0], fm.m[3][1], fm.m[3][2]);
+                    // Rows 0..2 contain the frame's local axes in world space
+                    VECTOR right = VGet(fm.m[0][0], fm.m[0][1], fm.m[0][2]);
+                    VECTOR up = VGet(fm.m[1][0], fm.m[1][1], fm.m[1][2]);
+                    VECTOR forward = VGet(fm.m[2][0], fm.m[2][1], fm.m[2][2]);
+
+                    VECTOR localOff = VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_);
+                    VECTOR rotatedOff = VAdd(VAdd(VScale(right, localOff.x), VScale(up, localOff.y)), VScale(forward, localOff.z));
+                    VECTOR wpos = VAdd(framePos, rotatedOff);
+
+                    MV1SetPosition(wh, wpos);
+
+                    float s = spec.equipScale * visualScale_;
+                    MV1SetScale(wh, VGet(s, s, s));
+
+                    // Apply the frame yaw to weapon rotation so it follows facing direction.
+                    float baseYaw = std::atan2(forward.x, forward.z); // radians
+                    float deg2rad = DX_PI_F / 180.0f;
+                    VECTOR rotDeg = spec.equipRotation;
+                    MV1SetRotationXYZ(wh, VGet(rotDeg.x * deg2rad, rotDeg.y * deg2rad + baseYaw, rotDeg.z * deg2rad));
+
+                    MV1DrawModel(wh);
+                } else {
+                    // Fallback: simple position offset from player origin (existing behavior)
+                    VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_));
+                    MV1SetPosition(wh, wpos);
+                    float s = spec.equipScale * visualScale_;
+                    MV1SetScale(wh, VGet(s, s, s));
+                    float deg2rad = DX_PI_F / 180.0f;
+                    VECTOR rotDeg = spec.equipRotation;
+                    MV1SetRotationXYZ(wh, VGet(rotDeg.x * deg2rad, rotDeg.y * deg2rad, rotDeg.z * deg2rad));
+                    MV1DrawModel(wh);
+                }
+            }
+    }
     else
     {
         // プレースホルダ: ワールド上の角を投影してプレイヤーの周りに3Dキューブを描く
@@ -102,6 +161,32 @@ void Player::Draw()
 
     // ブレンドを解除してその後のUI/テキスト描画に影響しないようにする
     DxLib::SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
+    // --- 装備武器の描画: 右手フレームに追従する ---
+    if (equippedWeapon_ != Game::WeaponType::None && equippedWeaponModelHandle_ != -1) {
+#ifdef MV1GetFrameLocalWorldMatrix
+        int fh = rightHandFrameIndex_;
+        if (fh != -1) {
+            MATRIX m;
+            MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh, &m);
+
+            // 武器の描画位置をフレームのワールド位置にオフセットで加える簡易実装
+            // 将来的に回転やスケールもフレームに合わせて適用する実装に差し替える
+            const Game::WeaponSpec& spec = Game::GetWeaponSpec(equippedWeapon_);
+            // DxLib の MATRIX のワールド位置は m.m[3][0..2] にある想定
+            VECTOR framePos = VGet(m.m[3][0], m.m[3][1], m.m[3][2]);
+            VECTOR worldPos = VAdd(framePos, spec.equipOffset);
+
+            MV1SetPosition(equippedWeaponModelHandle_, worldPos);
+            MV1SetScale(equippedWeaponModelHandle_, VGet(spec.equipScale, spec.equipScale, spec.equipScale));
+            // 回転は装備補正のみ適用（単純）
+            float d2r = DX_PI_F / 180.0f;
+            VECTOR rotDeg = spec.equipRotation;
+            MV1SetRotationXYZ(equippedWeaponModelHandle_, VGet(rotDeg.x * d2r, rotDeg.y * d2r, rotDeg.z * d2r));
+            MV1DrawModel(equippedWeaponModelHandle_);
+        }
+#endif
+    }
 
     DrawFormatString(10, 30, GetColor(255, 255, 255), "Mode: %s  Just:%s  AuxGauge: %.1f  HP: %.0f", mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp);
 }
