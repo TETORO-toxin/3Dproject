@@ -25,14 +25,34 @@ Game::WeaponType Player::GetEquippedWeapon() const
 // `newWeapon` が現在の装備と同じで変更がなかった場合は false を返す。
 bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut)
 {
+    // No-op when equipping the same weapon
     if (newWeapon == equippedWeapon_) return false;
+
+    // Return previous weapon to caller if requested
     if (oldOut) *oldOut = equippedWeapon_;
-    // 装備を更新し、アセットマネージャから装備用モデルを取得してハンドルを保持する
+
+    // If switching to None, invalidate model handle and update state
+    if (newWeapon == Game::WeaponType::None) {
+        equippedWeapon_ = Game::WeaponType::None;
+        equippedWeaponModelHandle_ = -1; // explicitly invalidate
+        return true;
+    }
+
+    // Update equipped weapon state and attempt to load an "equip" variant of the model.
+    // If loading the equip-specific model fails, try a non-equip fallback. If that also
+    // fails leave the handle as -1; drawing code should handle -1 safely.
     equippedWeapon_ = newWeapon;
     equippedWeaponModelHandle_ = -1;
     if (assets_) {
         equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/true);
+        if (equippedWeaponModelHandle_ == -1) {
+            // Fallback: try non-equip model if equip-specific not available
+            equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/false);
+        }
     }
+
+    // If assets_ is null or both loads failed, equippedWeaponModelHandle_ stays -1 which
+    // indicates to the renderer that no model is available for this equipped weapon.
     return true;
 }
 

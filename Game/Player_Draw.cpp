@@ -52,75 +52,13 @@ void Player::Draw()
     // コンストラクタで`modelHandle_`はベースに初期化されているため、これを主要な描画ハンドルとして使う。
     if (modelHandle_ != -1)
     {
-        MV1SetPosition(modelHandle_, VGet(x_, y_, z_));
-        // 均一スケールを適用
-        MV1SetScale(modelHandle_, VGet(visualScale_, visualScale_, visualScale_));
-        MV1DrawModel(modelHandle_);
+        ::MV1DrawModel(modelHandle_); // グローバル名前空間を明示
     }
     else if (baseModelHandle_ != -1)
     {
-        MV1SetPosition(baseModelHandle_, VGet(x_, y_, z_));
-        // 均一スケールを適用
-        MV1SetScale(baseModelHandle_, VGet(visualScale_, visualScale_, visualScale_));
-        MV1DrawModel(baseModelHandle_);
+        ::MV1DrawModel(baseModelHandle_);
     }
-    // 装備武器の描画: WeaponSpec の補正を使って手元に描く（簡易実装）
-    // 右手ボーンに正確に取り付ける代わりに、プレイヤー位置に対して equipOffset を加算して描画します。
-    using namespace Game;
-    if (GetEquippedWeapon() != WeaponType::None) {
-        int wh = -1;
-        // Try to use cached handle if present
-        // equippedWeaponModelHandle_ may be managed elsewhere; fall back to AssetsMgr if available
-        // (assets_ is a member initialized in Player ctor)
-        if (/* member exists */ false) {}
-        // The class exposes equippedWeaponModelHandle_ at runtime; attempt to use it via this-> (safe if present)
-        // Use pointer-to-member trick not needed: attempt to read the member if it exists in this translation unit.
-        // Simpler: ask AssetsMgr for the equip model handle when available.
-        if (assets_) {
-            wh = assets_->GetWeaponModelHandle(GetEquippedWeapon(), /*equip=*/true);
-        }
-            if (wh != -1) {
-                const WeaponSpec& spec = GetWeaponSpec(GetEquippedWeapon());
-                // If we have a valid right-hand frame on the base model, transform the equipOffset
-                // by the frame's basis vectors so the weapon follows the bone orientation.
-                int fh = rightHandFrameIndex_;
-                if (fh != -1 && baseModelHandle_ != -1) {
-                    MATRIX fm = MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh);
-                    VECTOR framePos = VGet(fm.m[3][0], fm.m[3][1], fm.m[3][2]);
-                    // Rows 0..2 contain the frame's local axes in world space
-                    VECTOR right = VGet(fm.m[0][0], fm.m[0][1], fm.m[0][2]);
-                    VECTOR up = VGet(fm.m[1][0], fm.m[1][1], fm.m[1][2]);
-                    VECTOR forward = VGet(fm.m[2][0], fm.m[2][1], fm.m[2][2]);
-
-                    VECTOR localOff = VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_);
-                    VECTOR rotatedOff = VAdd(VAdd(VScale(right, localOff.x), VScale(up, localOff.y)), VScale(forward, localOff.z));
-                    VECTOR wpos = VAdd(framePos, rotatedOff);
-
-                    MV1SetPosition(wh, wpos);
-
-                    float s = spec.equipScale * visualScale_;
-                    MV1SetScale(wh, VGet(s, s, s));
-
-                    // Apply the frame yaw to weapon rotation so it follows facing direction.
-                    float baseYaw = std::atan2(forward.x, forward.z); // radians
-                    float deg2rad = DX_PI_F / 180.0f;
-                    VECTOR rotDeg = spec.equipRotation;
-                    MV1SetRotationXYZ(wh, VGet(rotDeg.x * deg2rad, rotDeg.y * deg2rad + baseYaw, rotDeg.z * deg2rad));
-
-                    MV1DrawModel(wh);
-                } else {
-                    // Fallback: simple position offset from player origin (existing behavior)
-                    VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_));
-                    MV1SetPosition(wh, wpos);
-                    float s = spec.equipScale * visualScale_;
-                    MV1SetScale(wh, VGet(s, s, s));
-                    float deg2rad = DX_PI_F / 180.0f;
-                    VECTOR rotDeg = spec.equipRotation;
-                    MV1SetRotationXYZ(wh, VGet(rotDeg.x * deg2rad, rotDeg.y * deg2rad, rotDeg.z * deg2rad));
-                    MV1DrawModel(wh);
-                }
-            }
-    }
+    // 装備武器の描画は下部で一元的に行うためここでは何もしない
     else
     {
         // プレースホルダ: ワールド上の角を投影してプレイヤーの周りに3Dキューブを描く
@@ -163,29 +101,128 @@ void Player::Draw()
     DxLib::SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     // --- 装備武器の描画: 右手フレームに追従する ---
-    if (equippedWeapon_ != Game::WeaponType::None && equippedWeaponModelHandle_ != -1) {
-#ifdef MV1GetFrameLocalWorldMatrix
-        int fh = rightHandFrameIndex_;
-        if (fh != -1) {
-            MATRIX m;
-            MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh, &m);
-
-            // 武器の描画位置をフレームのワールド位置にオフセットで加える簡易実装
-            // 将来的に回転やスケールもフレームに合わせて適用する実装に差し替える
-            const Game::WeaponSpec& spec = Game::GetWeaponSpec(equippedWeapon_);
-            // DxLib の MATRIX のワールド位置は m.m[3][0..2] にある想定
-            VECTOR framePos = VGet(m.m[3][0], m.m[3][1], m.m[3][2]);
-            VECTOR worldPos = VAdd(framePos, spec.equipOffset);
-
-            MV1SetPosition(equippedWeaponModelHandle_, worldPos);
-            MV1SetScale(equippedWeaponModelHandle_, VGet(spec.equipScale, spec.equipScale, spec.equipScale));
-            // 回転は装備補正のみ適用（単純）
-            float d2r = DX_PI_F / 180.0f;
-            VECTOR rotDeg = spec.equipRotation;
-            MV1SetRotationXYZ(equippedWeaponModelHandle_, VGet(rotDeg.x * d2r, rotDeg.y * d2r, rotDeg.z * d2r));
-            MV1DrawModel(equippedWeaponModelHandle_);
+    if (equippedWeapon_ != Game::WeaponType::None) {
+        int wh = equippedWeaponModelHandle_;
+        // Try to obtain model handle via AssetsMgr if not cached
+        if (wh == -1 && assets_) {
+            wh = assets_->GetWeaponModelHandle(equippedWeapon_, /*equip=*/true);
         }
+
+        if (wh != -1) {
+            const Game::WeaponSpec& spec = Game::GetWeaponSpec(equippedWeapon_);
+#ifdef MV1GetFrameLocalWorldMatrix
+            int fh = rightHandFrameIndex_;
+            if (fh != -1 && baseModelHandle_ != -1) {
+                // MV1GetFrameLocalWorldMatrix を使ってフレームのワールド行列を取得
+                MATRIX fm;
+                MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh, &fm);
+                VECTOR framePos = VGet(fm.m[3][0], fm.m[3][1], fm.m[3][2]);
+                // フレームの基底ベクトルからオフセットを変換
+                VECTOR right = VGet(fm.m[0][0], fm.m[0][1], fm.m[0][2]);
+                VECTOR up = VGet(fm.m[1][0], fm.m[1][1], fm.m[1][2]);
+                VECTOR forward = VGet(fm.m[2][0], fm.m[2][1], fm.m[2][2]);
+
+                // Build local offset and rotate it by weapon local rotation (equipRotation)
+                // Build local offset and rotated offset by equip rotation
+                VECTOR localOff = VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_);
+
+                // Convert equip rotation (degrees) to radians
+                float d2r = DX_PI_F / 180.0f;
+                VECTOR rotDeg = spec.equipRotation; // degrees
+                float rx = rotDeg.x * d2r;
+                float ry = rotDeg.y * d2r;
+                float rz = rotDeg.z * d2r;
+
+                // Rotate localOff by Euler angles (X -> Y -> Z) in local weapon space
+                auto rotateLocal = [&](const VECTOR& v)->VECTOR{
+                    float cx = std::cos(rx), sx = std::sin(rx);
+                    float cy = std::cos(ry), sy = std::sin(ry);
+                    float cz = std::cos(rz), sz = std::sin(rz);
+
+                    // Apply X
+                    VECTOR a;
+                    a.x = v.x;
+                    a.y = v.y * cx - v.z * sx;
+                    a.z = v.y * sx + v.z * cx;
+
+                    // Apply Y
+                    VECTOR b;
+                    b.x = a.x * cy + a.z * sy;
+                    b.y = a.y;
+                    b.z = -a.x * sy + a.z * cy;
+
+                    // Apply Z
+                    VECTOR c;
+                    c.x = b.x * cz - b.y * sz;
+                    c.y = b.x * sz + b.y * cz;
+                    c.z = b.z;
+                    return c;
+                };
+
+                VECTOR localOffRot = rotateLocal(localOff);
+
+                // Build local transform matrix (translation = localOffRot, rotation = equipRotation, scale = equipScale*visualScale_)
+                auto MakeLocalMatrix = [&](const VECTOR& translationLocal, float rx_, float ry_, float rz_, float scale)->MATRIX{
+                    MATRIX m;
+                    // Rotation matrices
+                    float cx = std::cos(rx_), sx = std::sin(rx_);
+                    float cy = std::cos(ry_), sy = std::sin(ry_);
+                    float cz = std::cos(rz_), sz = std::sin(rz_);
+
+                    // R = Rz * Ry * Rx (applies Rx then Ry then Rz)
+                    float R00 = (cz * cy);
+                    float R01 = (cz * sy * sx - sz * cx);
+                    float R02 = (cz * sy * cx + sz * sx);
+
+                    float R10 = (sz * cy);
+                    float R11 = (sz * sy * sx + cz * cx);
+                    float R12 = (sz * sy * cx - cz * sx);
+
+                    float R20 = -sy;
+                    float R21 = cy * sx;
+                    float R22 = cy * cx;
+
+                    // Apply scale to rotation basis
+                    float s = scale;
+                    m.m[0][0] = R00 * s; m.m[0][1] = R01 * s; m.m[0][2] = R02 * s; m.m[0][3] = 0.0f;
+                    m.m[1][0] = R10 * s; m.m[1][1] = R11 * s; m.m[1][2] = R12 * s; m.m[1][3] = 0.0f;
+                    m.m[2][0] = R20 * s; m.m[2][1] = R21 * s; m.m[2][2] = R22 * s; m.m[2][3] = 0.0f;
+
+                    m.m[3][0] = translationLocal.x; m.m[3][1] = translationLocal.y; m.m[3][2] = translationLocal.z; m.m[3][3] = 1.0f;
+                    return m;
+                };
+
+                // Multiply matrices: C = A * B
+                auto MulM = [&](const MATRIX& A, const MATRIX& B)->MATRIX{
+                    MATRIX C;
+                    for (int r = 0; r < 4; ++r) {
+                        for (int c = 0; c < 4; ++c) {
+                            float sum = 0.0f;
+                            for (int k = 0; k < 4; ++k) sum += A.m[r][k] * B.m[k][c];
+                            C.m[r][c] = sum;
+                        }
+                    }
+                    return C;
+                };
+
+                MATRIX localMat = MakeLocalMatrix(localOffRot, rx, ry, rz, spec.equipScale * visualScale_);
+                // Final world matrix = frameMatrix * localMatrix
+                MATRIX finalMat = MulM(fm, localMat);
+                MV1SetMatrix(wh, &finalMat);
+                ::MV1DrawModel(wh);
+            } else
 #endif
+            {
+                // フォールバック: プレイヤー位置からの相対オフセットで配置
+                VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x * visualScale_, spec.equipOffset.y * visualScale_, spec.equipOffset.z * visualScale_));
+                MV1SetPosition(wh, wpos);
+                MV1SetScale(wh, VGet(spec.equipScale * visualScale_, spec.equipScale * visualScale_, spec.equipScale * visualScale_));
+                float d2r = DX_PI_F / 180.0f;
+                VECTOR rotDeg = spec.equipRotation;
+                MV1SetRotationXYZ(wh, VGet(rotDeg.x * d2r, rotDeg.y * d2r, rotDeg.z * d2r));
+                ::MV1DrawModel(wh);
+            }
+        }
     }
 
     DrawFormatString(10, 30, GetColor(255, 255, 255), "Mode: %s  Just:%s  AuxGauge: %.1f  HP: %.0f", mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp);

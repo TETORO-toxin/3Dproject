@@ -8,6 +8,23 @@
 #include "../Sys/Input.h"
 #include "WeaponTypes.h"
 
+// 右手フレーム探索候補名（優先順）
+// モデル差し替え時にここだけを編集すればよいように一覧にまとめる。
+static const char* const kRightHandFrameCandidates[] = {
+    // 優先順: モデルの違いに応じてここを変更すればよい
+    "WeaponAttach_R",
+    "Hand_R",
+    "R_Hand",
+    "RightHand",
+    "r_hand",
+    "hand_r",
+    "hand.R",
+    "手_右",
+    "Right",
+    "右手",
+    nullptr
+};
+
 class AssetsMgr;
 class ProjectileManager;
 struct AuxUnit;
@@ -192,16 +209,50 @@ private:
 
     // Track previous frame's attack button composite state to detect press edges (one attack per press)
     bool prevAttackBtnDown_ = false;
-    // 装備武器
-    // equippedWeapon_ は現在の最小実装: 将来は左右手のスロットや両手持ちモードへ置き換えます。
-    // 将来の構造案:
-    // int leftHandWeaponIndex;
-    // int rightHandWeaponIndex;
-    // bool twoHandMode;
-    // std::vector<Game::WeaponType> leftHandSlots;
-    // std::vector<Game::WeaponType> rightHandSlots;
-    // 今は単一の equippedWeapon_ を利用しますが、メンバ名とアクセスは将来の置換を容易にするため
-    // Game::WeaponType 型のまま残します。
+    // --- 装備（武器）関連の責務とメンバについて ---
+    // 装備関連の状態は以下のメンバで管理しています。責務を明確にするためにコメントで説明します。
+    //
+    // 1) equippedWeapon_
+    //    - 型: Game::WeaponType
+    //    - 内容: 現在プレイヤーが装備している武器の種類。
+    //    - 初期化: Player のメンバ初期値で None に初期化される。
+    //    - 更新: Player::TryEquipWeapon / Player::EquipWeapon によって変更される。
+    //    - 描画連携: 描画時に GetWeaponSpec(equippedWeapon_) を参照してモデルや補正を取得する。
+    //
+    // 2) equippedWeaponModelHandle_
+    //    - 型: int (MV1 model handle)
+    //    - 内容: 装備用モデルの MV1 ハンドル。AssetsMgr から取得したハンドルをキャッシュする。
+    //    - 初期化: -1（無効）で初期化。
+    //    - 更新: 装備切り替え時（TryEquipWeapon）に AssetsMgr から取得し、ロード失敗時は -1 のままにする。
+    //    - 描画連携: Player::Draw 内でこのハンドルを使って MV1SetMatrix/MV1DrawModel を呼ぶ。
+    //
+    // 3) rightHandFrameIndex_
+    //    - 型: int
+    //    - 内容: base model 内での右手フレームのインデックスをキャッシュ。見つからない場合は -1。
+    //    - 初期化: -1（未検出）で初期化。
+    //    - 更新: ベースモデルロード/差し替え時にモデル内フレーム名リストを走査して決定する（Player 初期化やモデル変更処理）。
+    //    - 描画連携: フレームが有効な場合は MV1GetFrameLocalWorldMatrix でフレームのワールド行列を取得して武器行列と合成する。
+    //
+    // 4) assets_
+    //    - 型: AssetsMgr*
+    //    - 内容: アセット管理器への参照。モデルやテクスチャの取得に使用する。
+    //    - 初期化: コンストラクタの引数で渡されるか nullptr。
+    //    - 更新: 基本的に所有権は持たず参照を保持する。外部で管理されるアセットマネージャを参照する。
+    //
+    // 注意点:
+    //  - 装備状態の責務はここ（Player）で行っていますが、将来的には装備専用コンポーネントに切り出すことを検討してください。
+    //  - 装備切り替え時は equippedWeapon_ と equippedWeaponModelHandle_ を整合させ、None のときはハンドルを -1 にすること。
+    //  - 描画側はハンドルが -1 の場合は安全にスキップする実装としてください。
+
+    // 将来の整理案: 装備状態をまとめる小さな構造体にできるようにテンプレを用意します。
+    struct EquipmentState {
+        Game::WeaponType equippedWeapon = Game::WeaponType::None; // 現在の武器種別
+        int equippedModelHandle = -1; // 装備表示に使う MV1 ハンドル (-1 = none)
+        int rightHandFrameIndex = -1; // 右手フレームのキャッシュ
+        // AssetsMgr は Player 全体で使うためここには参照しない（必要ならポインタを追加）
+    };
+
+    // 現状は既存の個別メンバを維持して互換性を保つ。
     Game::WeaponType equippedWeapon_ = Game::WeaponType::None;
     // アセットマネージャ参照（モデルの取得に利用）
     AssetsMgr* assets_ = nullptr;

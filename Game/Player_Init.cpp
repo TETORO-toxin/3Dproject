@@ -30,17 +30,7 @@ Player::Player(AssetsMgr* assets)
     // アセットマネージャ参照を保持
     assets_ = assets;
 
-    // 右手フレーム探索候補リスト
-    static const char* rightHandCandidates[] = {
-        "RightHand",
-        "r_hand",
-        "hand_r",
-        "hand.R",
-        "手_右",
-        "Right",
-        "右手",
-        nullptr
-    };
+    // 右手フレーム探索候補リストはヘッダのテーブルを利用
     // ベースモデル（アイドル）をロード
     if (assets) {
         baseModelHandle_ = assets->LoadModel("assets/models/mirai2.mv1");
@@ -51,6 +41,24 @@ Player::Player(AssetsMgr* assets)
         ownsBaseModel_ = true;
         modelHandle_ = baseModelHandle_;
     }
+
+    // ベースモデルのロード直後に右手フレームを探索してキャッシュする
+#ifdef MV1SearchFrame
+    rightHandFrameIndex_ = -1;
+    if (baseModelHandle_ != -1) {
+        for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
+            int fi = MV1SearchFrame(baseModelHandle_, *p);
+            if (fi >= 0) {
+                rightHandFrameIndex_ = fi;
+                DebugPrint("Player: Cached right-hand frame '%s' -> index=%d\n", *p, fi);
+                break;
+            }
+        }
+        if (rightHandFrameIndex_ == -1) {
+            DebugPrint("Player: right-hand frame not found in base model\n");
+        }
+    }
+#endif
 
     // いくつかのアニメーションを登録（慣例: mirai_anim_<name>.mv1）
     std::vector<std::pair<std::string, std::string>> animFiles = {
@@ -89,7 +97,7 @@ Player::Player(AssetsMgr* assets)
 #ifdef MV1SearchFrame
     // ベースモデルから右手フレームを探索してキャッシュ
     if (baseModelHandle_ != -1) {
-        for (const char** p = rightHandCandidates; *p != nullptr; ++p) {
+        for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
             int fi = MV1SearchFrame(baseModelHandle_, *p);
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
