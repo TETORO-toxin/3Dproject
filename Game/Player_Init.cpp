@@ -43,9 +43,10 @@ Player::Player(AssetsMgr* assets)
     }
 
     // ベースモデルのロード直後に右手フレームを探索してキャッシュする
-#ifdef MV1SearchFrame
+    // MV1SearchFrame がない環境でもフレーム列挙 API があれば名前を照合して解決する。
     rightHandFrameIndex_ = -1;
     if (baseModelHandle_ != -1) {
+#ifdef MV1SearchFrame
         for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
             int fi = MV1SearchFrame(baseModelHandle_, *p);
             if (fi >= 0) {
@@ -54,11 +55,29 @@ Player::Player(AssetsMgr* assets)
                 break;
             }
         }
+#else
+        // フレーム列挙が利用できる場合は名前を比較して検索
+#ifdef MV1GetFrameNum
+#ifdef MV1GetFrameName
+        int fc = MV1GetFrameNum(baseModelHandle_);
+        for (int i = 0; i < fc && rightHandFrameIndex_ == -1; ++i) {
+            const char* fname = MV1GetFrameName(baseModelHandle_, i);
+            if (!fname) continue;
+            for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
+                if (std::string(fname) == std::string(*p)) {
+                    rightHandFrameIndex_ = i;
+                    DebugPrint("Player: Cached right-hand frame '%s' -> index=%d\n", *p, i);
+                    break;
+                }
+            }
+        }
+#endif
+#endif
+#endif
         if (rightHandFrameIndex_ == -1) {
             DebugPrint("Player: right-hand frame not found in base model\n");
         }
     }
-#endif
 
     // いくつかのアニメーションを登録（慣例: mirai_anim_<name>.mv1）
     std::vector<std::pair<std::string, std::string>> animFiles = {
