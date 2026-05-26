@@ -14,6 +14,21 @@ namespace Game {
 WeaponPickup::WeaponPickup(WeaponType type, const VECTOR& pos, AssetsMgr* assets)
     : type_(type), pos_(pos), picked_(false), assets_(assets)
 {
+    // Try to create a dedicated instance model for this pickup so we can
+    // freely transform it without affecting shared handles used for equipped models.
+    if (assets_) {
+        modelHandle_ = assets_->CreateWeaponModelInstance(type_, /*equip=*/false);
+        // If creation failed, modelHandle_ stays -1 and Draw will fallback to marker.
+    }
+}
+
+WeaponPickup::~WeaponPickup()
+{
+    if (modelHandle_ != -1) {
+        // The model was duplicated specifically for this pickup; delete it.
+        MV1DeleteModel(modelHandle_);
+        modelHandle_ = -1;
+    }
 }
 
 bool WeaponPickup::CanPickupBy(const VECTOR& playerPos, float range) const
@@ -29,8 +44,9 @@ void WeaponPickup::Draw() const
     if (picked_) return;
     // Try to obtain a model handle from AssetsMgr. If unavailable or load failed,
     // fall back to the legacy cross marker drawing.
-    int modelHandle = -1;
-    if (assets_) {
+    int modelHandle = modelHandle_;
+    if (modelHandle == -1 && assets_) {
+        // As a fallback, attempt to obtain (but do not transform) the shared handle.
         modelHandle = assets_->GetWeaponModelHandle(type_, /*equip=*/false);
     }
 

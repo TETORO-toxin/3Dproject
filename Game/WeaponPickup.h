@@ -27,6 +27,7 @@ public:
     // assets: optional pointer to AssetsMgr to obtain shared model handles.
     // If assets is nullptr the pickup will render the legacy cross marker.
     WeaponPickup(WeaponType type = WeaponType::None, const VECTOR& pos = VGet(0,0,0), AssetsMgr* assets = nullptr);
+    ~WeaponPickup();
 
     WeaponType GetType() const { return type_; }
     VECTOR GetPosition() const { return pos_; }
@@ -44,6 +45,8 @@ private:
     VECTOR pos_;
     bool picked_ = false;
     AssetsMgr* assets_ = nullptr;
+    // Per-pickup dedicated model handle (duplicated from shared model). -1 if not available.
+    int modelHandle_ = -1;
 };
 
 } // namespace Game

@@ -23,6 +23,11 @@ public:
     // - If no model is specified for the weapon or the load failed, returns -1.
     int GetWeaponModelHandle(Game::WeaponType type, bool equip = false);
 
+    // Create a duplicated model instance for a weapon. Caller is responsible for
+    // deleting the returned model handle with MV1DeleteModel when done.
+    // Returns -1 on failure.
+    int CreateWeaponModelInstance(Game::WeaponType type, bool equip = false);
+
 private:
     // cache path -> MV1 handle
     std::unordered_map<std::string, int> modelCache_;

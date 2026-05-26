@@ -70,3 +70,23 @@ int AssetsMgr::GetWeaponModelHandle(Game::WeaponType type, bool equip)
     }
     return h;
 }
+
+int AssetsMgr::CreateWeaponModelInstance(Game::WeaponType type, bool equip)
+{
+    using namespace Game;
+    const WeaponSpec& w = GetWeaponSpec(type);
+    const char* path = equip ? w.equipModelPath : w.pickupModelPath;
+    if (!path) return -1;
+
+    // Ensure base model is loaded and cached
+    int base = LoadModel(path);
+    if (base == -1) return -1;
+
+    // Duplicate model so callers can modify transform independently.
+    int dup = MV1DuplicateModel(base);
+    if (dup == -1) {
+        // If duplication fails, return the base handle (caller must not delete it)
+        return base;
+    }
+    return dup;
+}
