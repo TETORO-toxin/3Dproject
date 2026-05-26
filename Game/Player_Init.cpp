@@ -45,40 +45,98 @@ Player::Player(AssetsMgr* assets)
     // ベースモデルのロード直後に右手フレームを探索してキャッシュする
     // MV1SearchFrame がない環境でもフレーム列挙 API があれば名前を照合して解決する。
     rightHandFrameIndex_ = -1;
-#if 1
+    rightHandFrameName_.clear();
+
     if (baseModelHandle_ != -1) {
+        // If frame enumeration APIs exist, list frames and pick candidates by keyword
+#ifdef MV1GetFrameNum
+#ifdef MV1GetFrameName
+        int fc = MV1GetFrameNum(baseModelHandle_);
+        DebugPrint("Player: Base model frame count: %d\n", fc);
+        std::vector<std::pair<int,std::string>> enumeratedFrames;
+        for (int i = 0; i < fc; ++i) {
+            const char* fname = MV1GetFrameName(baseModelHandle_, i);
+            if (fname) {
+                enumeratedFrames.emplace_back(i, std::string(fname));
+                DebugPrint("  [%d] '%s'\n", i, fname);
+            } else {
+                DebugPrint("  [%d] <null>\n", i);
+            }
+        }
+
+        // Filter names containing keywords (case-insensitive)
+        auto containsKeyword = [](const std::string &s)->bool{
+            std::string low = s;
+            std::transform(low.begin(), low.end(), low.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+            return low.find("hand") != std::string::npos || low.find("right") != std::string::npos || low.find("weapon") != std::string::npos || low.find("attach") != std::string::npos;
+        };
+
+        std::vector<std::pair<int,std::string>> keywordCandidates;
+        for (auto &fr : enumeratedFrames) {
+            if (containsKeyword(fr.second)) {
+                keywordCandidates.push_back(fr);
+                DebugPrint("  Candidate frame (keywords matched): [%d] '%s'\n", fr.first, fr.second.c_str());
+            }
+        }
+#endif
+#endif
+
+        // First try the predefined candidate list via MV1SearchFrame if available
 #ifdef MV1SearchFrame
         for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
             int fi = MV1SearchFrame(baseModelHandle_, *p);
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
-                DebugPrint("Player: Cached right-hand frame via MV1SearchFrame: name='%s' index=%d\n", *p, fi);
+                rightHandFrameName_ = *p;
+                DebugPrint("Player: Cached right-hand frame via MV1SearchFrame: name='%s' index=%d\n", rightHandFrameName_.c_str(), fi);
                 break;
             }
         }
-#else
-        // フレーム列挙が利用できる場合は名前を比較して検索
+        // If not found, try the keyword-matched names (if we enumerated frames)
 #ifdef MV1GetFrameNum
 #ifdef MV1GetFrameName
-        int fc = MV1GetFrameNum(baseModelHandle_);
-        for (int i = 0; i < fc && rightHandFrameIndex_ == -1; ++i) {
-            const char* fname = MV1GetFrameName(baseModelHandle_, i);
-            if (!fname) continue;
-            for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
-                if (std::string(fname) == std::string(*p)) {
-                    rightHandFrameIndex_ = i;
-                    DebugPrint("Player: Cached right-hand frame via frame-enumeration: candidate='%s' matched frameName='%s' index=%d\n", *p, fname, i);
+        if (rightHandFrameIndex_ == -1) {
+            for (auto &fr : keywordCandidates) {
+                int fi = MV1SearchFrame(baseModelHandle_, fr.second.c_str());
+                if (fi >= 0) {
+                    rightHandFrameIndex_ = fi;
+                    rightHandFrameName_ = fr.second;
+                    DebugPrint("Player: Cached right-hand frame via keyword search: name='%s' index=%d\n", fr.second.c_str(), fi);
                     break;
                 }
             }
         }
 #endif
 #endif
+#else
+        // No MV1SearchFrame: try to resolve using enumerated names and the candidate list
+#ifdef MV1GetFrameNum
+#ifdef MV1GetFrameName
+        for (auto &fr : enumeratedFrames) {
+            for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
+                if (fr.second == *p) {
+                    rightHandFrameIndex_ = fr.first;
+                    rightHandFrameName_ = fr.second;
+                    DebugPrint("Player: Cached right-hand frame via enumeration match: candidate='%s' matched frameName='%s' index=%d\n", *p, fr.second.c_str(), fr.first);
+                    break;
+                }
+            }
+            if (rightHandFrameIndex_ != -1) break;
+        }
+
+        // If still not found, pick the first keyword candidate as a best-effort
+        if (rightHandFrameIndex_ == -1 && !keywordCandidates.empty()) {
+            rightHandFrameIndex_ = keywordCandidates[0].first;
+            rightHandFrameName_ = keywordCandidates[0].second;
+            DebugPrint("Player: Using keyword-matched frame as right-hand: name='%s' index=%d\n", rightHandFrameName_.c_str(), rightHandFrameIndex_);
+        }
 #endif
+#endif
+
         if (rightHandFrameIndex_ == -1) {
             DebugPrint("Player: right-hand frame not found in base model\n");
             DebugPrint("右手フレーム未検出\n");
-            DebugPrint("フォールバック描画になる\n");
+            DebugPrint("固定位置フォールバック中\n");
         }
     } else {
         DebugPrint("Player: base model failed to load (handle == -1) - skipping right-hand frame search\n");
@@ -120,26 +178,6 @@ Player::Player(AssetsMgr* assets)
                     DebugPrint("  [%d] '%s'\n", ai, aname ? aname : "<null>");
                 }
             }
-#ifdef MV1SearchFrame
-    // ベースモデルから右手フレームを探索してキャッシュ
-    if (baseModelHandle_ != -1) {
-        // 再検索前に必ず未解決状態へ戻す
-        rightHandFrameIndex_ = -1;
-        for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
-            int fi = MV1SearchFrame(baseModelHandle_, *p);
-            if (fi >= 0) {
-                rightHandFrameIndex_ = fi;
-                DebugPrint("Player: Cached right-hand frame via MV1SearchFrame: name='%s' index=%d\n", *p, fi);
-                break;
-            }
-        }
-        if (rightHandFrameIndex_ == -1) {
-            DebugPrint("Player: right-hand frame not found in base model\n");
-            DebugPrint("右手フレーム未検出\n");
-            DebugPrint("フォールバック描画になる\n");
-        }
-    }
-#endif
 #endif
 #endif
 

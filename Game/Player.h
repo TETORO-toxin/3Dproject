@@ -261,6 +261,8 @@ private:
 
     // 右手フレーム番号のキャッシュ (-1 = 未検出)
     int rightHandFrameIndex_ = -1;
+    // 右手フレーム名キャッシュ（見つかった場合）
+    std::string rightHandFrameName_;
 
     // 装備中の武器モデルハンドル（AssetsMgr のキャッシュ先を参照する）
     int equippedWeaponModelHandle_ = -1;
