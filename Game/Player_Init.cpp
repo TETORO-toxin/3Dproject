@@ -29,6 +29,7 @@ Player::Player(AssetsMgr* assets)
 {
     // アセットマネージャ参照を保持
     assets_ = assets;
+    DebugPrint("Player ctor: entered\n");
 
     // 右手フレーム探索候補リストはヘッダのテーブルを利用
     // ベースモデル（アイドル）をロード
@@ -41,15 +42,9 @@ Player::Player(AssetsMgr* assets)
         ownsBaseModel_ = true;
         modelHandle_ = baseModelHandle_;
     }
+    DebugPrint("Player ctor: baseModelHandle=%d ownsBaseModel=%d modelHandle=%d\n", baseModelHandle_, (int)ownsBaseModel_, modelHandle_);
 
-#ifdef MV1GetFrameNum
-#ifdef MV1GetFrameName
-    // 出力: ベースモデルの全フレーム名を順番に表示
-    if (baseModelHandle_ != -1) {
-        // frame enumeration available, but suppress verbose listing here.
-    }
-#endif
-#endif
+// (Conditional frame-enumeration logging lives later where APIs are present.)
 
     // ベースモデルのロード直後に右手フレームを探索してキャッシュする
     // MV1SearchFrame がない環境でもフレーム列挙 API があれば名前を照合して解決する。s
@@ -57,12 +52,32 @@ Player::Player(AssetsMgr* assets)
     rightHandFrameName_.clear();
 
     if (baseModelHandle_ != -1) {
+        // Emit always-on diagnostics to help troubleshoot missing logs
+        DebugPrint("Player ctor entered, baseModelHandle=%d\n", baseModelHandle_);
+#if defined(MV1SearchFrame)
+        DebugPrint("MV1SearchFrame available: yes\n");
+#else
+        DebugPrint("MV1SearchFrame available: no\n");
+#endif
+#if defined(MV1GetFrameNum)
+        DebugPrint("MV1GetFrameNum available: yes\n");
+#else
+        DebugPrint("MV1GetFrameNum available: no\n");
+#endif
+#if defined(MV1GetFrameName)
+        DebugPrint("MV1GetFrameName available: yes\n");
+#else
+        DebugPrint("MV1GetFrameName available: no\n");
+#endif
+
+        DebugPrint("Predefined right-hand frame candidates:\n");
+        for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
+            DebugPrint("  %s\n", *p);
+        }
         // diagnostic helpers: track which search method succeeded
         bool foundByPredef = false;
         bool foundByKeyword = false;
-        // If frame enumeration APIs exist, gather frame names for keyword-based matching
-#ifdef MV1GetFrameNum
-#ifdef MV1GetFrameName
+        // Gather frame names for keyword-based matching
         int fc = MV1GetFrameNum(baseModelHandle_);
         std::vector<std::pair<int,std::string>> enumeratedFrames;
         for (int i = 0; i < fc; ++i) {
@@ -88,9 +103,13 @@ Player::Player(AssetsMgr* assets)
         // Print a few extracted keyword candidates for debugging
         if (!keywordCandidates.empty()) {
             DebugPrint("Player: keywordCandidates count=%d (showing up to 5)\n", (int)keywordCandidates.size());
-            int showN = std::min((size_t)5, keywordCandidates.size());
+            int showN = keywordCandidates.size() < 5 ? static_cast<int>(keywordCandidates.size()) : 5;
             for (int i = 0; i < showN; ++i) {
                 DebugPrint("  [%d] index=%d name='%s'\n", i, keywordCandidates[i].first, keywordCandidates[i].second.c_str());
+            }
+            // Also print the full keyword candidate list so the auto-extraction can be inspected
+            for (size_t ki = 0; ki < keywordCandidates.size(); ++ki) {
+                DebugPrint("KeywordCandidate[%d]: %s\n", (int)ki, keywordCandidates[ki].second.c_str());
             }
         }
 
@@ -111,13 +130,12 @@ Player::Player(AssetsMgr* assets)
             for (auto &fr : enumeratedFrames) DebugPrint("  frame[%d] '%s'\n", fr.first, fr.second.c_str());
         }
 #endif
-#endif
-#endif
 
-        // First try the predefined candidate list via MV1SearchFrame if available
-#ifdef MV1SearchFrame
+        // First try the predefined candidate list via MV1SearchFrame
         for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
+            DebugPrint("Try frame candidate: %s\n", *p);
             int fi = MV1SearchFrame(baseModelHandle_, *p);
+            DebugPrint("  MV1SearchFrame returned %d for '%s'\n", fi, *p);
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
                 rightHandFrameName_ = *p;
@@ -125,12 +143,13 @@ Player::Player(AssetsMgr* assets)
                 break;
             }
         }
-        // If not found, try the keyword-matched names (if we enumerated frames)
-#ifdef MV1GetFrameNum
-#ifdef MV1GetFrameName
+
+        // If not found, try the keyword-matched names
         if (rightHandFrameIndex_ == -1) {
             for (auto &fr : keywordCandidates) {
+                DebugPrint("Try keyword candidate: %s (index=%d)\n", fr.second.c_str(), fr.first);
                 int fi = MV1SearchFrame(baseModelHandle_, fr.second.c_str());
+                DebugPrint("  MV1SearchFrame returned %d for keyword '%s'\n", fi, fr.second.c_str());
                 if (fi >= 0) {
                     rightHandFrameIndex_ = fi;
                     rightHandFrameName_ = fr.second;
@@ -139,22 +158,22 @@ Player::Player(AssetsMgr* assets)
                 }
             }
         }
-#endif
-#endif
-#else
-        // No MV1SearchFrame: try to resolve using enumerated names and the candidate list
-#ifdef MV1GetFrameNum
-#ifdef MV1GetFrameName
-        for (auto &fr : enumeratedFrames) {
-            for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
-                if (fr.second == *p) {
-                    rightHandFrameIndex_ = fr.first;
-                    rightHandFrameName_ = fr.second;
-                    foundByPredef = true;
-                    break;
+
+        // If still not found, try matching enumerated names against predefined list
+        if (rightHandFrameIndex_ == -1) {
+            for (auto &fr : enumeratedFrames) {
+                for (const char* const* p = kRightHandFrameCandidates; *p != nullptr; ++p) {
+                    DebugPrint("Try frame candidate: %s against enumerated frame '%s' (idx=%d)\n", *p, fr.second.c_str(), fr.first);
+                    if (fr.second == *p) {
+                        DebugPrint("  Match found: '%s' == '%s' -> index=%d\n", fr.second.c_str(), *p, fr.first);
+                        rightHandFrameIndex_ = fr.first;
+                        rightHandFrameName_ = fr.second;
+                        foundByPredef = true;
+                        break;
+                    }
                 }
+                if (rightHandFrameIndex_ != -1) break;
             }
-            if (rightHandFrameIndex_ != -1) break;
         }
 
         // If still not found, pick the first keyword candidate as a best-effort
@@ -163,22 +182,33 @@ Player::Player(AssetsMgr* assets)
             rightHandFrameName_ = keywordCandidates[0].second;
             foundByKeyword = true;
         }
-#endif
-#endif
 
         if (rightHandFrameIndex_ == -1) {
-            DebugPrint("Player: right-hand frame not found in base model\n");
+            DebugPrint("No right-hand frame found\n");
+            // Print prioritized frames that match keywords first
+            DebugPrint("Prioritized frame names containing Right/Hand/Arm/Weapon/Attach:\n");
+            int printed = 0;
+            for (auto &fr : enumeratedFrames) {
+                std::string low = fr.second;
+                std::transform(low.begin(), low.end(), low.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
+                if (low.find("hand") != std::string::npos || low.find("right") != std::string::npos || low.find("weapon") != std::string::npos || low.find("attach") != std::string::npos || low.find("arm") != std::string::npos) {
+                    DebugPrint("  frame[%d] '%s'\n", fr.first, fr.second.c_str());
+                    ++printed;
+                }
+            }
+            if (printed == 0) DebugPrint("  (no prioritized matches)\n");
+
+            // Also dump full frame list to help manual inspection
+            DebugPrint("Full frame list (total=%d):\n", (int)enumeratedFrames.size());
+            for (auto &fr : enumeratedFrames) DebugPrint("  frame[%d] '%s'\n", fr.first, fr.second.c_str());
         } else {
+            DebugPrint("Picked right-hand frame: %s index=%d\n", rightHandFrameName_.c_str(), rightHandFrameIndex_);
             const char* method = "(unknown)";
             if (foundByPredef) method = "predefined-candidate";
             else if (foundByKeyword) method = "keyword-candidate";
             DebugPrint("Player: right-hand frame cached: name='%s' index=%d method=%s\n", rightHandFrameName_.c_str(), rightHandFrameIndex_, method);
         }
-    } else {
-        DebugPrint("Player: base model failed to load (handle == -1) - skipping right-hand frame search\n");
-        DebugPrint("ベースモデル未ロードのため右手フレーム検索をスキップ\n");
     }
-#endif
 
     // いくつかのアニメーションを登録（慣例: mirai_anim_<name>.mv1）
     std::vector<std::pair<std::string, std::string>> animFiles = {
