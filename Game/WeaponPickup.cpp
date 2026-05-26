@@ -20,8 +20,12 @@ WeaponPickup::WeaponPickup(WeaponType type, const VECTOR& pos, AssetsMgr* assets
     // of whether we successfully created a duplicated model instance.
     {
         const WeaponSpec& spec = GetWeaponSpec(type_);
-        pickupScale_ = spec.pickupScale;
-        pickupRotation_ = spec.pickupRotation;
+        // For debugging: simplify pickup transform to rule out tiny/rotated models.
+        // Use a reasonable visible scale and zero rotation so pickups are easy to spot.
+        pickupScale_ = 1.0f; // override spec.pickupScale temporarily for diagnostics
+        pickupRotation_ = VGet(0.0f, 0.0f, 0.0f);
+        DebugPrint("WeaponPickup ctor: type=%d pickupScale=%.3f pickupRot=(%.1f,%.1f,%.1f)\n",
+            static_cast<int>(type_), pickupScale_, pickupRotation_.x, pickupRotation_.y, pickupRotation_.z);
     }
 
     // Try to create a dedicated instance model for this pickup so we can

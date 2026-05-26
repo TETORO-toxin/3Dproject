@@ -142,125 +142,16 @@ void Player::Draw()
                 usedFollow = true;
                 pathStr = "Follow";
                 // MV1GetFrameLocalWorldMatrix を使ってフレームのワールド行列を取得
-                // Some DxLib builds provide a 2-arg variant that returns MATRIX,
-                // adjust call to match the available signature.
+                // 簡易検証のため、まずはフレーム位置に武器を置くだけの最小構成にする。
                 MATRIX fm = MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh);
                 VECTOR framePos = VGet(fm.m[3][0], fm.m[3][1], fm.m[3][2]);
                 pickedFramePos = framePos;
                 havePickedFramePos = true;
-                // フレームの基底ベクトルからオフセットを変換
-                VECTOR right = VGet(fm.m[0][0], fm.m[0][1], fm.m[0][2]);
-                VECTOR up = VGet(fm.m[1][0], fm.m[1][1], fm.m[1][2]);
-                VECTOR forward = VGet(fm.m[2][0], fm.m[2][1], fm.m[2][2]);
 
-                // Remove any scale encoded in the frame basis by normalizing the basis
-                // vectors. This ensures weapon world matrix does not inherit player's
-                // scale (avoids double-scaling when frame matrix already includes it).
-                auto safeNormalize = [](VECTOR v)->VECTOR{
-                    float len = sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
-                    if (len > 1e-6f) return VGet(v.x/len, v.y/len, v.z/len);
-                    return VGet(0.0f, 0.0f, 0.0f);
-                };
-                VECTOR nRight = safeNormalize(right);
-                VECTOR nUp = safeNormalize(up);
-                VECTOR nForward = safeNormalize(forward);
-                // Build a frame matrix without scale
-                MATRIX fmNoScale = fm;
-                fmNoScale.m[0][0] = nRight.x; fmNoScale.m[0][1] = nRight.y; fmNoScale.m[0][2] = nRight.z; fmNoScale.m[0][3] = 0.0f;
-                fmNoScale.m[1][0] = nUp.x;    fmNoScale.m[1][1] = nUp.y;    fmNoScale.m[1][2] = nUp.z;    fmNoScale.m[1][3] = 0.0f;
-                fmNoScale.m[2][0] = nForward.x; fmNoScale.m[2][1] = nForward.y; fmNoScale.m[2][2] = nForward.z; fmNoScale.m[2][3] = 0.0f;
-                fmNoScale.m[3][0] = framePos.x; fmNoScale.m[3][1] = framePos.y; fmNoScale.m[3][2] = framePos.z; fmNoScale.m[3][3] = 1.0f;
-
-                // Build local offset and rotate it by weapon local rotation (equipRotation)
-                // Note: do NOT multiply offsets/scales by `visualScale_` here. The frame matrix `fm`
-                // returned by MV1GetFrameLocalWorldMatrix may already include the player's scale.
-                // Weapon sizing is controlled solely by `spec.equipScale` and weapon-local offsets
-                // are taken from `spec.equipOffset` in world units relative to the frame.
-                VECTOR localOff = VGet(spec.equipOffset.x, spec.equipOffset.y, spec.equipOffset.z);
-
-                // Convert equip rotation (degrees) to radians
-                float d2r = DX_PI_F / 180.0f;
-                VECTOR rotDeg = spec.equipRotation; // degrees
-                float rx = rotDeg.x * d2r;
-                float ry = rotDeg.y * d2r;
-                float rz = rotDeg.z * d2r;
-
-                // Rotate localOff by Euler angles (X -> Y -> Z) in local weapon space
-                auto rotateLocal = [&](const VECTOR& v)->VECTOR{
-                    float cx = std::cos(rx), sx = std::sin(rx);
-                    float cy = std::cos(ry), sy = std::sin(ry);
-                    float cz = std::cos(rz), sz = std::sin(rz);
-
-                    // Apply X
-                    VECTOR a;
-                    a.x = v.x;
-                    a.y = v.y * cx - v.z * sx;
-                    a.z = v.y * sx + v.z * cx;
-
-                    // Apply Y
-                    VECTOR b;
-                    b.x = a.x * cy + a.z * sy;
-                    b.y = a.y;
-                    b.z = -a.x * sy + a.z * cy;
-
-                    // Apply Z
-                    VECTOR c;
-                    c.x = b.x * cz - b.y * sz;
-                    c.y = b.x * sz + b.y * cz;
-                    c.z = b.z;
-                    return c;
-                };
-
-                VECTOR localOffRot = rotateLocal(localOff);
-
-                // Build local transform matrix (translation = localOffRot, rotation = equipRotation, scale = equipScale*visualScale_)
-                auto MakeLocalMatrix = [&](const VECTOR& translationLocal, float rx_, float ry_, float rz_, float scale)->MATRIX{
-                    MATRIX m;
-                    // Rotation matrices
-                    float cx = std::cos(rx_), sx = std::sin(rx_);
-                    float cy = std::cos(ry_), sy = std::sin(ry_);
-                    float cz = std::cos(rz_), sz = std::sin(rz_);
-
-                    // R = Rz * Ry * Rx (applies Rx then Ry then Rz)
-                    float R00 = (cz * cy);
-                    float R01 = (cz * sy * sx - sz * cx);
-                    float R02 = (cz * sy * cx + sz * sx);
-
-                    float R10 = (sz * cy);
-                    float R11 = (sz * sy * sx + cz * cx);
-                    float R12 = (sz * sy * cx - cz * sx);
-
-                    float R20 = -sy;
-                    float R21 = cy * sx;
-                    float R22 = cy * cx;
-
-                    // Apply scale to rotation basis
-                    float s = scale;
-                    m.m[0][0] = R00 * s; m.m[0][1] = R01 * s; m.m[0][2] = R02 * s; m.m[0][3] = 0.0f;
-                    m.m[1][0] = R10 * s; m.m[1][1] = R11 * s; m.m[1][2] = R12 * s; m.m[1][3] = 0.0f;
-                    m.m[2][0] = R20 * s; m.m[2][1] = R21 * s; m.m[2][2] = R22 * s; m.m[2][3] = 0.0f;
-
-                    m.m[3][0] = translationLocal.x; m.m[3][1] = translationLocal.y; m.m[3][2] = translationLocal.z; m.m[3][3] = 1.0f;
-                    return m;
-                };
-
-                // Multiply matrices: C = A * B
-                auto MulM = [&](const MATRIX& A, const MATRIX& B)->MATRIX{
-                    MATRIX C;
-                    for (int r = 0; r < 4; ++r) {
-                        for (int c = 0; c < 4; ++c) {
-                            float sum = 0.0f;
-                            for (int k = 0; k < 4; ++k) sum += A.m[r][k] * B.m[k][c];
-                            C.m[r][c] = sum;
-                        }
-                    }
-                    return C;
-                };
-
-                MATRIX localMat = MakeLocalMatrix(localOffRot, rx, ry, rz, spec.equipScale);
-                // Final world matrix = frameMatrix_without_scale * localMatrix
-                MATRIX finalMat = MulM(fmNoScale, localMat);
-                MV1SetMatrix(wh, finalMat);
+                // Minimal placement: set position to frame position, apply weapon scale and no rotation.
+                MV1SetPosition(wh, framePos);
+                MV1SetScale(wh, VGet(spec.equipScale, spec.equipScale, spec.equipScale));
+                MV1SetRotationXYZ(wh, VGet(0.0f, 0.0f, 0.0f));
                 ::MV1DrawModel(wh);
             } else {
                 // フォールバック: プレイヤー位置からの相対オフセットで配置
