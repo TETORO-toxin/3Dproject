@@ -114,6 +114,7 @@ void Player::Draw()
     DxLib::SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     // --- 装備武器の描画: 右手フレームに追従する ---
+    bool usedFollow = false;
     if (equippedWeapon_ != Game::WeaponType::None) {
         int wh = equippedWeaponModelHandle_;
         // Try to obtain model handle via AssetsMgr if not cached
@@ -126,6 +127,7 @@ void Player::Draw()
 #ifdef MV1GetFrameLocalWorldMatrix
             int fh = rightHandFrameIndex_;
             if (fh != -1 && baseModelHandle_ != -1) {
+                usedFollow = true;
                 // MV1GetFrameLocalWorldMatrix を使ってフレームのワールド行列を取得
                 MATRIX fm;
                 MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh, &fm);
@@ -260,5 +262,8 @@ void Player::Draw()
         }
     }
 
-    DrawFormatString(10, 30, GetColor(255, 255, 255), "Mode: %s  Just:%s  AuxGauge: %.1f  HP: %.0f", mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp);
+    // show some debug info: current right-hand frame index, whether we used the frame-follow branch, and equipped weapon model handle
+    DrawFormatString(10, 30, GetColor(255, 255, 255), "Mode: %s  Just:%s  AuxGauge: %.1f  HP: %.0f  RHFrame:%d Follow:%s WpnHandle:%d",
+        mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp,
+        rightHandFrameIndex_, usedFollow?"Y":"N", equippedWeaponModelHandle_);
 }

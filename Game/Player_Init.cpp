@@ -46,12 +46,7 @@ Player::Player(AssetsMgr* assets)
 #ifdef MV1GetFrameName
     // 出力: ベースモデルの全フレーム名を順番に表示
     if (baseModelHandle_ != -1) {
-        int __frameCount = MV1GetFrameNum(baseModelHandle_);
-        DebugPrint("Player: Listing all base model frames (count=%d):\n", __frameCount);
-        for (int __fi = 0; __fi < __frameCount; ++__fi) {
-            const char* __fname = MV1GetFrameName(baseModelHandle_, __fi);
-            DebugPrint("  [%d] '%s'\n", __fi, __fname ? __fname : "<null>");
-        }
+        // frame enumeration available, but suppress verbose listing here.
     }
 #endif
 #endif
@@ -62,19 +57,15 @@ Player::Player(AssetsMgr* assets)
     rightHandFrameName_.clear();
 
     if (baseModelHandle_ != -1) {
-        // If frame enumeration APIs exist, list frames and pick candidates by keyword
+        // If frame enumeration APIs exist, gather frame names for keyword-based matching
 #ifdef MV1GetFrameNum
 #ifdef MV1GetFrameName
         int fc = MV1GetFrameNum(baseModelHandle_);
-        DebugPrint("Player: Base model frame count: %d\n", fc);
         std::vector<std::pair<int,std::string>> enumeratedFrames;
         for (int i = 0; i < fc; ++i) {
             const char* fname = MV1GetFrameName(baseModelHandle_, i);
             if (fname) {
                 enumeratedFrames.emplace_back(i, std::string(fname));
-                DebugPrint("  [%d] '%s'\n", i, fname);
-            } else {
-                DebugPrint("  [%d] <null>\n", i);
             }
         }
 
@@ -89,7 +80,6 @@ Player::Player(AssetsMgr* assets)
         for (auto &fr : enumeratedFrames) {
             if (containsKeyword(fr.second)) {
                 keywordCandidates.push_back(fr);
-                DebugPrint("  Candidate frame (keywords matched): [%d] '%s'\n", fr.first, fr.second.c_str());
             }
         }
 #endif
@@ -102,7 +92,6 @@ Player::Player(AssetsMgr* assets)
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
                 rightHandFrameName_ = *p;
-                DebugPrint("Player: Cached right-hand frame via MV1SearchFrame: name='%s' index=%d\n", rightHandFrameName_.c_str(), fi);
                 break;
             }
         }
@@ -115,7 +104,6 @@ Player::Player(AssetsMgr* assets)
                 if (fi >= 0) {
                     rightHandFrameIndex_ = fi;
                     rightHandFrameName_ = fr.second;
-                    DebugPrint("Player: Cached right-hand frame via keyword search: name='%s' index=%d\n", fr.second.c_str(), fi);
                     break;
                 }
             }
@@ -131,7 +119,6 @@ Player::Player(AssetsMgr* assets)
                 if (fr.second == *p) {
                     rightHandFrameIndex_ = fr.first;
                     rightHandFrameName_ = fr.second;
-                    DebugPrint("Player: Cached right-hand frame via enumeration match: candidate='%s' matched frameName='%s' index=%d\n", *p, fr.second.c_str(), fr.first);
                     break;
                 }
             }
@@ -142,15 +129,14 @@ Player::Player(AssetsMgr* assets)
         if (rightHandFrameIndex_ == -1 && !keywordCandidates.empty()) {
             rightHandFrameIndex_ = keywordCandidates[0].first;
             rightHandFrameName_ = keywordCandidates[0].second;
-            DebugPrint("Player: Using keyword-matched frame as right-hand: name='%s' index=%d\n", rightHandFrameName_.c_str(), rightHandFrameIndex_);
         }
 #endif
 #endif
 
         if (rightHandFrameIndex_ == -1) {
             DebugPrint("Player: right-hand frame not found in base model\n");
-            DebugPrint("右手フレーム未検出\n");
-            DebugPrint("固定位置フォールバック中\n");
+        } else {
+            DebugPrint("Player: right-hand frame cached: name='%s' index=%d\n", rightHandFrameName_.c_str(), rightHandFrameIndex_);
         }
     } else {
         DebugPrint("Player: base model failed to load (handle == -1) - skipping right-hand frame search\n");
