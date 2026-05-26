@@ -57,6 +57,9 @@ Player::Player(AssetsMgr* assets)
     rightHandFrameName_.clear();
 
     if (baseModelHandle_ != -1) {
+        // diagnostic helpers: track which search method succeeded
+        bool foundByPredef = false;
+        bool foundByKeyword = false;
         // If frame enumeration APIs exist, gather frame names for keyword-based matching
 #ifdef MV1GetFrameNum
 #ifdef MV1GetFrameName
@@ -82,6 +85,32 @@ Player::Player(AssetsMgr* assets)
                 keywordCandidates.push_back(fr);
             }
         }
+        // Print a few extracted keyword candidates for debugging
+        if (!keywordCandidates.empty()) {
+            DebugPrint("Player: keywordCandidates count=%d (showing up to 5)\n", (int)keywordCandidates.size());
+            int showN = std::min((size_t)5, keywordCandidates.size());
+            for (int i = 0; i < showN; ++i) {
+                DebugPrint("  [%d] index=%d name='%s'\n", i, keywordCandidates[i].first, keywordCandidates[i].second.c_str());
+            }
+        }
+
+        // Optional: dump all frame names when DEBUG_DUMP_FRAMES env var is set
+#if defined(_MSC_VER)
+        char* dbgVal = nullptr; size_t dbgLen = 0;
+        if (_dupenv_s(&dbgVal, &dbgLen, "DEBUG_DUMP_FRAMES") == 0 && dbgVal != nullptr) {
+            if (dbgVal[0] != '\0') {
+                DebugPrint("Player: dumping all frame names (total=%d)\n", fc);
+                for (auto &fr : enumeratedFrames) DebugPrint("  frame[%d] '%s'\n", fr.first, fr.second.c_str());
+            }
+            free(dbgVal);
+        }
+#else
+        const char* dbgVal = std::getenv("DEBUG_DUMP_FRAMES");
+        if (dbgVal && dbgVal[0] != '\0') {
+            DebugPrint("Player: dumping all frame names (total=%d)\n", fc);
+            for (auto &fr : enumeratedFrames) DebugPrint("  frame[%d] '%s'\n", fr.first, fr.second.c_str());
+        }
+#endif
 #endif
 #endif
 
@@ -92,6 +121,7 @@ Player::Player(AssetsMgr* assets)
             if (fi >= 0) {
                 rightHandFrameIndex_ = fi;
                 rightHandFrameName_ = *p;
+                foundByPredef = true;
                 break;
             }
         }
@@ -104,6 +134,7 @@ Player::Player(AssetsMgr* assets)
                 if (fi >= 0) {
                     rightHandFrameIndex_ = fi;
                     rightHandFrameName_ = fr.second;
+                    foundByKeyword = true;
                     break;
                 }
             }
@@ -119,6 +150,7 @@ Player::Player(AssetsMgr* assets)
                 if (fr.second == *p) {
                     rightHandFrameIndex_ = fr.first;
                     rightHandFrameName_ = fr.second;
+                    foundByPredef = true;
                     break;
                 }
             }
@@ -129,6 +161,7 @@ Player::Player(AssetsMgr* assets)
         if (rightHandFrameIndex_ == -1 && !keywordCandidates.empty()) {
             rightHandFrameIndex_ = keywordCandidates[0].first;
             rightHandFrameName_ = keywordCandidates[0].second;
+            foundByKeyword = true;
         }
 #endif
 #endif
@@ -136,7 +169,10 @@ Player::Player(AssetsMgr* assets)
         if (rightHandFrameIndex_ == -1) {
             DebugPrint("Player: right-hand frame not found in base model\n");
         } else {
-            DebugPrint("Player: right-hand frame cached: name='%s' index=%d\n", rightHandFrameName_.c_str(), rightHandFrameIndex_);
+            const char* method = "(unknown)";
+            if (foundByPredef) method = "predefined-candidate";
+            else if (foundByKeyword) method = "keyword-candidate";
+            DebugPrint("Player: right-hand frame cached: name='%s' index=%d method=%s\n", rightHandFrameName_.c_str(), rightHandFrameIndex_, method);
         }
     } else {
         DebugPrint("Player: base model failed to load (handle == -1) - skipping right-hand frame search\n");

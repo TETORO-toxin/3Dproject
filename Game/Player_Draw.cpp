@@ -115,6 +115,12 @@ void Player::Draw()
 
     // --- 装備武器の描画: 右手フレームに追従する ---
     bool usedFollow = false;
+    // Prepare diagnostic info for follow/fallback
+    int fh = rightHandFrameIndex_;
+    VECTOR pickedFramePos = VGet(0.0f, 0.0f, 0.0f);
+    bool havePickedFramePos = false;
+    const char* followReason = "";
+    const char* pathStr = "Fallback";
     if (equippedWeapon_ != Game::WeaponType::None) {
         int wh = equippedWeaponModelHandle_;
         // Try to obtain model handle via AssetsMgr if not cached
@@ -128,10 +134,13 @@ void Player::Draw()
             int fh = rightHandFrameIndex_;
             if (fh != -1 && baseModelHandle_ != -1) {
                 usedFollow = true;
+                pathStr = "Follow";
                 // MV1GetFrameLocalWorldMatrix を使ってフレームのワールド行列を取得
                 MATRIX fm;
                 MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh, &fm);
                 VECTOR framePos = VGet(fm.m[3][0], fm.m[3][1], fm.m[3][2]);
+                pickedFramePos = framePos;
+                havePickedFramePos = true;
                 // フレームの基底ベクトルからオフセットを変換
                 VECTOR right = VGet(fm.m[0][0], fm.m[0][1], fm.m[0][2]);
                 VECTOR up = VGet(fm.m[1][0], fm.m[1][1], fm.m[1][2]);
@@ -252,6 +261,9 @@ void Player::Draw()
                 // フォールバック: プレイヤー位置からの相対オフセットで配置
                 // Use spec.equipOffset directly (world-relative) and spec.equipScale for weapon size.
                 VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x, spec.equipOffset.y, spec.equipOffset.z));
+                // when not following a frame, record the fallback weapon position for diagnostics
+                pickedFramePos = wpos;
+                havePickedFramePos = true;
                 MV1SetPosition(wh, wpos);
                 MV1SetScale(wh, VGet(spec.equipScale, spec.equipScale, spec.equipScale));
                 float d2r = DX_PI_F / 180.0f;
@@ -262,8 +274,30 @@ void Player::Draw()
         }
     }
 
-    // show some debug info: current right-hand frame index, whether we used the frame-follow branch, and equipped weapon model handle
-    DrawFormatString(10, 30, GetColor(255, 255, 255), "Mode: %s  Just:%s  AuxGauge: %.1f  HP: %.0f  RHFrame:%d Follow:%s WpnHandle:%d",
-        mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp,
-        rightHandFrameIndex_, usedFollow?"Y":"N", equippedWeaponModelHandle_);
+    // Determine follow failure reason if not using follow
+    if (!usedFollow) {
+        if (fh == -1) followReason = "fh==-1";
+        else if (baseModelHandle_ == -1) followReason = "baseModelHandle==-1";
+        else if (equippedWeaponModelHandle_ == -1) followReason = "wh==-1";
+        else followReason = "unknown";
+        pathStr = "Fallback";
+    } else {
+        followReason = "";
+    }
+
+    // show some debug info: current right-hand frame index, frame name, follow path/reason, frame world pos, whether we used follow, and equipped weapon model handle
+    DrawFormatString(10, 30, GetColor(255, 255, 255), "Mode: %s  Just:%s  AuxGauge: %.1f  HP: %.0f",
+        mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp);
+
+    DrawFormatString(10, 50, GetColor(255,255,255), "RHFrameIdx: %d  RHFrameName: %s  Path: %s  FollowUsed: %s  WpnHandle: %d",
+        rightHandFrameIndex_, rightHandFrameName_.c_str(), pathStr, usedFollow?"Y":"N", equippedWeaponModelHandle_);
+
+    DrawFormatString(10, 70, GetColor(255,255,0), "FollowFailReason: %s",
+        followReason);
+
+    if (havePickedFramePos) {
+        DrawFormatString(10, 90, GetColor(200,255,200), "PickedFramePos: (%.2f, %.2f, %.2f)", pickedFramePos.x, pickedFramePos.y, pickedFramePos.z);
+    } else {
+        DrawFormatString(10, 90, GetColor(200,255,200), "PickedFramePos: n/a");
+    }
 }
