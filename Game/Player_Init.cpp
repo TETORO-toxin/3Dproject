@@ -473,5 +473,12 @@ Player::~Player()
         MV1DeleteModel(baseModelHandle_);
     }
 
+    // Delete equipped weapon instance if we own it
+    if (equippedWeaponModelOwned_ && equippedWeaponModelHandle_ != -1) {
+        MV1DeleteModel(equippedWeaponModelHandle_);
+        equippedWeaponModelHandle_ = -1;
+        equippedWeaponModelOwned_ = false;
+    }
+
     delete auxLeft; delete auxRight;
 }

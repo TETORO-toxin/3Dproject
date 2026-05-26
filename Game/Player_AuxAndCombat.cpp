@@ -42,12 +42,25 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
     // If loading the equip-specific model fails, try a non-equip fallback. If that also
     // fails leave the handle as -1; drawing code should handle -1 safely.
     equippedWeapon_ = newWeapon;
+    // Dispose previous owned instance if any
+    if (equippedWeaponModelOwned_ && equippedWeaponModelHandle_ != -1) {
+        MV1DeleteModel(equippedWeaponModelHandle_);
+    }
+    equippedWeaponModelOwned_ = false;
     equippedWeaponModelHandle_ = -1;
     if (assets_) {
-        equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/true);
-        if (equippedWeaponModelHandle_ == -1) {
-            // Fallback: try non-equip model if equip-specific not available
-            equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/false);
+        // Try to create a dedicated instance for equipped weapon so transforms don't
+        // interfere with shared cached handles used elsewhere.
+        equippedWeaponModelHandle_ = assets_->CreateWeaponModelInstance(newWeapon, /*equip=*/true);
+        if (equippedWeaponModelHandle_ != -1) {
+            equippedWeaponModelOwned_ = true;
+        } else {
+            // Fallback: try shared equip handle
+            equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/true);
+            if (equippedWeaponModelHandle_ == -1) {
+                // Final fallback: try pickup model shared handle
+                equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/false);
+            }
         }
     }
 

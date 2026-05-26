@@ -85,8 +85,14 @@ int AssetsMgr::CreateWeaponModelInstance(Game::WeaponType type, bool equip)
     // Duplicate model so callers can modify transform independently.
     int dup = MV1DuplicateModel(base);
     if (dup == -1) {
-        // If duplication fails, return the base handle (caller must not delete it)
-        return base;
+        // Duplication failed: log and return -1 so callers know no dedicated instance was created.
+        // Returning the base handle here is dangerous because callers may delete it, which would
+        // remove the cached shared model. Instead, signal failure and let callers fall back to
+        // using the shared handle without attempting to delete it.
+        char buf[512];
+        sprintf_s(buf, "MV1DuplicateModel failed for model: %s", path);
+        DrawString(10, 80, buf, GetColor(255, 0, 0));
+        return -1;
     }
     return dup;
 }

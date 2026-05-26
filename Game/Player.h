@@ -266,4 +266,8 @@ private:
 
     // 装備中の武器モデルハンドル（AssetsMgr のキャッシュ先を参照する）
     int equippedWeaponModelHandle_ = -1;
+    // Whether the equippedWeaponModelHandle_ is a dedicated duplicated instance
+    // owned by this Player (and must be deleted with MV1DeleteModel). If false,
+    // the handle refers to a shared cached model and must not be deleted here.
+    bool equippedWeaponModelOwned_ = false;
 };

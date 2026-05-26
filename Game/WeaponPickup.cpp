@@ -7,6 +7,7 @@
 #include "WeaponTypes.h"
 #include "../Sys/Assets.h"
 #include "../Sys/DebugPrint.h"
+#include <cstdio>
 #include <cmath>
 
 namespace Game {
@@ -19,6 +20,10 @@ WeaponPickup::WeaponPickup(WeaponType type, const VECTOR& pos, AssetsMgr* assets
     if (assets_) {
         modelHandle_ = assets_->CreateWeaponModelInstance(type_, /*equip=*/false);
         // If creation failed, modelHandle_ stays -1 and Draw will fallback to marker.
+        // Log the result so we can diagnose duplication failures.
+        const WeaponSpec& spec = GetWeaponSpec(type_);
+        const char* path = spec.pickupModelPath ? spec.pickupModelPath : "(null)";
+        DebugPrint("WeaponPickup ctor: type=%d modelHandle=%d pickupPath=%s\n", static_cast<int>(type_), modelHandle_, path);
     }
 }
 
@@ -45,6 +50,16 @@ void WeaponPickup::Draw() const
     // Try to obtain a model handle from AssetsMgr. If unavailable or load failed,
     // fall back to the legacy cross marker drawing.
     int modelHandle = modelHandle_;
+    if (modelHandle_ == -1) {
+        // Dedicated instance unavailable ? log and display which model path we attempted to duplicate.
+        const WeaponSpec& spec = GetWeaponSpec(type_);
+        const char* path = spec.pickupModelPath ? spec.pickupModelPath : "(null)";
+        DebugPrint("WeaponPickup::Draw: dedicated model missing for type=%d pickupPath=%s\n", static_cast<int>(type_), path);
+        char dbgBuf[512];
+        sprintf_s(dbgBuf, "Pickup model missing: %s", path);
+        DrawString(10, 90, dbgBuf, GetColor(255, 0, 0));
+    }
+
     if (modelHandle == -1 && assets_) {
         // As a fallback, attempt to obtain (but do not transform) the shared handle.
         modelHandle = assets_->GetWeaponModelHandle(type_, /*equip=*/false);
