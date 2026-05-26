@@ -42,8 +42,22 @@ Player::Player(AssetsMgr* assets)
         modelHandle_ = baseModelHandle_;
     }
 
+#ifdef MV1GetFrameNum
+#ifdef MV1GetFrameName
+    // 出力: ベースモデルの全フレーム名を順番に表示
+    if (baseModelHandle_ != -1) {
+        int __frameCount = MV1GetFrameNum(baseModelHandle_);
+        DebugPrint("Player: Listing all base model frames (count=%d):\n", __frameCount);
+        for (int __fi = 0; __fi < __frameCount; ++__fi) {
+            const char* __fname = MV1GetFrameName(baseModelHandle_, __fi);
+            DebugPrint("  [%d] '%s'\n", __fi, __fname ? __fname : "<null>");
+        }
+    }
+#endif
+#endif
+
     // ベースモデルのロード直後に右手フレームを探索してキャッシュする
-    // MV1SearchFrame がない環境でもフレーム列挙 API があれば名前を照合して解決する。
+    // MV1SearchFrame がない環境でもフレーム列挙 API があれば名前を照合して解決する。s
     rightHandFrameIndex_ = -1;
     rightHandFrameName_.clear();
 
