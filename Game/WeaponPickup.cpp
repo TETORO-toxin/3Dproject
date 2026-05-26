@@ -15,6 +15,15 @@ namespace Game {
 WeaponPickup::WeaponPickup(WeaponType type, const VECTOR& pos, AssetsMgr* assets)
     : type_(type), pos_(pos), picked_(false), assets_(assets)
 {
+    // Initialize per-pickup transform from spec so each pickup can be
+    // transformed independently of shared model handles. Do this regardless
+    // of whether we successfully created a duplicated model instance.
+    {
+        const WeaponSpec& spec = GetWeaponSpec(type_);
+        pickupScale_ = spec.pickupScale;
+        pickupRotation_ = spec.pickupRotation;
+    }
+
     // Try to create a dedicated instance model for this pickup so we can
     // freely transform it without affecting shared handles used for equipped models.
     if (assets_) {
@@ -50,7 +59,12 @@ void WeaponPickup::Draw() const
     // Try to obtain a model handle from AssetsMgr. If unavailable or load failed,
     // fall back to the legacy cross marker drawing.
     int modelHandle = modelHandle_;
-    if (modelHandle_ == -1) {
+
+    // Always log the per-pickup model handle so we can verify whether this pickup
+    // is using a dedicated duplicated model or falling back to the marker.
+    DebugPrint("WeaponPickup::Draw: type=%d modelHandle=%d\n", static_cast<int>(type_), modelHandle);
+
+    if (modelHandle == -1) {
         // Dedicated instance unavailable ? log and display which model path we attempted to duplicate.
         const WeaponSpec& spec = GetWeaponSpec(type_);
         const char* path = spec.pickupModelPath ? spec.pickupModelPath : "(null)";
@@ -60,18 +74,15 @@ void WeaponPickup::Draw() const
         DrawString(10, 90, dbgBuf, GetColor(255, 0, 0));
     }
 
-    if (modelHandle == -1 && assets_) {
-        // As a fallback, attempt to obtain (but do not transform) the shared handle.
-        modelHandle = assets_->GetWeaponModelHandle(type_, /*equip=*/false);
-    }
+    // Do NOT call assets_->GetWeaponModelHandle(...) for drawing. We only use
+    // the per-pickup duplicated handle if available. Otherwise fall back to marker.
 
     if (modelHandle != -1) {
-        // Apply pickup-specific transform from WeaponSpec
-        const WeaponSpec& spec = GetWeaponSpec(type_);
+        // Apply pickup-specific transform from the per-pickup cached transform
         MV1SetPosition(modelHandle, pos_);
-        MV1SetScale(modelHandle, VGet(spec.pickupScale, spec.pickupScale, spec.pickupScale));
-        // pickupRotation stored as degrees in VECTOR; convert to radians for DXLib rotation API
-        VECTOR rotDeg = spec.pickupRotation;
+        MV1SetScale(modelHandle, VGet(pickupScale_, pickupScale_, pickupScale_));
+        // pickupRotation_ stored as degrees in VECTOR; convert to radians for DXLib rotation API
+        VECTOR rotDeg = pickupRotation_;
         float deg2rad = DX_PI_F / 180.0f;
         MV1SetRotationXYZ(modelHandle, VGet(rotDeg.x * deg2rad, rotDeg.y * deg2rad, rotDeg.z * deg2rad));
         MV1DrawModel(modelHandle);

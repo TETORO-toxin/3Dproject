@@ -1,6 +1,7 @@
 #include "Assets.h"
 #include "../Game/WeaponTypes.h"
 #include <cstdio>
+#include "DebugPrint.h"
 
 AssetsMgr::AssetsMgr()
 {
@@ -48,6 +49,9 @@ int AssetsMgr::LoadModel(const std::string& path)
         char buf[512];
         sprintf_s(buf, "Failed to load model: %s", path.c_str());
         DrawString(10, 60, buf, GetColor(255, 0, 0));
+        DebugPrint("AssetsMgr::LoadModel FAILED path=%s handle=%d\n", path.c_str(), handle);
+    } else {
+        DebugPrint("AssetsMgr::LoadModel OK path=%s handle=%d\n", path.c_str(), handle);
     }
     modelCache_.emplace(path, handle);
     return handle;
@@ -86,13 +90,12 @@ int AssetsMgr::CreateWeaponModelInstance(Game::WeaponType type, bool equip)
     int dup = MV1DuplicateModel(base);
     if (dup == -1) {
         // Duplication failed: log and return -1 so callers know no dedicated instance was created.
-        // Returning the base handle here is dangerous because callers may delete it, which would
-        // remove the cached shared model. Instead, signal failure and let callers fall back to
-        // using the shared handle without attempting to delete it.
         char buf[512];
         sprintf_s(buf, "MV1DuplicateModel failed for model: %s", path);
         DrawString(10, 80, buf, GetColor(255, 0, 0));
+        DebugPrint("AssetsMgr::CreateWeaponModelInstance: MV1DuplicateModel FAILED base=%d path=%s\n", base, path);
         return -1;
     }
+    DebugPrint("AssetsMgr::CreateWeaponModelInstance: duplicated base=%d -> dup=%d path=%s\n", base, dup, path);
     return dup;
 }

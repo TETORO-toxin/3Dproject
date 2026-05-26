@@ -5,6 +5,7 @@
 
 #include "Player.h"
 #include "../Sys/Assets.h"
+#include "../Sys/DebugPrint.h"
 #include "AuxUnit.h"
 #include "Enemy.h"
 #include "Projectile.h"
@@ -54,6 +55,7 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
         equippedWeaponModelHandle_ = assets_->CreateWeaponModelInstance(newWeapon, /*equip=*/true);
         if (equippedWeaponModelHandle_ != -1) {
             equippedWeaponModelOwned_ = true;
+            DebugPrint("Player::TryEquipWeapon: created equipped dup handle=%d for weapon=%d\n", equippedWeaponModelHandle_, static_cast<int>(newWeapon));
         } else {
             // Fallback: try shared equip handle
             equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/true);
@@ -61,6 +63,7 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
                 // Final fallback: try pickup model shared handle
                 equippedWeaponModelHandle_ = assets_->GetWeaponModelHandle(newWeapon, /*equip=*/false);
             }
+            DebugPrint("Player::TryEquipWeapon: using shared handle=%d for weapon=%d\n", equippedWeaponModelHandle_, static_cast<int>(newWeapon));
         }
     }
 

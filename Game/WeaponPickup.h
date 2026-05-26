@@ -29,6 +29,10 @@ public:
     WeaponPickup(WeaponType type = WeaponType::None, const VECTOR& pos = VGet(0,0,0), AssetsMgr* assets = nullptr);
     ~WeaponPickup();
 
+    // Note: destructor will delete the per-pickup duplicated model instance if one
+    // was successfully created via AssetsMgr::CreateWeaponModelInstance. It will not
+    // delete shared cached models returned by AssetsMgr::GetWeaponModelHandle.
+
     WeaponType GetType() const { return type_; }
     VECTOR GetPosition() const { return pos_; }
     bool IsPicked() const { return picked_; }
@@ -47,6 +51,10 @@ private:
     AssetsMgr* assets_ = nullptr;
     // Per-pickup dedicated model handle (duplicated from shared model). -1 if not available.
     int modelHandle_ = -1;
+    // Per-pickup transform so each pickup can be transformed independently
+    // without touching shared model handles.
+    float pickupScale_ = 1.0f;
+    VECTOR pickupRotation_ = VGet(0.0f, 0.0f, 0.0f);
 };
 
 } // namespace Game
