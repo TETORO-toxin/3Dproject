@@ -112,7 +112,7 @@ inline const WeaponSpec& GetWeaponSpec(WeaponType t)
         // equipOffset: 右手フレーム基準のローカル座標。x=左右, y=高さ, z=前方
         VGet(0.0f, 0.0f, 0.0f),
         // equipRotation: 装備時に向きを合わせるための回転補正（右手フレーム基準、度）
-        VGet(0.0f, 90.0f, 90.0f),
+        VGet(90.0f, 20.0f, 20.0f),
         // effectScale: 鉄パイプはやや大きめのエフェクト
         1.2f,
         // effectOffset: エフェクト出現位置（プレイヤー基準ローカル）
