@@ -117,27 +117,34 @@ void Player::Draw()
     bool usedFollow = false;
     // Prepare diagnostic info for follow/fallback
     int fh = rightHandFrameIndex_;
+    // Resolved weapon model handle used for placement; keep for diagnostics
+    int whDiag = equippedWeaponModelHandle_;
     VECTOR pickedFramePos = VGet(0.0f, 0.0f, 0.0f);
     bool havePickedFramePos = false;
     const char* followReason = "";
     const char* pathStr = "Fallback";
     if (equippedWeapon_ != Game::WeaponType::None) {
-        int wh = equippedWeaponModelHandle_;
+        // make weapon handle available for diagnostic checks after this block
+        int wh = whDiag;
         // Try to obtain model handle via AssetsMgr if not cached
         if (wh == -1 && assets_) {
             wh = assets_->GetWeaponModelHandle(equippedWeapon_, /*equip=*/true);
         }
 
+        // update diagnostic copy
+        whDiag = wh;
+
         if (wh != -1) {
             const Game::WeaponSpec& spec = Game::GetWeaponSpec(equippedWeapon_);
-#ifdef MV1GetFrameLocalWorldMatrix
-            int fh = rightHandFrameIndex_;
+            // Use frame API unconditionally to get the frame world matrix
             if (fh != -1 && baseModelHandle_ != -1) {
+                // entering follow branch
                 usedFollow = true;
                 pathStr = "Follow";
                 // MV1GetFrameLocalWorldMatrix を使ってフレームのワールド行列を取得
-                MATRIX fm;
-                MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh, &fm);
+                // Some DxLib builds provide a 2-arg variant that returns MATRIX,
+                // adjust call to match the available signature.
+                MATRIX fm = MV1GetFrameLocalWorldMatrix(baseModelHandle_, fh);
                 VECTOR framePos = VGet(fm.m[3][0], fm.m[3][1], fm.m[3][2]);
                 pickedFramePos = framePos;
                 havePickedFramePos = true;
@@ -253,11 +260,9 @@ void Player::Draw()
                 MATRIX localMat = MakeLocalMatrix(localOffRot, rx, ry, rz, spec.equipScale);
                 // Final world matrix = frameMatrix_without_scale * localMatrix
                 MATRIX finalMat = MulM(fmNoScale, localMat);
-                MV1SetMatrix(wh, &finalMat);
+                MV1SetMatrix(wh, finalMat);
                 ::MV1DrawModel(wh);
-            } else
-#endif
-            {
+            } else {
                 // フォールバック: プレイヤー位置からの相対オフセットで配置
                 // Use spec.equipOffset directly (world-relative) and spec.equipScale for weapon size.
                 VECTOR wpos = VAdd(VGet(x_, y_, z_), VGet(spec.equipOffset.x, spec.equipOffset.y, spec.equipOffset.z));
@@ -278,7 +283,10 @@ void Player::Draw()
     if (!usedFollow) {
         if (fh == -1) followReason = "fh==-1";
         else if (baseModelHandle_ == -1) followReason = "baseModelHandle==-1";
-        else if (equippedWeaponModelHandle_ == -1) followReason = "wh==-1";
+        else if (
+            // if there was no equipped weapon or weapon model could not be resolved
+            (equippedWeapon_ != Game::WeaponType::None && /*equipped but model unresolved*/ true)
+        ) followReason = "wh==-1";
         else followReason = "unknown";
         pathStr = "Fallback";
     } else {
@@ -290,7 +298,7 @@ void Player::Draw()
         mode_==Mode::Melee?"Melee":"Ranged", justExecuted_?"Yes":"No", auxGauge, hp);
 
     DrawFormatString(10, 50, GetColor(255,255,255), "RHFrameIdx: %d  RHFrameName: %s  Path: %s  FollowUsed: %s  WpnHandle: %d",
-        rightHandFrameIndex_, rightHandFrameName_.c_str(), pathStr, usedFollow?"Y":"N", equippedWeaponModelHandle_);
+        rightHandFrameIndex_, rightHandFrameName_.c_str(), pathStr, usedFollow?"Y":"N", whDiag);
 
     DrawFormatString(10, 70, GetColor(255,255,0), "FollowFailReason: %s",
         followReason);
