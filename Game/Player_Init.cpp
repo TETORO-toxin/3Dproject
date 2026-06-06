@@ -1,9 +1,9 @@
 // Player_Init.cpp
-// ƒTƒ}ƒŠ[:
-//  - ƒvƒŒƒCƒ„[‚Ì¶¬/”jŠü‚ÉŠÖ‚·‚éÀ‘•‚ğ‚Ü‚Æ‚ß‚½ƒtƒ@ƒCƒ‹‚Å‚·B
-//  - ƒ‚ƒfƒ‹‚ÆƒAƒjƒ[ƒVƒ‡ƒ“ƒ‚ƒfƒ‹‚Ì“Ç‚İ‚İAƒAƒjƒ[ƒVƒ‡ƒ“ƒƒ^ƒf[ƒ^‚Ì‰Šú‰»A
-//    ƒfƒoƒbƒOŒü‚¯‚ÌŠÂ‹«•Ï”ƒ`ƒFƒbƒN‚È‚ÇAƒŠƒ\[ƒX‰Šú‰»‚ÉŠÖ‚í‚éˆ—‚ğ’S‚¢‚Ü‚·B
-//  - ƒfƒXƒgƒ‰ƒNƒ^‚Å‚ÍŠeíƒAƒ^ƒbƒ`‰ğœ‚ÆƒŠƒ\[ƒX‰ğ•ú‚ğs‚¢‚Ü‚·B
+// ï¿½Tï¿½}ï¿½ï¿½ï¿½[:
+//  - ï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ìï¿½ï¿½ï¿½/ï¿½jï¿½ï¿½ï¿½ÉŠÖ‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚Æ‚ß‚ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Å‚ï¿½ï¿½B
+//  - ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ÆƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Ì“Ç‚İï¿½ï¿½İAï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½fï¿½[ï¿½^ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½ï¿½A
+//    ï¿½fï¿½oï¿½bï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½ÌŠÂ‹ï¿½ï¿½Ïï¿½ï¿½`ï¿½Fï¿½bï¿½Nï¿½È‚ÇAï¿½ï¿½ï¿½\ï¿½[ï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÉŠÖ‚ï¿½éˆï¿½ï¿½ï¿½ï¿½Sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
+//  - ï¿½fï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^ï¿½Å‚ÍŠeï¿½ï¿½Aï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½Æƒï¿½ï¿½\ï¿½[ï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
 
 #include "Player.h"
 #include "../Sys/Assets.h"
@@ -19,20 +19,20 @@
 #include <cctype>
 #include <cstdlib>
 
-// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
-//  - ƒAƒZƒbƒgƒ}ƒl[ƒWƒƒ‚ª—^‚¦‚ç‚ê‚Ä‚¢‚ê‚Î‚»‚ê‚ğg‚Á‚Äƒx[ƒXƒ‚ƒfƒ‹‚ğæ“¾‚·‚éB
-//  - ’è‹`Ï‚İ‚ÌƒAƒjƒ[ƒVƒ‡ƒ“MV1ƒtƒ@ƒCƒ‹‚ğ—ñ‹“‚µ‚Ä“Ç‚İ‚İAƒ‚[ƒVƒ‡ƒ“ƒCƒ“ƒfƒbƒNƒX‚âÄ¶ŠÔ‚ğ„’è‚µ‚ÄŠi”[‚·‚éB
-//  - ƒtƒŒ[ƒ€/ƒ{[ƒ“–¼‚Ì·ˆÙ‚ğf’f‚·‚é‚½‚ß‚ÌƒƒMƒ“ƒO‚ğs‚¤iAPI‚ª‘¶İ‚·‚éê‡jB
-//  - ŠÂ‹«•Ï”`DEBUG_FORCE_DRAW_ANIM`‚ªİ’è‚³‚ê‚Ä‚¢‚éê‡‚ÍAƒx[ƒXƒ‚ƒfƒ‹‚Ì‘ã‚í‚è‚ÉƒAƒjƒƒ‚ƒfƒ‹‚ğ’¼Ú•`‰æ‚·‚éƒIƒvƒVƒ‡ƒ“‚ğ—LŒø‚É‚·‚éB
-//  - ÅŒã‚É•â•ƒ†ƒjƒbƒg‚ğ¶¬‚·‚éB
+// ï¿½Rï¿½ï¿½ï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
+//  - ï¿½Aï¿½Zï¿½bï¿½gï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Î‚ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Äƒxï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½æ“¾ï¿½ï¿½ï¿½ï¿½B
+//  - ï¿½ï¿½`ï¿½Ï‚İ‚ÌƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½MV1ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ñ‹“‚ï¿½ï¿½Ä“Ç‚İï¿½ï¿½İAï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ï¿½Äï¿½ï¿½ï¿½ï¿½Ô‚ğ„’è‚µï¿½ÄŠiï¿½[ï¿½ï¿½ï¿½ï¿½B
+//  - ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½/ï¿½{ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Ìï¿½ï¿½Ù‚ï¿½fï¿½fï¿½ï¿½ï¿½é‚½ï¿½ß‚Ìƒï¿½ï¿½Mï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½sï¿½ï¿½ï¿½iAPIï¿½ï¿½ï¿½ï¿½ï¿½İ‚ï¿½ï¿½ï¿½ê‡ï¿½jï¿½B
+//  - ï¿½Â‹ï¿½ï¿½Ïï¿½`DEBUG_FORCE_DRAW_ANIM`ï¿½ï¿½ï¿½İ’è‚³ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ê‡ï¿½ÍAï¿½xï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Ì‘ï¿½ï¿½ï¿½ÉƒAï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ğ’¼Ú•`ï¿½æ‚·ï¿½ï¿½Iï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½É‚ï¿½ï¿½ï¿½B
+//  - ï¿½ÅŒï¿½É•â•ï¿½ï¿½ï¿½jï¿½bï¿½gï¿½ğ¶ï¿½ï¿½ï¿½ï¿½ï¿½B
 Player::Player(AssetsMgr* assets)
 {
-    // ƒAƒZƒbƒgƒ}ƒl[ƒWƒƒQÆ‚ğ•Û
+    // ï¿½Aï¿½Zï¿½bï¿½gï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½Qï¿½Æ‚ï¿½Ûï¿½
     assets_ = assets;
     DebugPrint("Player ctor: entered\n");
 
-    // ‰EèƒtƒŒ[ƒ€’TõŒó•âƒŠƒXƒg‚Íƒwƒbƒ_‚Ìƒe[ƒuƒ‹‚ğ—˜—p
-    // ƒx[ƒXƒ‚ƒfƒ‹iƒAƒCƒhƒ‹j‚ğƒ[ƒh
+    // ï¿½Eï¿½ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Tï¿½ï¿½ï¿½ï¿½âƒŠï¿½Xï¿½gï¿½Íƒwï¿½bï¿½_ï¿½Ìƒeï¿½[ï¿½uï¿½ï¿½ï¿½ğ—˜—p
+    // ï¿½xï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½iï¿½Aï¿½Cï¿½hï¿½ï¿½ï¿½jï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
     if (assets) {
         baseModelHandle_ = assets->LoadModel("assets/models/mirai2.mv1");
         ownsBaseModel_ = false;
@@ -46,8 +46,8 @@ Player::Player(AssetsMgr* assets)
 
 // (Conditional frame-enumeration logging lives later where APIs are present.)
 
-    // ƒx[ƒXƒ‚ƒfƒ‹‚Ìƒ[ƒh’¼Œã‚É‰EèƒtƒŒ[ƒ€‚ğ’Tõ‚µ‚ÄƒLƒƒƒbƒVƒ…‚·‚é
-    // MV1SearchFrame ‚ª‚È‚¢ŠÂ‹«‚Å‚àƒtƒŒ[ƒ€—ñ‹“ API ‚ª‚ ‚ê‚Î–¼‘O‚ğÆ‡‚µ‚Ä‰ğŒˆ‚·‚éBs
+    // ï¿½xï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½É‰Eï¿½ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½Tï¿½ï¿½ï¿½ï¿½ï¿½ÄƒLï¿½ï¿½ï¿½bï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    // MV1SearchFrame ï¿½ï¿½ï¿½È‚ï¿½ï¿½Â‹ï¿½ï¿½Å‚ï¿½ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ API ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î–ï¿½ï¿½Oï¿½ï¿½ï¿½Æï¿½ï¿½ï¿½ï¿½Ä‰ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Bs
     rightHandFrameIndex_ = -1;
     rightHandFrameName_.clear();
 
@@ -210,31 +210,33 @@ Player::Player(AssetsMgr* assets)
         }
     }
 
-    // ‚¢‚­‚Â‚©‚ÌƒAƒjƒ[ƒVƒ‡ƒ“‚ğ“o˜^iŠµ—á: mirai_anim_<name>.mv1j
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ÌƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½oï¿½^ï¿½iï¿½ï¿½ï¿½ï¿½: mirai_anim_<name>.mv1ï¿½j
     std::vector<std::pair<std::string, std::string>> animFiles = {
         {"idle", "assets/models/mirai_Idle.mv1"},
+        {"idle_weapon", "assets/models/mirai_Idle.mv1"},
         {"dodge", "assets/models/mirai_dodge.mv1"},
         {"move", "assets/models/mirai_move2.mv1"},
         {"jump", "assets/models/mirai_jump.mv1"},
         {"attack", "assets/models/mirai_attack.mv1"},
+        {"attack_weapon", "assets/models/mirai_attack.mv1"},
         {"aim", "assets/models/mirai_Aim.mv1"}
     };
     for (auto &p : animFiles) {
         int h = MV1LoadModel(p.second.c_str());
         if (h != -1) {
-            // —˜—p‰Â”\‚È‚çA“Ç‚İ‚ñ‚¾MV1‚ªÀÛ‚ÉƒAƒjƒ[ƒVƒ‡ƒ“ƒ‚[ƒVƒ‡ƒ“‚ğŠÜ‚Ş‚©Šm”F‚·‚éB
+            // ï¿½ï¿½ï¿½pï¿½Â”\ï¿½È‚ï¿½Aï¿½Ç‚İï¿½ï¿½ï¿½MV1ï¿½ï¿½ï¿½ï¿½ï¿½Û‚ÉƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü‚Ş‚ï¿½ï¿½mï¿½Fï¿½ï¿½ï¿½ï¿½B
             int animCount = -1;
 #ifdef MV1GetAnimNum
             animCount = MV1GetAnimNum(h);
 #endif
             if (animCount == 0) {
-                // ‚±‚ÌMV1‚Éƒ‚[ƒVƒ‡ƒ“‚ª‚È‚¢ ? ƒXƒLƒbƒv‚µ‚Äƒ‚ƒfƒ‹‚ğ‰ğ•ú‚·‚é
+                // ï¿½ï¿½ï¿½ï¿½MV1ï¿½Éƒï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È‚ï¿½ ? ï¿½Xï¿½Lï¿½bï¿½vï¿½ï¿½ï¿½Äƒï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 DebugPrint("Warning: animation model '%s' contains 0 motions, skipping.\n", p.second.c_str());
                 MV1DeleteModel(h);
                 continue;
             }
 
-            // API‚ª—˜—p‰Â”\‚È‚çAŠÜ‚Ü‚ê‚éƒ‚[ƒVƒ‡ƒ“–¼‚ğ—ñ‹“‚µ‚Ä–¼‘O‚Ì•sˆê’v‚ğf’f‚·‚é
+            // APIï¿½ï¿½ï¿½ï¿½ï¿½pï¿½Â”\ï¿½È‚ï¿½Aï¿½Ü‚Ü‚ï¿½éƒ‚ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ñ‹“‚ï¿½ï¿½Ä–ï¿½ï¿½Oï¿½Ì•sï¿½ï¿½vï¿½ï¿½fï¿½fï¿½ï¿½ï¿½ï¿½
 #ifdef MV1GetAnimNum
 #ifdef MV1GetAnimName
             if (animCount > 0) {
@@ -247,7 +249,7 @@ Player::Player(AssetsMgr* assets)
 #endif
 #endif
 
-            // “Ç‚İ‚ñ‚¾ƒAƒjƒƒ‚ƒfƒ‹“à‚Ìƒ‚[ƒVƒ‡ƒ“ƒCƒ“ƒfƒbƒNƒX‚ğŒˆ’èBAPI‚ª‚È‚¢‚©–¼‘O‚ªŒ©‚Â‚©‚ç‚È‚¯‚ê‚ÎƒfƒtƒHƒ‹ƒg0B
+            // ï¿½Ç‚İï¿½ï¿½ñ‚¾ƒAï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½BAPIï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½Â‚ï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½Îƒfï¿½tï¿½Hï¿½ï¿½ï¿½g0ï¿½B
             int motionIndex = 0;
 #ifdef MV1GetAnimIndex
             {
@@ -255,7 +257,7 @@ Player::Player(AssetsMgr* assets)
                 if (idx >= 0) {
                     motionIndex = idx;
                 } else {
-                    // –¼‘O‚Ì•sˆê’v‚ğŒyŒ¸‚·‚é‚½‚ß‚Ìˆê”Ê“I‚ÈƒtƒH[ƒ‹ƒoƒbƒN‚ğsi—á: 'Armature|Idle'Aæ“ª‘å•¶š‚È‚Çj
+                    // ï¿½ï¿½ï¿½Oï¿½Ì•sï¿½ï¿½vï¿½ï¿½ï¿½yï¿½ï¿½ï¿½ï¿½ï¿½é‚½ï¿½ß‚Ìˆï¿½Ê“Iï¿½Èƒtï¿½Hï¿½[ï¿½ï¿½ï¿½oï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½ï¿½sï¿½iï¿½ï¿½: 'Armature|Idle'ï¿½Aï¿½æ“ªï¿½å•¶ï¿½ï¿½ï¿½È‚Çj
                     std::vector<std::string> candidates;
                     candidates.push_back(std::string("Armature|") + p.first);
                     candidates.push_back(std::string("Armature.") + p.first);
@@ -275,7 +277,7 @@ Player::Player(AssetsMgr* assets)
                         }
                     }
 
-                    // ‚»‚ê‚Å‚àˆê’v‚µ‚È‚¢ê‡AiAPI‚ª‚ ‚ê‚ÎjŠÜ‚Ü‚ê‚éƒ‚[ƒVƒ‡ƒ“–¼‚ğ‘å•¶š¬•¶š–³‹‚Ì•”•ª•¶š—ñƒ`ƒFƒbƒN‚Å‘–¸
+                    // ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½È‚ï¿½ï¿½ê‡ï¿½Aï¿½iAPIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îjï¿½Ü‚Ü‚ï¿½éƒ‚ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å•¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì•ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½`ï¿½Fï¿½bï¿½Nï¿½Å‘ï¿½ï¿½ï¿½
 #ifdef MV1GetAnimNum
 #ifdef MV1GetAnimName
                     if (!matched) {
@@ -310,14 +312,14 @@ Player::Player(AssetsMgr* assets)
             animModelHandles_.emplace(p.first, h);
             animModelAnimIndex_.emplace(p.first, motionIndex);
 
-            // ‰Â”\‚È‚çÀÛ‚ÌƒAƒjƒ[ƒVƒ‡ƒ“’·‚ğ“Ç‚İæ‚éBƒfƒtƒHƒ‹ƒg‚Í1.0•b
+            // ï¿½Â”\ï¿½È‚ï¿½ï¿½ï¿½Û‚ÌƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚İï¿½ï¿½Bï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½1.0ï¿½b
             float dur = 1.0f;
 #ifdef MV1GetAnimTotalTime
             {
                 float t = MV1GetAnimTotalTime(h, motionIndex);
                 if (t > 0.0f) {
-                    // ˆê•”‚Ìƒrƒ‹ƒh‚Å‚Í•b‚Å‚Í‚È‚­ƒtƒŒ[ƒ€/ƒeƒBƒbƒN‚ğ•Ô‚·‚±‚Æ‚ª‚ ‚éB
-                    // ’l‚ªƒeƒBƒbƒN‚ç‚µ‚¢ê‡i‘å‚«‚¢j‚É‚Í60‚ÅŠ„‚Á‚Ä•b‚É•ÏŠ·‚·‚éƒqƒ…[ƒŠƒXƒeƒBƒbƒN‚ğg‚¤B
+                    // ï¿½ê•”ï¿½Ìƒrï¿½ï¿½ï¿½hï¿½Å‚Í•bï¿½Å‚Í‚È‚ï¿½ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½/ï¿½eï¿½Bï¿½bï¿½Nï¿½ï¿½Ô‚ï¿½ï¿½ï¿½ï¿½Æ‚ï¿½ï¿½ï¿½ï¿½ï¿½B
+                    // ï¿½lï¿½ï¿½ï¿½eï¿½Bï¿½bï¿½Nï¿½ç‚µï¿½ï¿½ï¿½ê‡ï¿½iï¿½å‚«ï¿½ï¿½ï¿½jï¿½É‚ï¿½60ï¿½ÅŠï¿½ï¿½ï¿½ï¿½Ä•bï¿½É•ÏŠï¿½ï¿½ï¿½ï¿½ï¿½qï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½gï¿½ï¿½ï¿½B
                     if (t > 10.0f) {
                         DebugPrint("MV1GetAnimTotalTime for model '%s' motion %d returned %.3f - treating as ticks and converting to seconds by /60\n", p.second.c_str(), motionIndex, t);
                         t = t / 60.0f;
@@ -328,30 +330,30 @@ Player::Player(AssetsMgr* assets)
 #endif
             animDurations_.emplace(p.first, dur);
 
-            // moveƒAƒjƒ‚Ìƒ‹[ƒv‚ğ‚â‚â’Z‚­‚µ‚Ä‚æ‚è—‚¿’…‚¢‚½Š´‚¶‚É‚·‚é
+            // moveï¿½Aï¿½jï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½è—ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É‚ï¿½ï¿½ï¿½
             if (p.first == "move") {
-                // moveƒ‹[ƒv‚ÌŠÔŠu‚ğ’Z‚­‚µ‚Äƒ‹[ƒvŠÔŠu‚ğ’Z‚­‚·‚é
+                // moveï¿½ï¿½ï¿½[ï¿½vï¿½ÌŠÔŠuï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½Äƒï¿½ï¿½[ï¿½vï¿½ÔŠuï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 float newDur = dur * 2.5f;
                 animDurations_["move"] = newDur;
                 DebugPrint("Adjusted move anim duration from %.3f -> %.3f\n", dur, newDur);
             }
 
-            // --- ‚±‚±‚É idle ‚ÌÄ¶‘¬“x‚ğ’x‚­‚·‚é‚½‚ß‚Ì’²®‚ğ’Ç‰Á ---
-            if (p.first == "idle") {
-                // idle ‚ğ’x‚­‚·‚éiƒfƒtƒHƒ‹ƒg‚Ì2”{‚Ì’·‚³‚É‚µ‚ÄÄ¶‘¬“x‚ğ”¼•ª‚É‚·‚éj
+            // --- ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ idle ï¿½ÌÄï¿½ï¿½ï¿½ï¿½xï¿½ï¿½xï¿½ï¿½ï¿½ï¿½ï¿½é‚½ï¿½ß‚Ì’ï¿½ï¿½ï¿½ï¿½ï¿½Ç‰ï¿½ ---
+            if (p.first == "idle" || p.first == "idle_weapon") {
+                // idle ï¿½ï¿½xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½fï¿½tï¿½Hï¿½ï¿½ï¿½gï¿½ï¿½2ï¿½{ï¿½Ì’ï¿½ï¿½ï¿½ï¿½É‚ï¿½ï¿½ÄÄï¿½ï¿½ï¿½ï¿½xï¿½ğ”¼•ï¿½ï¿½É‚ï¿½ï¿½ï¿½j
                 float newDur = dur * 2.0f;
-                animDurations_["idle"] = newDur;
-                DebugPrint("Adjusted idle anim duration from %.3f -> %.3f\n", dur, newDur);
+                animDurations_[p.first] = newDur;
+                DebugPrint("Adjusted %s anim duration from %.3f -> %.3f\n", p.first.c_str(), dur, newDur);
             }
 
-            // ƒfƒoƒbƒO: ƒ[ƒh‚µ‚½ƒAƒjƒƒ‚ƒfƒ‹‚Æƒƒ^ƒf[ƒ^‚ğƒƒOo—Í
+            // ï¿½fï¿½oï¿½bï¿½O: ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Æƒï¿½ï¿½^ï¿½fï¿½[ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½oï¿½ï¿½
             DebugPrint("Loaded anim '%s' handle=%d motionIndex=%d dur=%.3f\n", p.first.c_str(), h, motionIndex, dur);
 
-            // ‚±‚±‚Åƒx[ƒXƒ‚ƒfƒ‹‚ğ·‚µ‘Ö‚¦‚È‚¢; ƒAƒjƒ‚Íƒx[ƒXƒ‚ƒfƒ‹‚ÉƒAƒ^ƒbƒ`‚³‚ê‚é
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Åƒxï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö‚ï¿½ï¿½È‚ï¿½; ï¿½Aï¿½jï¿½ï¿½ï¿½Íƒxï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ÉƒAï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½
         }
     }
 
-    // ‰Â”\‚È‚çƒtƒŒ[ƒ€/ƒ{[ƒ“–¼‚ğŒŸ¸‚µ‚ÄƒAƒ^ƒbƒ`•sˆê’v‚ğf’f‚·‚éB
+    // ï¿½Â”\ï¿½È‚ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½/ï¿½{ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄƒAï¿½^ï¿½bï¿½`ï¿½sï¿½ï¿½vï¿½ï¿½fï¿½fï¿½ï¿½ï¿½ï¿½B
 #ifdef MV1GetFrameNum
 #ifdef MV1GetFrameName
     if (baseModelHandle_ != -1) {
@@ -374,7 +376,7 @@ Player::Player(AssetsMgr* assets)
                 if (fn) animNames.emplace_back(fn);
             }
 
-            // ’Pƒ‚È‹¤’Ê—v‘f”‚ğŒvZi‘å•¶š¬•¶š–³‹j
+            // ï¿½Pï¿½ï¿½ï¿½È‹ï¿½ï¿½Ê—vï¿½fï¿½ï¿½ï¿½ï¿½ï¿½vï¿½Zï¿½iï¿½å•¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½j
             auto toLower = [](const std::string &s){ std::string r = s; std::transform(r.begin(), r.end(), r.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); }); return r; };
             std::vector<std::string> baseLow, animLow;
             for (auto &s : baseNames) baseLow.push_back(toLower(s));
@@ -386,7 +388,7 @@ Player::Player(AssetsMgr* assets)
             }
             DebugPrint("Anim model '%s' common frame names with base: %d / %d\n", kv.first.c_str(), common, (int)animNames.size());
 
-            // ŒŸ¸—p‚ÉÅ‘å10Œ‚ÌŒ‡—–¼‚ğ•\¦
+            // ï¿½ï¿½ï¿½ï¿½ï¿½pï¿½ÉÅ‘ï¿½10ï¿½ï¿½ï¿½ÌŒï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\ï¿½ï¿½
             int printed = 0;
             for (size_t i = 0; i < animNames.size() && printed < 10; ++i) {
                 std::string low = animLow[i];
@@ -400,8 +402,8 @@ Player::Player(AssetsMgr* assets)
 #endif
 #endif
 
-    // ŠÂ‹«•Ï”‚ÅƒAƒjƒƒ‚ƒfƒ‹‚Ì‹­§•`‰æ‚ğs‚¢‹Šo“I‚ÉŠm”F‚·‚éB
-    // MSVC‚Å‚Í”ñ„§ŒxC4996‚ğ”ğ‚¯‚é‚½‚ßˆÀ‘S‚ÈgetenvƒoƒŠƒAƒ“ƒg‚ğg—p
+    // ï¿½Â‹ï¿½ï¿½Ïï¿½ï¿½ÅƒAï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½Ì‹ï¿½ï¿½ï¿½ï¿½`ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½ï¿½ï¿½ï¿½oï¿½Iï¿½ÉŠmï¿½Fï¿½ï¿½ï¿½ï¿½B
+    // MSVCï¿½Å‚Í”ñ„ï¿½ï¿½xï¿½ï¿½C4996ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é‚½ï¿½ßˆï¿½ï¿½Sï¿½ï¿½getenvï¿½oï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½gï¿½ï¿½ï¿½gï¿½p
 #if defined(_MSC_VER)
     char* envVal = nullptr;
     size_t envLen = 0;
@@ -426,20 +428,20 @@ Player::Player(AssetsMgr* assets)
     }
 #endif
 
-    // ŠJn‚ÉƒAƒCƒhƒ‹ƒAƒjƒ‚ªÄ¶‚³‚ê‚é‚æ‚¤‚É‚·‚é
+    // ï¿½Jï¿½nï¿½ï¿½ï¿½ÉƒAï¿½Cï¿½hï¿½ï¿½ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½Äï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
     PlayAnimation("idle", true);
 
-    auxLeft = new AuxUnit(0, 0.2f, 3.0f, 60.0f); // ‹@ŠÖe
-    auxRight = new AuxUnit(1, 1.0f, 12.0f, 40.0f); // ƒ~ƒTƒCƒ‹
+    auxLeft = new AuxUnit(0, 0.2f, 3.0f, 60.0f); // ï¿½@ï¿½Öe
+    auxRight = new AuxUnit(1, 1.0f, 12.0f, 40.0f); // ï¿½~ï¿½Tï¿½Cï¿½ï¿½
 }
 
-// ƒfƒXƒgƒ‰ƒNƒ^
-//  - MV1‚ÌƒAƒ^ƒbƒ`‚ğ‰ğœ‚µA“Ç‚İ‚ñ‚¾ƒAƒjƒƒ‚ƒfƒ‹‚ğ‰ğ•ú‚·‚éB
-//  - ƒx[ƒXƒ‚ƒfƒ‹‚ğ©g‚ÅŠ—L‚µ‚Ä‚¢‚éê‡‚Í‚»‚ê‚ğíœ‚·‚éB
-//  - •â•ƒ†ƒjƒbƒg‚ğ”jŠü‚·‚éB
+// ï¿½fï¿½Xï¿½gï¿½ï¿½ï¿½Nï¿½^
+//  - MV1ï¿½ÌƒAï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½Ç‚İï¿½ï¿½ñ‚¾ƒAï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½B
+//  - ï¿½xï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½Åï¿½ï¿½Lï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ê‡ï¿½Í‚ï¿½ï¿½ï¿½ï¿½ï¿½íœï¿½ï¿½ï¿½ï¿½B
+//  - ï¿½â•ï¿½ï¿½ï¿½jï¿½bï¿½gï¿½ï¿½jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½B
 Player::~Player()
 {
-    // Œ»İ‚Æ‘O‰ñ‚ÌƒAƒ^ƒbƒ`ƒAƒjƒ‚ğƒfƒ^ƒbƒ`
+    // ï¿½ï¿½ï¿½İ‚Æ‘Oï¿½ï¿½ÌƒAï¿½^ï¿½bï¿½`ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½^ï¿½bï¿½`
     if (attachedAnimAttachIndex_ != -1) {
         MV1DetachAnim(baseModelHandle_, attachedAnimAttachIndex_);
         attachedAnimAttachIndex_ = -1;
@@ -463,12 +465,12 @@ Player::~Player()
         prevUpperAttachedAnimTotalTime_ = 0.0f;
     }
 
-    // ƒAƒjƒƒ‚ƒfƒ‹‚ğíœ
+    // ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½íœ
     for (auto &kv : animModelHandles_) {
         if (kv.second != -1) MV1DeleteModel(kv.second);
     }
 
-    // ©•ª‚ÅŠ—L‚µ‚Ä‚¢‚éƒx[ƒXƒ‚ƒfƒ‹‚ğíœ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Åï¿½ï¿½Lï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½xï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½íœ
     if (ownsBaseModel_ && baseModelHandle_ != -1) {
         MV1DeleteModel(baseModelHandle_);
     }
