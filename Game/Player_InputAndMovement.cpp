@@ -194,7 +194,11 @@ void Player::UpdateLogic(float dt, const InputState& in)
             if (currentAnim_ != "attack") {
                 // プレイヤーが移動中ならmove、そうでなければidle
                 bool movingNow = (fabsf(in.moveX) > 0.0001f || fabsf(in.moveY) > 0.0001f);
-                if (movingNow) PlayAnimation("move", true, AnimLayer::Lower); else PlayAnimation("idle", true, AnimLayer::Lower);
+                if (movingNow) PlayAnimation("move", true, AnimLayer::Lower);
+                else {
+                    const std::string desiredIdle = (equippedWeapon_ == Game::WeaponType::None) ? "idle" : "idle_weapon";
+                    PlayAnimation(desiredIdle, true, AnimLayer::Lower);
+                }
             }
         }
     }

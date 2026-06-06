@@ -300,8 +300,9 @@ void Player::UpdateAnimation(float dt)
             const float finishedEps = 1e-3f;
             if (!animLoop_ && animTime_ + finishedEps >= configLen) {
                 if (onGround_) {
-                    if (currentAnim_ == "attack") {
-                        PlayAnimation("idle", true);
+                    if (currentAnim_ == "attack" || currentAnim_ == "attack_weapon") {
+                        const std::string desiredIdle = (equippedWeapon_ == Game::WeaponType::None) ? "idle" : "idle_weapon";
+                        PlayAnimation(desiredIdle, true);
                         return;
                     }
                 }
@@ -385,8 +386,9 @@ void Player::UpdateAnimation(float dt)
             const float finishedEps2 = 1e-3f;
             if (!animLoop_ && animTime_ + finishedEps2 >= configLen) {
                 if (onGround_) {
-                    if (currentAnim_ == "attack") {
-                        PlayAnimation("idle", true);
+                    if (currentAnim_ == "attack" || currentAnim_ == "attack_weapon") {
+                        const std::string desiredIdle = (equippedWeapon_ == Game::WeaponType::None) ? "idle" : "idle_weapon";
+                        PlayAnimation(desiredIdle, true);
                         return;
                     }
                 }

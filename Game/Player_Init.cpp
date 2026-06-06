@@ -213,10 +213,12 @@ Player::Player(AssetsMgr* assets)
     // いくつかのアニメーションを登録（慣例: mirai_anim_<name>.mv1）
     std::vector<std::pair<std::string, std::string>> animFiles = {
         {"idle", "assets/models/mirai_Idle.mv1"},
+        {"idle_weapon", "assets/models/mirai_Weapon_id.mv1"},
         {"dodge", "assets/models/mirai_dodge.mv1"},
         {"move", "assets/models/mirai_move2.mv1"},
         {"jump", "assets/models/mirai_jump.mv1"},
         {"attack", "assets/models/mirai_attack.mv1"},
+        {"attack_weapon", "assets/models/mirai_Weapon_atk.mv1"},
         {"aim", "assets/models/mirai_Aim.mv1"}
     };
     for (auto &p : animFiles) {
@@ -342,6 +344,13 @@ Player::Player(AssetsMgr* assets)
                 float newDur = dur * 2.0f;
                 animDurations_["idle"] = newDur;
                 DebugPrint("Adjusted idle anim duration from %.3f -> %.3f\n", dur, newDur);
+            }
+
+            // idle_weapon を装備時用に少し遅くする（装備時により落ち着いたループにする）
+            if (p.first == "idle_weapon") {
+                float newDur = dur * 2.0f;
+                animDurations_["idle_weapon"] = newDur;
+                DebugPrint("Adjusted idle_weapon anim duration from %.3f -> %.3f\n", dur, newDur);
             }
 
             // デバッグ: ロードしたアニメモデルとメタデータをログ出力

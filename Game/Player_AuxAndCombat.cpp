@@ -36,6 +36,10 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
     if (newWeapon == Game::WeaponType::None) {
         equippedWeapon_ = Game::WeaponType::None;
         equippedWeaponModelHandle_ = -1; // explicitly invalidate
+        // Reflect visual change immediately if not attacking/jumping
+        if (onGround_ && currentAnim_ != "attack" && currentAnim_ != "jump") {
+            PlayAnimation("idle", true, AnimLayer::Lower);
+        }
         return true;
     }
 
@@ -69,6 +73,11 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
 
     // If assets_ is null or both loads failed, equippedWeaponModelHandle_ stays -1 which
     // indicates to the renderer that no model is available for this equipped weapon.
+    // Reflect visual change immediately if not attacking/jumping
+    if (onGround_ && currentAnim_ != "attack" && currentAnim_ != "jump") {
+        const std::string desiredIdle = (equippedWeapon_ == Game::WeaponType::None) ? "idle" : "idle_weapon";
+        PlayAnimation(desiredIdle, true, AnimLayer::Lower);
+    }
     return true;
 }
 
