@@ -5,10 +5,36 @@
 // フレームレート固定用ユーティリティ
 #include "Sys/FrameLimiter.h"
 
-// ヘルパー: フォアグラウンドウィンドウのクライアント領域にカーソルを制限する
-static bool ConfineCursorToActiveWindow()
+// グローバル: 自プロセスのメインウィンドウハンドルを保持
+static HWND g_ourHwnd = NULL;
+
+// EnumWindows のコールバック: プロセスIDが一致する最初のトップレベル可視ウィンドウを返す
+static BOOL CALLBACK EnumFindWindowProc(HWND hwnd, LPARAM lParam)
 {
-    HWND hwnd = GetForegroundWindow();
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    DWORD myPid = (DWORD)lParam;
+    if (pid != myPid) return TRUE; // 継続
+    // トップレベルかつ可視で、タイトルがあるウィンドウを好む
+    if (!IsWindowVisible(hwnd)) return TRUE;
+    int len = GetWindowTextLengthW(hwnd);
+    if (len == 0) return TRUE;
+    // 見つかったら格納して停止
+    g_ourHwnd = hwnd;
+    return FALSE;
+}
+
+// 自プロセスのウィンドウを探して g_ourHwnd に設定する
+static void FindOurMainWindow()
+{
+    g_ourHwnd = NULL;
+    DWORD myPid = GetCurrentProcessId();
+    EnumWindows(EnumFindWindowProc, (LPARAM)myPid);
+}
+
+// ヘルパー: 指定ウィンドウのクライアント領域にカーソルを制限する
+static bool ConfineCursorToWindow(HWND hwnd)
+{
     if (!hwnd) return false;
     RECT rcClient;
     if (!GetClientRect(hwnd, &rcClient)) return false;
@@ -100,9 +126,12 @@ static int RunApp()
     // シーンの変更を追跡
     auto prevScene = scene->GetCurrentScene();
 
+    // 自プロセスのウィンドウを探す
+    FindOurMainWindow();
+
     // ゲームプレイシーンで開始する場合は即座にカーソルを制限
     if (prevScene == SceneMgr::Scene::Base) {
-        ConfineCursorToActiveWindow();
+        if (g_ourHwnd) ConfineCursorToWindow(g_ourHwnd);
     }
 
     // メインループ
@@ -114,7 +143,7 @@ static int RunApp()
         // 更新処理
         scene->Update();
 
-        // シーン遷移を検出
+        // 毎フレーム: シーン遷移を検出
         auto currScene = scene->GetCurrentScene();
         if (currScene != prevScene) {
             // シンプルな遷移時処理（SFX再生やタイマーリセットなど）
@@ -123,14 +152,20 @@ static int RunApp()
             const char* to = names[(int)currScene];
             DrawFormatString(10, 560, GetColor(255,255,0), "Scene changed: %s -> %s", from, to);
 
-            // ゲームプレイ（Base）に入るときはカーソルをゲームウィンドウに制限し、それ以外は解除
-            if (currScene == SceneMgr::Scene::Base) {
-                ConfineCursorToActiveWindow();
-            } else {
-                ReleaseCursorClip();
-            }
+            // シーン遷移時の処理はここで行う（Clip の処理は毎フレームで評価）
 
             prevScene = currScene;
+        }
+
+        // 毎フレーム: フロントウィンドウが自ウィンドウかつ Base シーンならクリップ、そうでなければ解除
+        HWND foreground = GetForegroundWindow();
+        bool foregroundIsOurs = (foreground != NULL && g_ourHwnd != NULL && foreground == g_ourHwnd);
+        if (foregroundIsOurs && currScene == SceneMgr::Scene::Base) {
+            // クリップを適用
+            ConfineCursorToWindow(g_ourHwnd);
+        } else {
+            // それ以外は解除
+            ReleaseCursorClip();
         }
 
         // 高レベルな例: Resultに達したらEnterでTitleに戻る

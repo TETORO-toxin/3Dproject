@@ -62,6 +62,7 @@ struct WeaponSpec {
     // Pickup 表示補正
     float pickupScale;
     VECTOR pickupRotation; // Euler degrees, use VGet()
+    VECTOR pickupOffset;   // Pickup 時にモデル原点のズレを補正するオフセット
 
     // 装備表示補正
     float equipScale;
@@ -88,6 +89,7 @@ inline const WeaponSpec& GetWeaponSpec(WeaponType t)
         nullptr,    // equipModelPath
         1.0f,       // pickupScale
         VGet(0.0f, 0.0f, 0.0f), // pickupRotation
+        VGet(0.0f, 0.0f, 0.0f), // pickupOffset
         1.0f,       // equipScale
         VGet(0.0f, 0.0f, 0.0f), // equipOffset
         VGet(0.0f, 0.0f, 0.0f), // equipRotation
@@ -107,6 +109,8 @@ inline const WeaponSpec& GetWeaponSpec(WeaponType t)
         0.05f,
         // pickupRotation: モデル原点の向きに合わせて回転補正（度）
         VGet(0.0f, 90.0f, 90.0f),
+        // pickupOffset: モデル原点がモデル中心からずれている場合の補正
+        VGet(0.0f, 0.0f, 0.0f),
         // equipScale: 右手フレーム基準でのスケール。フレームに対するローカル補正として扱います。
         0.05f,
         // equipOffset: 右手フレーム基準のローカル座標。x=左右, y=高さ, z=前方

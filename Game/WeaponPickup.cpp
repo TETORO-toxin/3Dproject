@@ -68,6 +68,9 @@ void WeaponPickup::Draw() const
     // is using a dedicated duplicated model or falling back to the marker.
     DebugPrint("WeaponPickup::Draw: type=%d modelHandle=%d\n", static_cast<int>(type_), modelHandle);
 
+    // Log the world position for debugging and verification.
+    DebugPrint("WeaponPickup::Draw: pos=(%.3f, %.3f, %.3f)\n", pos_.x, pos_.y, pos_.z);
+
     if (modelHandle == -1) {
         // Dedicated instance unavailable ? log and display which model path we attempted to duplicate.
         const WeaponSpec& spec = GetWeaponSpec(type_);
@@ -83,7 +86,10 @@ void WeaponPickup::Draw() const
 
     if (modelHandle != -1) {
         // Apply pickup-specific transform from the per-pickup cached transform
-        MV1SetPosition(modelHandle, pos_);
+        // Use weapon spec pickupOffset to correct model-origin drift so pickups
+        // appear at the intended world position even if model origin is off.
+        const WeaponSpec& spec = GetWeaponSpec(type_);
+        MV1SetPosition(modelHandle, VAdd(pos_, spec.pickupOffset));
         MV1SetScale(modelHandle, VGet(pickupScale_, pickupScale_, pickupScale_));
         // pickupRotation_ stored as degrees in VECTOR; convert to radians for DXLib rotation API
         VECTOR rotDeg = pickupRotation_;
@@ -99,13 +105,29 @@ void WeaponPickup::Draw() const
         DrawLine3D(VAdd(pos_, VGet(0,0,-s)), VAdd(pos_, VGet(0,0,s)), col);
     }
 
+    // Always draw a small, high-contrast 3D marker at the exact pickup world position
+    // so we can visually verify the model origin/origin-offset issues.
+    {
+        const unsigned int markCol = GetColor(255, 64, 64);
+        const float ms = 0.25f;
+        DrawLine3D(VAdd(pos_, VGet(-ms,0,0)), VAdd(pos_, VGet(ms,0,0)), markCol);
+        DrawLine3D(VAdd(pos_, VGet(0,-ms,0)), VAdd(pos_, VGet(0,ms,0)), markCol);
+        DrawLine3D(VAdd(pos_, VGet(0,0,-ms)), VAdd(pos_, VGet(0,0,ms)), markCol);
+    }
+
     // Draw name above the pickup
     const char* name = GetWeaponName(type_);
     VECTOR labelPos = VAdd(pos_, VGet(0.0f, 1.0f, 0.0f));
     VECTOR scr = ConvWorldPosToScreenPos(labelPos);
+    DebugPrint("WeaponPickup::Draw: labelPos=(%.3f, %.3f, %.3f) screen=(%.1f, %.1f, %.3f)\n",
+        labelPos.x, labelPos.y, labelPos.z, scr.x, scr.y, scr.z);
     // Only draw if in front of camera
     if (scr.z > 0.01f) {
-        DrawString((int)scr.x - 16, (int)scr.y - 8, name, GetColor(255,255,255));
+        // Draw a small 2D marker at the projected label position to check alignment
+        int sx = (int)scr.x;
+        int sy = (int)scr.y;
+        DrawBox(sx - 3, sy - 3, sx + 3, sy + 3, GetColor(255, 0, 0), TRUE);
+        DrawString(sx - 16, sy - 8, name, GetColor(255,255,255));
     }
 }
 
