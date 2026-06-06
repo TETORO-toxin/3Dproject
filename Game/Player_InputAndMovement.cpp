@@ -117,11 +117,13 @@ void Player::UpdateLogic(float dt, const InputState& in)
     bool moving = (fabsf(moveX) > 0.0001f || fabsf(moveY) > 0.0001f);
     if (onGround_) {
         // 攻撃やジャンプアニメを上書きしない
-        if (currentAnim_ != "attack" && currentAnim_ != "jump") {
+        // exclude both attack variants
+        if (currentAnim_ != "attack" && currentAnim_ != "attack_weapon" && currentAnim_ != "jump") {
             if (moving) {
                 if (currentAnim_ != "move") PlayAnimation("move", true, AnimLayer::Lower);
             } else {
-                if (currentAnim_ != "idle") PlayAnimation("idle", true, AnimLayer::Lower);
+                const std::string desiredIdle = (equippedWeapon_ == Game::WeaponType::None) ? "idle" : "idle_weapon";
+                if (currentAnim_ != desiredIdle) PlayAnimation(desiredIdle, true, AnimLayer::Lower);
             }
         }
     }
@@ -136,7 +138,9 @@ void Player::UpdateLogic(float dt, const InputState& in)
         if (now - lastAttackTimeMs_ > (unsigned int)attackCooldownMs_) {
             lastAttackTimeMs_ = now;
             // 下半身状態（move/idle）を維持しつつ上半身攻撃アニメを再生
-            PlayAnimation("attack", false, AnimLayer::Upper);
+            // 装備状態に応じて攻撃アニメを切り替える
+            const std::string attackName = (equippedWeapon_ == Game::WeaponType::None) ? "attack" : "attack_weapon";
+            PlayAnimation(attackName, false, AnimLayer::Upper);
             // spawn an attack effect slightly in front of the player
             // 変更点: 装備武器 (equippedWeapon_) に合わせてエフェクトのファイル/スケール/オフセットを選択する
             // - WeaponTypes のヘルパー GetWeaponEffectFile/Scale/Offset を使う
@@ -191,8 +195,8 @@ void Player::UpdateLogic(float dt, const InputState& in)
             velY_ = 0.0f;
             onGround_ = true;
             // 着地時に移動またはアイドルアニメに復帰
-            if (currentAnim_ != "attack") {
-                // プレイヤーが移動中ならmove、そうでなければidle
+            if (currentAnim_ != "attack" && currentAnim_ != "attack_weapon") {
+                // プレイヤーが移動中ならmove、そうでなければ装備状態に応じた idle
                 bool movingNow = (fabsf(in.moveX) > 0.0001f || fabsf(in.moveY) > 0.0001f);
                 if (movingNow) PlayAnimation("move", true, AnimLayer::Lower);
                 else {
