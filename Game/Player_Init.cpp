@@ -144,6 +144,20 @@ Player::Player(AssetsMgr* assets)
             }
         }
 
+        // 上半身ルート候補も探す（Spine / Chest 等）
+        upperBodyFrameIndex_ = -1;
+        upperBodyFrameName_.clear();
+        for (const char* const* p = kUpperBodyFrameCandidates; *p != nullptr; ++p) {
+            DebugPrint("Try upper-body frame candidate: %s\n", *p);
+            int fi = MV1SearchFrame(baseModelHandle_, *p);
+            DebugPrint("  MV1SearchFrame returned %d for upper '%s'\n", fi, *p);
+            if (fi >= 0) {
+                upperBodyFrameIndex_ = fi;
+                upperBodyFrameName_ = *p;
+                break;
+            }
+        }
+
         // If not found, try the keyword-matched names
         if (rightHandFrameIndex_ == -1) {
             for (auto &fr : keywordCandidates) {

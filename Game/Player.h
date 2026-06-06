@@ -27,6 +27,19 @@ static const char* const kRightHandFrameCandidates[] = {
     nullptr
 };
 
+// 上半身ルート候補（優先順）
+static const char* const kUpperBodyFrameCandidates[] = {
+    "mixamorig:Spine",
+    "Spine",
+    "Chest",
+    "Torso",
+    "UpperBody",
+    "Spine1",
+    "Spine2",
+    "胸",
+    nullptr
+};
+
 class AssetsMgr;
 class ProjectileManager;
 struct AuxUnit;
@@ -263,6 +276,10 @@ private:
     int rightHandFrameIndex_ = -1;
     // 右手フレーム名キャッシュ（見つかった場合）
     std::string rightHandFrameName_;
+
+    // 上半身ルートフレームのキャッシュ (-1 = 未検出)
+    int upperBodyFrameIndex_ = -1;
+    std::string upperBodyFrameName_;
 
     // 装備中の武器モデルハンドル（AssetsMgr のキャッシュ先を参照する）
     int equippedWeaponModelHandle_ = -1;

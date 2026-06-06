@@ -127,6 +127,31 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
             attachTotal = total > 0.0f ? total : 0.0f;
         }
 
+        // フレームマスクの適用（上半身/下半身の分離）。対応APIがある場合のみ実行。
+#if defined(MV1SetFrameTreeEnable) && defined(MV1SetFrameEnable) && defined(MV1GetFrameNum)
+        if (isUpper) {
+            // 一旦全フレームを無効化してから、上半身ルート以下のみ有効化する
+            int fn = MV1GetFrameNum(baseModelHandle_);
+            for (int fi = 0; fi < fn; ++fi) MV1SetFrameEnable(baseModelHandle_, fi, FALSE);
+            if (upperBodyFrameIndex_ >= 0) {
+                MV1SetFrameTreeEnable(baseModelHandle_, upperBodyFrameIndex_, TRUE);
+                DebugPrint("Applied upper-layer frame mask: enabling subtree at index=%d name=%s\n", upperBodyFrameIndex_, upperBodyFrameName_.c_str());
+            }
+        } else {
+            // 下半身/全身アタッチ時は上半身ルート以下を無効化して干渉を避ける
+            // まず全フレームを有効化してから上半身ツリーを無効化することで、
+            // 以前の上半身アタッチで無効化されたフレームが残る問題を防ぐ。
+            int fn = MV1GetFrameNum(baseModelHandle_);
+            for (int fi = 0; fi < fn; ++fi) MV1SetFrameEnable(baseModelHandle_, fi, TRUE);
+            if (upperBodyFrameIndex_ >= 0) {
+                MV1SetFrameTreeEnable(baseModelHandle_, upperBodyFrameIndex_, FALSE);
+                DebugPrint("Applied lower-layer frame mask: enabling all then disabling subtree at index=%d name=%s\n", upperBodyFrameIndex_, upperBodyFrameName_.c_str());
+            } else {
+                DebugPrint("Applied lower-layer frame mask: enabled all frames (no upper-body candidate)\n");
+            }
+        }
+#endif
+
         // メタデータを設定
         curName = name;
         curLoop = loop;
