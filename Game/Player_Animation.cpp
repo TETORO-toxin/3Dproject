@@ -1,8 +1,8 @@
 // Player_Animation.cpp
-// ŠT—v:
-//  - ƒAƒjƒ[ƒVƒ‡ƒ“Ä¶‚ÆŠÇ—‚Ìˆ—‚ðØ‚èo‚µ‚½ƒtƒ@ƒCƒ‹‚Å‚·B
-//  - ƒŒƒCƒ„[‘Î‰ži‘Sg/‰º”¼g/ã”¼gj‚ÌÄ¶AƒCƒxƒ“ƒg“o˜^AŽžŠÔisAƒuƒŒƒ“ƒhˆ—‚ð’S“–‚µ‚Ü‚·B
-//  - ŠeƒŒƒCƒ„[‚²‚Æ‚ÉƒAƒ^ƒbƒ`AƒuƒŒƒ“ƒhAŽžŠÔXVƒƒWƒbƒN‚ðŠÜ‚Ý‚Ü‚·B
+// ï¿½Tï¿½v:
+//  - ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Äï¿½ï¿½ÆŠÇ—ï¿½ï¿½Ìï¿½ï¿½ï¿½ï¿½ï¿½Ø‚ï¿½oï¿½ï¿½ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Å‚ï¿½ï¿½B
+//  - ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Î‰ï¿½ï¿½iï¿½Sï¿½g/ï¿½ï¿½ï¿½ï¿½ï¿½g/ï¿½ã”¼ï¿½gï¿½jï¿½ÌÄï¿½ï¿½Aï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½oï¿½^ï¿½Aï¿½ï¿½ï¿½Ôiï¿½sï¿½Aï¿½uï¿½ï¿½ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Sï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
+//  - ï¿½eï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Æ‚ÉƒAï¿½^ï¿½bï¿½`ï¿½Aï¿½uï¿½ï¿½ï¿½ï¿½ï¿½hï¿½Aï¿½ï¿½ï¿½ÔXï¿½Vï¿½ï¿½ï¿½Wï¿½bï¿½Nï¿½ï¿½ï¿½Ü‚Ý‚Ü‚ï¿½ï¿½B
 
 #include "Player.h"
 #include "CameraRig.h"
@@ -10,10 +10,10 @@
 #include "../Sys/GlobalEffects.h"
 #include <algorithm>
 
-// PlayAnimation ‚ÍA‘SgE‰º”¼gEã”¼g‚ÌƒAƒjƒ[ƒVƒ‡ƒ“ƒXƒƒbƒg‚ðŽw’è‚·‚éƒIƒvƒVƒ‡ƒ“‚ÌƒŒƒCƒ„[ƒpƒ‰ƒ[ƒ^‚É‘Î‰ž‚µ‚Ü‚µ‚½B
+// PlayAnimation ï¿½ÍAï¿½Sï¿½gï¿½Eï¿½ï¿½ï¿½ï¿½ï¿½gï¿½Eï¿½ã”¼ï¿½gï¿½ÌƒAï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½ï¿½ï¿½wï¿½è‚·ï¿½ï¿½Iï¿½vï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½Ìƒï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½É‘Î‰ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½ï¿½B
 void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 {
-    // ƒAƒjƒ[ƒVƒ‡ƒ“ƒ‚ƒfƒ‹‚ðŒŸõ
+    // ï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     auto it = animModelHandles_.find(name);
     if (it == animModelHandles_.end()) {
         DebugPrint("PlayAnimation: animation '%s' not found in animModelHandles_.\n", name.c_str());
@@ -22,9 +22,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 
     int animModel = it->second;
 
-    // ‘SgŽw’è‚Ìê‡‚Í‰º”¼g‚Æ‚µ‚Äˆµ‚¢Aã”¼gƒŒƒCƒ„[‚ðƒNƒŠƒA‚·‚é
+    // ï¿½Sï¿½gï¿½wï¿½ï¿½Ìê‡ï¿½Í‰ï¿½ï¿½ï¿½ï¿½gï¿½Æ‚ï¿½ï¿½Äˆï¿½ï¿½ï¿½ï¿½Aï¿½ã”¼ï¿½gï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½
     if (layer == AnimLayer::Full) {
-        // ã”¼gƒŒƒCƒ„[‚ðƒNƒŠƒA
+        // ï¿½ã”¼ï¿½gï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Nï¿½ï¿½ï¿½A
         if (upperAttachedAnimAttachIndex_ != -1) {
             MV1DetachAnim(baseModelHandle_, upperAttachedAnimAttachIndex_);
             upperAttachedAnimAttachIndex_ = -1;
@@ -38,9 +38,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         }
     }
 
-    // ƒXƒƒbƒg‚ÉƒAƒ^ƒbƒ`‚·‚é‚½‚ß‚Ìƒwƒ‹ƒp[ƒ‰ƒ€ƒ_i‰º”¼gEã”¼g‚Ì—¼•û‚ÅŽg—pj
+    // ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½ÉƒAï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½é‚½ï¿½ß‚Ìƒwï¿½ï¿½ï¿½pï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½_ï¿½iï¿½ï¿½ï¿½ï¿½ï¿½gï¿½Eï¿½ã”¼ï¿½gï¿½Ì—ï¿½ï¿½ï¿½ï¿½ÅŽgï¿½pï¿½j
     auto attachForLayer = [&](bool isUpper) {
-        // ó‘ÔŽQÆ‚ð‘I‘ð
+        // ï¿½ï¿½ÔŽQï¿½Æ‚ï¿½Iï¿½ï¿½
         int &attachIndex = isUpper ? upperAttachedAnimAttachIndex_ : attachedAnimAttachIndex_;
         int &prevAttachIndex = isUpper ? prevUpperAttachedAnimAttachIndex_ : prevAttachedAnimAttachIndex_;
         float &attachTotal = isUpper ? upperAttachedAnimTotalTime_ : attachedAnimTotalTime_;
@@ -52,9 +52,9 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         bool &curLoop = isUpper ? upperAnimLoop_ : animLoop_;
         bool &prevLoop = isUpper ? prevUpperAnimLoop_ : prevAnimLoop_;
         float &blendRate = isUpper ? upperAnimBlendRate_ : animBlendRate_;
-        float &blendSpeed = animBlendSpeed_; // —¼•û‚Å“¯‚¶‘¬“x
+        float &blendSpeed = animBlendSpeed_; // ï¿½ï¿½ï¿½ï¿½ï¿½Å“ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½x
 
-        // ŒÃ‚¢ prev ‚ðƒfƒ^ƒbƒ`i‘¶Ý‚·‚éê‡j‚µAcurrent ‚ð prev ‚ÉˆÚ“®
+        // ï¿½Ã‚ï¿½ prev ï¿½ï¿½ï¿½fï¿½^ï¿½bï¿½`ï¿½iï¿½ï¿½ï¿½Ý‚ï¿½ï¿½ï¿½ê‡ï¿½jï¿½ï¿½ï¿½Acurrent ï¿½ï¿½ prev ï¿½ÉˆÚ“ï¿½
         if (prevAttachIndex != -1) {
             MV1DetachAnim(baseModelHandle_, prevAttachIndex);
             prevAttachIndex = -1;
@@ -72,7 +72,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         attachIndex = -1;
         attachTotal = 0.0f;
 
-        // ƒAƒjƒƒ‚ƒfƒ‹“à‚ÌƒAƒjƒƒCƒ“ƒfƒbƒNƒX‚ðŒˆ’èi•Û‘¶‚³‚ê‚Ä‚¢‚ê‚Îj
+        // ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½ÌƒAï¿½jï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½fï¿½bï¿½Nï¿½Xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½Û‘ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½Îj
         int animIndex = 0;
         auto idxIt = animModelAnimIndex_.find(name);
         if (idxIt != animModelAnimIndex_.end()) {
@@ -118,7 +118,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         }
 #endif
 
-        // ƒx[ƒXƒ‚ƒfƒ‹‚ÉƒAƒ^ƒbƒ`
+        // ï¿½xï¿½[ï¿½Xï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ÉƒAï¿½^ï¿½bï¿½`
         int attachIdx = MV1AttachAnim(baseModelHandle_, 0, animModel, FALSE);
         DebugPrint("MV1AttachAnim -> attachIndex=%d baseModel=%d animModel=%d animIndex=%d\n", attachIdx, baseModelHandle_, animModel, animIndex);
         if (attachIdx >= 0) {
@@ -127,23 +127,23 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
             attachTotal = total > 0.0f ? total : 0.0f;
         }
 
-        // ƒƒ^ƒf[ƒ^‚ðÝ’è
+        // ï¿½ï¿½ï¿½^ï¿½fï¿½[ï¿½^ï¿½ï¿½Ý’ï¿½
         curName = name;
         curLoop = loop;
         timeSec = 0.0f;
         prevTimeSec = 0.0f;
 
-        // ‰º”¼gƒŒƒCƒ„[‚Ìê‡‚ÍƒCƒxƒ“ƒg‚ðƒŠƒZƒbƒg
+        // ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ìê‡ï¿½ÍƒCï¿½xï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½bï¿½g
         if (!isUpper) {
             auto evIt = animEvents_.find(curName);
             if (evIt != animEvents_.end()) { for (auto &ev : evIt->second) ev.fired = false; }
         }
 
-        // ƒuƒŒƒ“ƒh‰Šú‰»
+        // ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         blendRate = (prevAttachIndex == -1) ? 1.0f : 0.0f;
-        if (prevAttachIndex != -1) blendRate = 0.0f; // ƒuƒŒƒ“ƒh’†‚Í 0 ‚©‚çŠJŽn
+        if (prevAttachIndex != -1) blendRate = 0.0f; // ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½ 0 ï¿½ï¿½ï¿½ï¿½Jï¿½n
 
-        // •\Ž¦‚·‚éƒ‚ƒfƒ‹ƒnƒ“ƒhƒ‹‚ðŒˆ’èFƒAƒ^ƒbƒ`¬Œ÷Žž‚Íƒx[ƒX‚ð—Dæ
+        // ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½éƒ‚ï¿½fï¿½ï¿½ï¿½nï¿½ï¿½ï¿½hï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Fï¿½Aï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íƒxï¿½[ï¿½Xï¿½ï¿½Dï¿½ï¿½
         if (attachIndex != -1) {
             if (baseModelHandle_ != -1) modelHandle_ = baseModelHandle_;
         } else {
@@ -153,7 +153,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
 
     if (layer == AnimLayer::Upper) {
         attachForLayer(true);
-        // ã”¼gƒŒƒCƒ„[‚ÅUŒ‚—p‚ÌƒGƒtƒFƒNƒgƒCƒxƒ“ƒg‚ð“o˜^
+        // ï¿½ã”¼ï¿½gï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½ÅUï¿½ï¿½ï¿½pï¿½ÌƒGï¿½tï¿½Fï¿½Nï¿½gï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½oï¿½^
         if (name == "attack") {
             ClearAnimEvents("attack");
             AddAnimEvent("attack", 0.05f, [this]() {
@@ -161,12 +161,12 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
                 EffectManager* em = GetGlobalEffectManager();
                 if (em) {
                     VECTOR p = GetPosition();
-                    // ƒJƒƒ‰‚ÌXZ•½–Ê‚Ì‘O•ûŒü‚ð—Dæ‚µA–³‚¯‚ê‚Î +Z ‚ð—˜—p
+                    // ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½XZï¿½ï¿½ï¿½Ê‚Ì‘Oï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Dï¿½æ‚µï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ +Z ï¿½ð—˜—p
                     VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
                     if (camera_) forward = camera_->GetForwardXZ();
                     float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
                     if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
-                    // ƒvƒŒƒCƒ„[‚Ì‘O•û‚©‚Âã•û‚É­‚µ—£‚µ‚ÄƒGƒtƒFƒNƒg‚ð”z’u
+                    // ï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ì‘Oï¿½ï¿½ï¿½ï¿½ï¿½Âï¿½ï¿½ï¿½Éï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÄƒGï¿½tï¿½Fï¿½Nï¿½gï¿½ï¿½zï¿½u
                     VECTOR pos = VAdd(p, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
                     DebugPrint("Player attack effect pos=%.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
                     // Use the global default effect resource (configured by SceneMgr)
@@ -182,7 +182,7 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
         attachForLayer(false);
         return;
     }
-    else { // ‘SgŽw’è
+    else { // ï¿½Sï¿½gï¿½wï¿½ï¿½
         attachForLayer(false);
         if (name == "attack") {
             ClearAnimEvents("attack");
@@ -207,19 +207,19 @@ void Player::PlayAnimation(const std::string& name, bool loop, AnimLayer layer)
     }
 }
 
-// UŒ‚Žž‚ÉƒGƒtƒFƒNƒgƒCƒxƒ“ƒg‚ð“o˜^
-// ŽÀ‘•‚ÌŒã‚É’u‚­‚±‚Æ‚Å‘O•ûéŒ¾‚Ì–â‘è‚ð”ð‚¯‚é
+// ï¿½Uï¿½ï¿½ï¿½ï¿½ï¿½ÉƒGï¿½tï¿½Fï¿½Nï¿½gï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½oï¿½^
+// ï¿½ï¿½ï¿½ï¿½ï¿½ÌŒï¿½É’uï¿½ï¿½ï¿½ï¿½ï¿½Æ‚Å‘Oï¿½ï¿½ï¿½éŒ¾ï¿½Ì–ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #include "../Sys/GlobalEffects.h"
 
-// PlayAnimation ‚É¬‚³‚Èƒwƒ‹ƒp[‚ð•t‰ÁFattack ‚ªŠJŽn‚³‚ê‚½ê‡A0.05 •b‚ÌƒCƒxƒ“ƒg‚ð’Ç‰Á
-// ‚±‚±‚Å AddAnimEvent ‚ðŒÄ‚Ño‚µ‚ÄƒtƒbƒN‚·‚éiPlayAnimation ‚²‚Æ‚Éƒƒ“ƒVƒ‡ƒbƒgjB
-// ’ˆÓ: –{ƒvƒƒWƒFƒNƒg‚É“K‚µ‚½ŠÈˆÕ“I‚ÈŽÀ‘•‚Å‚·B
+// PlayAnimation ï¿½Éï¿½ï¿½ï¿½ï¿½Èƒwï¿½ï¿½ï¿½pï¿½[ï¿½ï¿½tï¿½ï¿½ï¿½Fattack ï¿½ï¿½ï¿½Jï¿½nï¿½ï¿½ï¿½ê‚½ï¿½ê‡ï¿½A0.05 ï¿½bï¿½ÌƒCï¿½xï¿½ï¿½ï¿½gï¿½ï¿½Ç‰ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ AddAnimEvent ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½ï¿½Äƒtï¿½bï¿½Nï¿½ï¿½ï¿½ï¿½iPlayAnimation ï¿½ï¿½ï¿½Æ‚Éƒï¿½ï¿½ï¿½ï¿½Vï¿½ï¿½ï¿½bï¿½gï¿½jï¿½B
+// ï¿½ï¿½ï¿½ï¿½: ï¿½{ï¿½vï¿½ï¿½ï¿½Wï¿½Fï¿½Nï¿½gï¿½É“Kï¿½ï¿½ï¿½ï¿½ï¿½ÈˆÕ“Iï¿½ÈŽï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½B
 
 
-// attack ƒAƒjƒ‚ªÄ¶‚³‚ê‚½ê‡A0.05 •b‚Ìƒ^ƒCƒ~ƒ“ƒO‚ÅƒGƒtƒFƒNƒg‚ð”­¶‚³‚¹‚é¬‚³‚ÈƒCƒxƒ“ƒg‚ð“o˜^‚µ‚Ü‚·B
-// ‘¼‚ÌƒVƒXƒeƒ€‚ð‘å‚«‚­•Ï‚¦‚¸‚ÉƒAƒjƒ‚ÆƒGƒtƒFƒNƒg‚ð‹ß‚Ã‚¯‚é‚½‚ß‚Ìˆ—‚Å‚·B
-// ƒAƒvƒŠ‘¤‚ÅƒOƒ[ƒoƒ‹ƒGƒtƒFƒNƒgƒ}ƒl[ƒWƒƒ‚ªÝ’è‚³‚ê‚Ä‚¢‚é‚±‚Æ‚ª•K—v‚Å‚·B
-// ’ˆÓ: “¯‚¶ƒAƒjƒ–¼‚É‘Î‚µ‚ÄƒCƒxƒ“ƒg‚ªd•¡‚µ‚Ä’~Ï‚³‚ê‚é‚½‚ßA‚±‚±‚Å‚Í name=="attack" ‚©‚ÂƒŒƒCƒ„[‚ªã”¼g/‘Sg‚Ì‚Æ‚«‚Ì‚Ý’Ç‰Á‚µ‚Ü‚·B
+// attack ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½Äï¿½ï¿½ï¿½ï¿½ê‚½ï¿½ê‡ï¿½A0.05 ï¿½bï¿½Ìƒ^ï¿½Cï¿½~ï¿½ï¿½ï¿½Oï¿½ÅƒGï¿½tï¿½Fï¿½Nï¿½gï¿½ð”­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é¬ï¿½ï¿½ï¿½ÈƒCï¿½xï¿½ï¿½ï¿½gï¿½ï¿½oï¿½^ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
+// ï¿½ï¿½ï¿½ÌƒVï¿½Xï¿½eï¿½ï¿½ï¿½ï¿½å‚«ï¿½ï¿½ï¿½Ï‚ï¿½ï¿½ï¿½ï¿½ÉƒAï¿½jï¿½ï¿½ï¿½ÆƒGï¿½tï¿½Fï¿½Nï¿½gï¿½ï¿½ï¿½ß‚Ã‚ï¿½ï¿½é‚½ï¿½ß‚Ìï¿½ï¿½ï¿½ï¿½Å‚ï¿½ï¿½B
+// ï¿½Aï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ÅƒOï¿½ï¿½ï¿½[ï¿½oï¿½ï¿½ï¿½Gï¿½tï¿½Fï¿½Nï¿½gï¿½}ï¿½lï¿½[ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½Ý’è‚³ï¿½ï¿½Ä‚ï¿½ï¿½é‚±ï¿½Æ‚ï¿½ï¿½Kï¿½vï¿½Å‚ï¿½ï¿½B
+// ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½É‘Î‚ï¿½ï¿½ÄƒCï¿½xï¿½ï¿½ï¿½gï¿½ï¿½ï¿½dï¿½ï¿½ï¿½ï¿½ï¿½Ä’~ï¿½Ï‚ï¿½ï¿½ï¿½é‚½ï¿½ßAï¿½ï¿½ï¿½ï¿½ï¿½Å‚ï¿½ name=="attack" ï¿½ï¿½ï¿½Âƒï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ã”¼ï¿½g/ï¿½Sï¿½gï¿½Ì‚Æ‚ï¿½ï¿½Ì‚Ý’Ç‰ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
 
 void Player::AddAnimEvent(const std::string& animName, float timeSec, std::function<void()> cb)
 {
@@ -234,9 +234,9 @@ void Player::ClearAnimEvents(const std::string& animName)
 
 void Player::UpdateAnimation(float dt)
 {
-    // ‰º”¼gƒŒƒCƒ„[iŒ³‚ÌƒƒWƒbƒNAƒƒ“ƒo–¼‚É‡‚í‚¹‚Ä’²®j
+    // ï¿½ï¿½ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½iï¿½ï¿½ï¿½Ìƒï¿½ï¿½Wï¿½bï¿½Nï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½oï¿½ï¿½ï¿½Éï¿½ï¿½í‚¹ï¿½Ä’ï¿½ï¿½ï¿½ï¿½j
     if (!currentAnim_.empty()) {
-        // ƒuƒŒƒ“ƒh‚ðis
+        // ï¿½uï¿½ï¿½ï¿½ï¿½ï¿½hï¿½ï¿½iï¿½s
         if (animBlendRate_ < 1.0f) {
             animBlendRate_ += animBlendSpeed_;
             if (animBlendRate_ > 1.0f) animBlendRate_ = 1.0f;
@@ -261,7 +261,7 @@ void Player::UpdateAnimation(float dt)
                 if (animTime_ > configLen) animTime_ = configLen;
             }
 
-            // ƒCƒxƒ“ƒgˆ—
+            // ï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ï¿½
             auto evIt = animEvents_.find(currentAnim_);
             if (evIt != animEvents_.end()) {
                 for (auto &ev : evIt->second) {
@@ -300,15 +300,16 @@ void Player::UpdateAnimation(float dt)
             const float finishedEps = 1e-3f;
             if (!animLoop_ && animTime_ + finishedEps >= configLen) {
                 if (onGround_) {
-                    if (currentAnim_ == "attack") {
-                        PlayAnimation("idle", true);
+                    if (currentAnim_ == "attack" || currentAnim_ == "attack_weapon") {
+                        const bool hasWeapon = (equippedWeapon_ != Game::WeaponType::None);
+                        PlayAnimation(hasWeapon ? "idle_weapon" : "idle", true);
                         return;
                     }
                 }
             }
         }
 
-        // ‘O‚Ì‰º”¼gƒAƒjƒ[ƒVƒ‡ƒ“
+        // ï¿½Oï¿½Ì‰ï¿½ï¿½ï¿½ï¿½gï¿½Aï¿½jï¿½ï¿½ï¿½[ï¿½Vï¿½ï¿½ï¿½ï¿½
         if (prevAttachedAnimAttachIndex_ != -1 && prevAttachedAnimTotalTime_ > 0.0f) {
             prevAnimTimeSeconds_ += dt;
 
@@ -343,7 +344,7 @@ void Player::UpdateAnimation(float dt)
             }
         }
 
-        // ƒAƒ^ƒbƒ`‚ª‚È‚¢ê‡‚ÍŽžŠÔ‚ði‚ßAƒCƒxƒ“ƒg‚ð”­‰Î‚µA•K—v‚È‚çƒAƒjƒƒ‚ƒfƒ‹ŽžŠÔ‚ðXV
+        // ï¿½Aï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½È‚ï¿½ï¿½ê‡ï¿½ÍŽï¿½ï¿½Ô‚ï¿½iï¿½ßAï¿½Cï¿½xï¿½ï¿½ï¿½gï¿½ð”­‰Î‚ï¿½ï¿½Aï¿½Kï¿½vï¿½È‚ï¿½Aï¿½jï¿½ï¿½ï¿½ï¿½ï¿½fï¿½ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½Xï¿½V
         if (attachedAnimAttachIndex_ == -1) {
             prevAnimTime_ = animTime_;
             animTime_ += dt;
@@ -385,8 +386,9 @@ void Player::UpdateAnimation(float dt)
             const float finishedEps2 = 1e-3f;
             if (!animLoop_ && animTime_ + finishedEps2 >= configLen) {
                 if (onGround_) {
-                    if (currentAnim_ == "attack") {
-                        PlayAnimation("idle", true);
+                    if (currentAnim_ == "attack" || currentAnim_ == "attack_weapon") {
+                        const bool hasWeapon = (equippedWeapon_ != Game::WeaponType::None);
+                        PlayAnimation(hasWeapon ? "idle_weapon" : "idle", true);
                         return;
                     }
                 }
@@ -394,7 +396,7 @@ void Player::UpdateAnimation(float dt)
         }
     }
 
-    // ã”¼gƒŒƒCƒ„[FƒAƒ^ƒbƒ`ƒXƒƒbƒg‚ÆƒuƒŒƒ“ƒh‚ð•ª—£
+    // ï¿½ã”¼ï¿½gï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Fï¿½Aï¿½^ï¿½bï¿½`ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½Æƒuï¿½ï¿½ï¿½ï¿½ï¿½hï¿½ð•ª—ï¿½
     if (!upperAnim_.empty()) {
         if (upperAnimBlendRate_ < 1.0f) {
             upperAnimBlendRate_ += animBlendSpeed_;
@@ -426,10 +428,10 @@ void Player::UpdateAnimation(float dt)
             MV1SetAttachAnimTime(baseModelHandle_, upperAttachedAnimAttachIndex_, dxTime);
             MV1SetAttachAnimBlendRate(baseModelHandle_, upperAttachedAnimAttachIndex_, upperAnimBlendRate_);
 
-            // ã”¼g‚ª”ñƒ‹[ƒv‚ÅI—¹‚µ‚½‚ç’Pƒ‚ÉƒNƒŠƒA‚µ‚Ä‰º‚ÌƒAƒjƒ‚ªŒ©‚¦‚é‚æ‚¤‚É‚·‚é
+            // ï¿½ã”¼ï¿½gï¿½ï¿½ï¿½ñƒ‹[ï¿½vï¿½ÅIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Pï¿½ï¿½ï¿½ÉƒNï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Ä‰ï¿½ï¿½ÌƒAï¿½jï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
             const float finishEps = 1e-3f;
             if (!upperAnimLoop_ && upperAnimTime_ + finishEps >= configLen) {   
-                // ã”¼g‚ðƒfƒ^ƒbƒ`‚µ‚ÄƒNƒŠƒA
+                // ï¿½ã”¼ï¿½gï¿½ï¿½ï¿½fï¿½^ï¿½bï¿½`ï¿½ï¿½ï¿½ÄƒNï¿½ï¿½ï¿½A
                 if (prevUpperAttachedAnimAttachIndex_ != -1) {
                     MV1DetachAnim(baseModelHandle_, prevUpperAttachedAnimAttachIndex_);
                     prevUpperAttachedAnimAttachIndex_ = -1;
@@ -448,7 +450,7 @@ void Player::UpdateAnimation(float dt)
             }
         }
 
-        // ‘O‚Ìã”¼gƒuƒŒƒ“ƒh
+        // ï¿½Oï¿½Ìã”¼ï¿½gï¿½uï¿½ï¿½ï¿½ï¿½ï¿½h
         if (prevUpperAttachedAnimAttachIndex_ != -1 && prevUpperAttachedAnimTotalTime_ > 0.0f) {
             prevUpperAnimTimeSeconds_ += dt;
 

@@ -1,7 +1,7 @@
 // Player_InputAndMovement.cpp
-// ѓTѓ}ѓЉЃ[:
-//  - ѓvѓЊѓCѓ„Ѓ[‚М“ь—НЏ€—ќ‚Ж€Ъ“®ЃAѓWѓѓѓ“ѓv/•Ё—ќЃAѓ‚Ѓ[ѓhђШ‘Ц/‰с”р/ЌUЊ‚“ь—Н‚М”»’и‚р’S“–‚µ‚Ь‚·ЃB
-//  - ѓJѓЃѓ‰ЋQЏЖ‚рЋg‚Б‚ЅѓJѓЃѓ‰ЉоЏЂ€Ъ“®‚ЖѓvѓЊѓCѓ„Ѓ[‚МЊь‚«ђЭ’иЃAЉeЋн“ь—Н‚МѓfѓoѓEѓ“ѓX‚вѓNЃ[ѓ‹ѓ_ѓEѓ“Џ€—ќ‚аЉЬ‚Э‚Ь‚·ЃB
+// пїЅTпїЅ}пїЅпїЅпїЅ[:
+//  - пїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅМ“пїЅпїЅНЏпїЅпїЅпїЅпїЅЖ€Ъ“пїЅпїЅAпїЅWпїЅпїЅпїЅпїЅпїЅv/пїЅпїЅпїЅпїЅпїЅAпїЅпїЅпїЅ[пїЅhпїЅШ‘пїЅ/пїЅпїЅпїЅ/пїЅUпїЅпїЅпїЅпїЅпїЅН‚М”пїЅпїЅпїЅпїЅSпїЅпїЅпїЅпїЅпїЅЬ‚пїЅпїЅB
+//  - пїЅJпїЅпїЅпїЅпїЅпїЅQпїЅЖ‚пїЅпїЅgпїЅпїЅпїЅпїЅпїЅJпїЅпїЅпїЅпїЅпїЅоЏЂпїЅЪ“пїЅпїЅЖѓvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅМЊпїЅпїЅпїЅпїЅЭ’пїЅAпїЅeпїЅпїЅпїЅпїЅН‚МѓfпїЅoпїЅEпїЅпїЅпїЅXпїЅпїЅNпїЅ[пїЅпїЅпїЅ_пїЅEпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅЬ‚Э‚Ь‚пїЅпїЅB
 
 #include "Player.h"
 #include "../Sys/Input.h"
@@ -10,73 +10,73 @@
 #include "../Sys/GlobalEffects.h"
 #include <cmath>
 
-// UpdateLogic: ѓQЃ[ѓЂѓЌѓWѓbѓN‚М‚Э‚рЌXђV‚·‚йЃi•`‰ж‚НЌs‚н‚И‚ўЃj
-//  - ЊЕ’иѓ^ѓCѓЂѓXѓeѓbѓv‚Е“ь—Н‚рѓ|Ѓ[ѓЉѓ“ѓO‚µЃAѓ‚Ѓ[ѓhђШ‘ЦЃA‰с”рЃA•вЏ•”­ЋЛ”»’иЃAЌUЊ‚/ѓWѓѓѓ“ѓv“ь—Н‚МЏ€—ќ‚рЌs‚¤ЃB
-//  - ѓJѓЃѓ‰ЉоЏЂ‚М€Ъ“®ѓxѓNѓgѓ‹‚рѓЏЃ[ѓ‹ѓhXZ‚Й•ПЉ·‚µ€К’u‚ЖЊь‚«‚рЌXђV‚·‚йЃB
-//  - ѓWѓѓѓ“ѓv‚в’…’n‚Мђ‚’ј•Ё—ќ‚р“ќЌ‡‚µЃA“KђШ‚ИѓAѓjѓЃЃ[ѓVѓ‡ѓ“‚Ц‘J€Ъ‚і‚№‚йЃB
+// UpdateLogic: пїЅQпїЅ[пїЅпїЅпїЅпїЅпїЅWпїЅbпїЅNпїЅМ‚Э‚пїЅпїЅXпїЅVпїЅпїЅпїЅпїЅiпїЅ`пїЅпїЅНЌsпїЅпїЅИ‚пїЅпїЅj
+//  - пїЅЕ’пїЅ^пїЅCпїЅпїЅпїЅXпїЅeпїЅbпїЅvпїЅЕ“пїЅпїЅН‚пїЅпїЅ|пїЅ[пїЅпїЅпїЅпїЅпїЅOпїЅпїЅпїЅAпїЅпїЅпїЅ[пїЅhпїЅШ‘ЦЃAпїЅпїЅпїЅпїЅAпїЅвЏ•пїЅпїЅпїЅЛ”пїЅпїЅпїЅAпїЅUпїЅпїЅ/пїЅWпїЅпїЅпїЅпїЅпїЅvпїЅпїЅпїЅН‚МЏпїЅпїЅпїЅпїЅпїЅпїЅsпїЅпїЅпїЅB
+//  - пїЅJпїЅпїЅпїЅпїЅпїЅоЏЂпїЅМ€Ъ“пїЅпїЅxпїЅNпїЅgпїЅпїЅпїЅпїЅпїЅпїЅпїЅ[пїЅпїЅпїЅhXZпїЅЙ•ПЉпїЅпїЅпїЅпїЅК’uпїЅЖЊпїЅпїЅпїЅпїЅпїЅпїЅXпїЅVпїЅпїЅпїЅпїЅB
+//  - пїЅWпїЅпїЅпїЅпїЅпїЅvпїЅв’…пїЅnпїЅМђпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅр“ќЌпїЅпїЅпїЅпїЅAпїЅKпїЅШ‚ИѓAпїЅjпїЅпїЅпїЅ[пїЅVпїЅпїЅпїЅпїЅпїЅЦ‘JпїЅЪ‚пїЅпїЅпїЅпїЅпїЅB
 void Player::UpdateLogic(float dt, const InputState& in)
 {
-    // dt ‚Н SceneMgr ‚©‚з“n‚і‚к‚Ѕ’lЃi•bЃj
+    // dt пїЅпїЅ SceneMgr пїЅпїЅпїЅпїЅnпїЅпїЅпїЅк‚ЅпїЅlпїЅiпїЅbпїЅj
 
-    // Њ»Џу‚Н‹ЯђЪ•ђЉн‚М‚Э‚М‚Ѕ‚Яѓ‚Ѓ[ѓhђШ‘Ц‚Н–іЊш‰»‚і‚к‚Д‚ў‚Ь‚·ЃB
-    // Џ«—€‚МЋЛЊ‚•ђЉнЋА‘•‚ЙЊь‚Ї‚Ѕ TODO ‚Ж‚µ‚ДЋc‚µ‚Д‚ў‚Ь‚·ЃB
+    // пїЅпїЅпїЅпїЅН‹ЯђЪ•пїЅпїЅпїЅМ‚Э‚М‚пїЅпїЅЯѓпїЅпїЅ[пїЅhпїЅШ‘Ц‚Н–пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅД‚пїЅпїЅЬ‚пїЅпїЅB
+    // пїЅпїЅпїЅпїЅпїЅМЋЛЊпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅЙЊпїЅпїЅпїЅпїЅпїЅ TODO пїЅЖ‚пїЅпїЅДЋcпїЅпїЅпїЅД‚пїЅпїЅЬ‚пїЅпїЅB
 
-    // ‰с”рЃi€У–ЎѓxЃ[ѓX‚Мѓtѓ‰ѓO‚рЋg—pЃj
+    // пїЅпїЅпїЅпїЅiпїЅУ–пїЅпїЅxпїЅ[пїЅXпїЅМѓtпїЅпїЅпїЅOпїЅпїЅпїЅgпїЅpпїЅj
     if (in.dodgePressed || (in.dodgeDown && !in.dodgePressed && false)) {
         unsigned int now = GetNowCount();
         if (now - lastDodgeTimeMs_ > dodgeCooldownMs_) {
-            // ѓWѓѓѓXѓg‰с”р‚©”»’и
+            // пїЅWпїЅпїЅпїЅXпїЅgпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             if (now - lastIncomingTimeMs_ <= justWindowMs_) {
                 justExecuted_ = true;
-                // ѓWѓѓѓXѓg‰с”рѓ{Ѓ[ѓiѓXЃi’Z‚ў‘O•ыѓeѓЊѓ|Ѓ[ѓgЃj‚р“K—p
+                // пїЅWпїЅпїЅпїЅXпїЅgпїЅпїЅпїЅпїЅ{пїЅ[пїЅiпїЅXпїЅiпїЅZпїЅпїЅпїЅOпїЅпїЅпїЅeпїЅпїЅпїЅ|пїЅ[пїЅgпїЅjпїЅпїЅKпїЅp
                 x_ += 2.0f;
             }
             lastDodgeTimeMs_ = now;
         }
     }
 
-    // •вЏ•ЌUЊ‚ЃiЌ¶/‰EѓgѓЉѓKЃ[‚вѓ}ѓEѓXѓ{ѓ^ѓ“Ѓj - €У–ЎѓxЃ[ѓX‚Ми‡’l‚рЋg—p
+    // пїЅвЏ•пїЅUпїЅпїЅпїЅiпїЅпїЅ/пїЅEпїЅgпїЅпїЅпїЅKпїЅ[пїЅпїЅ}пїЅEпїЅXпїЅ{пїЅ^пїЅпїЅпїЅj - пїЅУ–пїЅпїЅxпїЅ[пїЅXпїЅпїЅи‡’lпїЅпїЅпїЅgпїЅp
     if (in.leftTrigger > 0.5f || in.leftTriggerHoldTime > 0.0f) {
-        // Ќ¶•вЏ•”­ЋЛ - ЉO•”ЊД‚СЏo‚µ‚рЉъ‘Т
+        // пїЅпїЅпїЅвЏ•пїЅпїЅпїЅпїЅ - пїЅOпїЅпїЅпїЅД‚СЏoпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     }
     if (in.rightTrigger > 0.5f || in.rightTriggerHoldTime > 0.0f) {
-        // ‰E•вЏ•”­ЋЛ - ЉO•”ЊД‚СЏo‚µ‚рЉъ‘Т
+        // пїЅEпїЅвЏ•пїЅпїЅпїЅпїЅ - пїЅOпїЅпїЅпїЅД‚СЏoпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     }
 
-    // ЌUЊ‚‚ЖѓWѓѓѓ“ѓv“ь—Н: InputState ‚М€У–Ў“IѓAѓNѓVѓ‡ѓ“ѓtѓ‰ѓO‚рЋg—p
+    // пїЅUпїЅпїЅпїЅЖѓWпїЅпїЅпїЅпїЅпїЅvпїЅпїЅпїЅпїЅ: InputState пїЅМ€У–пїЅпїЅIпїЅAпїЅNпїЅVпїЅпїЅпїЅпїЅпїЅtпїЅпїЅпїЅOпїЅпїЅпїЅgпїЅp
     bool attackInput = in.attackLightPressed || in.attackLightDown || in.attackHeavyPressed || in.attackHeavyDown;
     bool jumpInput = in.jumpPressed || in.jumpDown;
 
-    // Ќ¶ѓXѓeѓBѓbѓN/ѓLЃ[ѓ{Ѓ[ѓh‚Й‚ж‚й’PЏѓ€Ъ“®
-    // €Ъ“®‚НѓJѓЃѓ‰ЉоЏЂ: ‘O•ы“ь—Н‚ЕѓvѓЊѓCѓ„Ѓ[‚ЄѓJѓЃѓ‰‚©‚з‰“‚ґ‚©‚йЃiѓvѓЊѓCѓ„Ѓ[‚М”w‚ЄѓJѓЃѓ‰Њь‚«Ѓj‚ж‚¤‚Й€Ъ“®
+    // пїЅпїЅпїЅXпїЅeпїЅBпїЅbпїЅN/пїЅLпїЅ[пїЅ{пїЅ[пїЅhпїЅЙ‚пїЅпїЅPпїЅпїЅпїЅЪ“пїЅ
+    // пїЅЪ“пїЅпїЅНѓJпїЅпїЅпїЅпїЅпїЅоЏЂ: пїЅOпїЅпїЅпїЅпїЅпїЅН‚ЕѓvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅпїЅпїЅJпїЅпїЅпїЅпїЅпїЅпїЅпїЅз‰“пїЅпїЅпїЅпїЅпїЅпїЅiпїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅМ”wпїЅпїЅпїЅJпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅjпїЅж‚¤пїЅЙ€Ъ“пїЅ
     float moveX = in.moveX;
     float moveY = in.moveY;
 
     if (camera_ != nullptr) {
-          VECTOR camF = camera_->GetForwardXZ(); // ѓJѓЃѓ‰‚©‚зѓ^Ѓ[ѓQѓbѓgЃiѓvѓЊѓCѓ„Ѓ[Ѓj‚Ц‚Мђі‹K‰»‚і‚к‚Ѕ‘O•ыѓxѓNѓgѓ‹
-          // ѓvѓЊѓCѓ„Ѓ[‚М‘O•ы‚НѓJѓЃѓ‰‚М‘O•ы‚Ж‚Н‹tЊь‚«ЃiXZ•Ѕ–КЃjЃB‘O‚Ц“ь—Н(moveY>0)‚ЕѓvѓЊѓCѓ„Ѓ[‚НѓJѓЃѓ‰‚©‚з—Ј‚к‚й
-          // XZЏг‚М‰EѓxѓNѓgѓ‹‚рЊvЋZ
-          VECTOR right = VGet(camF.z, 0.0f, -camF.x); // 90“x‰с“]
+          VECTOR camF = camera_->GetForwardXZ(); // пїЅJпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ^пїЅ[пїЅQпїЅbпїЅgпїЅiпїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅjпїЅЦ‚МђпїЅпїЅKпїЅпїЅпїЅпїЅпїЅк‚ЅпїЅOпїЅпїЅпїЅxпїЅNпїЅgпїЅпїЅ
+          // пїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅМ‘OпїЅпїЅпїЅНѓJпїЅпїЅпїЅпїЅпїЅМ‘OпїЅпїЅпїЅЖ‚Н‹tпїЅпїЅпїЅпїЅпїЅiXZпїЅпїЅпїЅКЃjпїЅBпїЅOпїЅЦ“пїЅпїЅпїЅ(moveY>0)пїЅЕѓvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅНѓJпїЅпїЅпїЅпїЅпїЅпїЅпїЅз—ЈпїЅпїЅпїЅ
+          // XZпїЅпїЅМ‰EпїЅxпїЅNпїЅgпїЅпїЅпїЅпїЅпїЅvпїЅZ
+          VECTOR right = VGet(camF.z, 0.0f, -camF.x); // 90пїЅxпїЅпїЅ]
       
-          // ѓJѓЃѓ‰ЉоЏЂЋІ‚рЋg‚Б‚ДѓЏЃ[ѓ‹ѓhXZ‚М€Ъ“®‚рЌ‡ђ¬ЃBmoveX=‰E, moveY=‘O
+          // пїЅJпїЅпїЅпїЅпїЅпїЅоЏЂпїЅпїЅпїЅпїЅпїЅgпїЅпїЅпїЅДѓпїЅпїЅ[пїЅпїЅпїЅhXZпїЅМ€Ъ“пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅBmoveX=пїЅE, moveY=пїЅO
           float worldDX = right.x * moveX + (-camF.x) * moveY;
           float worldDZ = right.z * moveX + (-camF.z) * moveY;
 
           x_ += worldDX * 0.2f;
           z_ += worldDZ * 0.2f;
 
-          // ѓvѓЊѓCѓ„Ѓ[‚МЊь‚«‚р€Ъ“®•ыЊь‚ЙЌ‡‚н‚№‚й
+          // пїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅМЊпїЅпїЅпїЅпїЅпїЅпїЅЪ“пїЅпїЅпїЅпїЅпїЅпїЅЙЌпїЅпїЅн‚№пїЅпїЅ
           {
               float faceDX = worldDX;
               float faceDZ = worldDZ;
               if (fabsf(faceDX) > 0.0001f || fabsf(faceDZ) > 0.0001f) {
                   float desiredYaw = atan2f(faceDX, faceDZ);
                   targetYaw_ = desiredYaw;
-                  // ЌЕ’Z‚МЉp‹——Ј‚Е–Ъ•Wѓ€Ѓ[‚ЦЌЏ‚Э€Ъ“®‚·‚й
+                  // пїЅЕ’ZпїЅМЉpпїЅпїЅпїЅпїЅпїЅЕ–Ъ•WпїЅпїЅпїЅ[пїЅЦЌпїЅпїЅЭ€Ъ“пїЅпїЅпїЅпїЅпїЅ
                   float a = currentYaw_;
                   float b = desiredYaw;
                   float diff = b - a;
-                  // ЉЄ‚«Ќћ‚Э‚рЌs‚ўЉpЌ·‚р [-pi, pi] ‚Йђі‹K‰»
+                  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅЭ‚пїЅпїЅsпїЅпїЅпїЅpпїЅпїЅпїЅпїЅ [-pi, pi] пїЅЙђпїЅпїЅKпїЅпїЅ
                   while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
                   while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
                   float maxStep = yawTurnSpeed_ * dt;
@@ -91,7 +91,7 @@ void Player::UpdateLogic(float dt, const InputState& in)
           x_ += moveX * 0.2f;
           z_ += moveY * 0.2f;
 
-          // ѓvѓЊѓCѓ„Ѓ[‚МЊь‚«‚р€Ъ“®•ыЊь‚ЙЌ‡‚н‚№‚й
+          // пїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅМЊпїЅпїЅпїЅпїЅпїЅпїЅЪ“пїЅпїЅпїЅпїЅпїЅпїЅЙЌпїЅпїЅн‚№пїЅпїЅ
           {
               float faceDX = moveX;
               float faceDZ = moveY;
@@ -101,7 +101,7 @@ void Player::UpdateLogic(float dt, const InputState& in)
                   float a = currentYaw_;
                   float b = desiredYaw;
                   float diff = b - a;
-                  // ЉЄ‚«Ќћ‚Э‚рЌs‚ўЉpЌ·‚р [-pi, pi] ‚Йђі‹K‰»
+                  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅЭ‚пїЅпїЅsпїЅпїЅпїЅpпїЅпїЅпїЅпїЅ [-pi, pi] пїЅЙђпїЅпїЅKпїЅпїЅ
                   while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
                   while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
                   float maxStep = yawTurnSpeed_ * dt;
@@ -113,34 +113,37 @@ void Player::UpdateLogic(float dt, const InputState& in)
               }
           }
       }
-    // ’nЏг‚Й‚ў‚йЋћЃAWASD/ѓLЃ[ѓ{Ѓ[ѓh€Ъ“®Ѓi‚Ь‚Ѕ‚НѓRѓ“ѓgѓЌЃ[ѓ‰Ќ¶ѓXѓeѓBѓbѓNЃj‚ЕmoveѓAѓjѓЃ‚рЌДђ¶
+    // пїЅnпїЅпїЅЙ‚пїЅпїЅйЋћпїЅAWASD/пїЅLпїЅ[пїЅ{пїЅ[пїЅhпїЅЪ“пїЅпїЅiпїЅЬ‚пїЅпїЅНѓRпїЅпїЅпїЅgпїЅпїЅпїЅ[пїЅпїЅпїЅпїЅпїЅXпїЅeпїЅBпїЅbпїЅNпїЅjпїЅпїЅmoveпїЅAпїЅjпїЅпїЅпїЅпїЅпїЅДђпїЅ
     bool moving = (fabsf(moveX) > 0.0001f || fabsf(moveY) > 0.0001f);
     if (onGround_) {
-        // ЌUЊ‚‚вѓWѓѓѓ“ѓvѓAѓjѓЃ‚рЏгЏ‘‚«‚µ‚И‚ў
-        if (currentAnim_ != "attack" && currentAnim_ != "jump") {
+        // пїЅUпїЅпїЅпїЅпїЅWпїЅпїЅпїЅпїЅпїЅvпїЅAпїЅjпїЅпїЅпїЅпїЅпїЅгЏ‘пїЅпїЅпїЅпїЅпїЅИ‚пїЅ
+        if (currentAnim_ != "attack" && currentAnim_ != "attack_weapon" && currentAnim_ != "jump") {
             if (moving) {
                 if (currentAnim_ != "move") PlayAnimation("move", true, AnimLayer::Lower);
             } else {
-                if (currentAnim_ != "idle") PlayAnimation("idle", true, AnimLayer::Lower);
+                const bool hasWeapon = (equippedWeapon_ != Game::WeaponType::None);
+                const std::string idleAnim = hasWeapon ? "idle_weapon" : "idle";
+                if (currentAnim_ != idleAnim) PlayAnimation(idleAnim, true, AnimLayer::Lower);
             }
         }
     }
      
-     // ЌUЊ‚“ь—Н‚МЏ€—ќЃi€Ъ“®‚ж‚и—DђжЃAѓWѓѓѓ“ѓv‚ж‚и‚Н—тЊгЃj
+     // пїЅUпїЅпїЅпїЅпїЅпїЅН‚МЏпїЅпїЅпїЅпїЅiпїЅЪ“пїЅпїЅпїЅпїЅDпїЅпїЅAпїЅWпїЅпїЅпїЅпїЅпїЅvпїЅпїЅпїЅН—пїЅпїЅj
     unsigned int now = GetNowCount();
 
-    // ЌUЊ‚“ь—Н‚рѓGѓbѓWЊџЏo‚µ‚ДЃA1 ‰с‚М‰џ‰є‚Е 1 ‰с‚ѕ‚ЇЌUЊ‚‚Є”­“®‚·‚й‚ж‚¤‚Й‚·‚й
+    // пїЅUпїЅпїЅпїЅпїЅпїЅН‚пїЅпїЅGпїЅbпїЅWпїЅпїЅпїЅoпїЅпїЅпїЅДЃA1 пїЅпїЅМ‰пїЅпїЅпїЅпїЅпїЅ 1 пїЅс‚ѕ‚пїЅпїЅUпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅж‚¤пїЅЙ‚пїЅпїЅпїЅ
     bool attackBtnComposite = attackInput;
     if (attackBtnComposite && !prevAttackBtnDown_) {
-        // ‰џ‰єЉJЋnЃiѓGѓbѓWЃj
+        // пїЅпїЅпїЅпїЅпїЅJпїЅnпїЅiпїЅGпїЅbпїЅWпїЅj
         if (now - lastAttackTimeMs_ > (unsigned int)attackCooldownMs_) {
             lastAttackTimeMs_ = now;
-            // ‰є”јђgЏу‘ФЃimove/idleЃj‚р€ЫЋќ‚µ‚В‚ВЏг”јђgЌUЊ‚ѓAѓjѓЃ‚рЌДђ¶
-            PlayAnimation("attack", false, AnimLayer::Upper);
+            // пїЅпїЅпїЅпїЅпїЅgпїЅпїЅФЃimove/idleпїЅjпїЅпїЅпїЅЫЋпїЅпїЅпїЅпїЅВ‚ВЏг”јпїЅgпїЅUпїЅпїЅпїЅAпїЅjпїЅпїЅпїЅпїЅпїЅДђпїЅ
+            const bool hasWeapon = (equippedWeapon_ != Game::WeaponType::None);
+            PlayAnimation(hasWeapon ? "attack_weapon" : "attack", false, AnimLayer::Upper);
             // spawn an attack effect slightly in front of the player
-            // •ПЌX“_: ‘•”х•ђЉн (equippedWeapon_) ‚ЙЌ‡‚н‚№‚ДѓGѓtѓFѓNѓg‚Мѓtѓ@ѓCѓ‹/ѓXѓPЃ[ѓ‹/ѓIѓtѓZѓbѓg‚р‘I‘р‚·‚й
-            // - WeaponTypes ‚Мѓwѓ‹ѓpЃ[ GetWeaponEffectFile/Scale/Offset ‚рЋg‚¤
-            // - ‘•”х‚И‚µ (None) ‚Е‚аЌUЊ‚‚НЌs‚¦‚й‚ЄЃAѓGѓtѓFѓNѓg‚НЋг‚Я‚Й‚·‚й
+            // пїЅПЌXпїЅ_: пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (equippedWeapon_) пїЅЙЌпїЅпїЅн‚№пїЅДѓGпїЅtпїЅFпїЅNпїЅgпїЅМѓtпїЅ@пїЅCпїЅпїЅ/пїЅXпїЅPпїЅ[пїЅпїЅ/пїЅIпїЅtпїЅZпїЅbпїЅgпїЅпїЅIпїЅпїЅпїЅпїЅпїЅпїЅ
+            // - WeaponTypes пїЅМѓwпїЅпїЅпїЅpпїЅ[ GetWeaponEffectFile/Scale/Offset пїЅпїЅпїЅgпїЅпїЅ
+            // - пїЅпїЅпїЅпїЅпїЅИ‚пїЅ (None) пїЅЕ‚пїЅпїЅUпїЅпїЅпїЅНЌsпїЅпїЅпїЅй‚ЄпїЅAпїЅGпїЅtпїЅFпїЅNпїЅgпїЅНЋпїЅЯ‚Й‚пїЅпїЅпїЅ
             EffectManager* gem = GetGlobalEffectManager();
             if (gem) {
                 VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
@@ -148,57 +151,62 @@ void Player::UpdateLogic(float dt, const InputState& in)
                 float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
                 if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
 
-                // WeaponSpec ‚©‚зЌ·•Є‚рЋж“ѕ
+                // WeaponSpec пїЅпїЅпїЅзЌ·пїЅпїЅпїЅпїЅпїЅж“ѕ
                 const Game::WeaponSpec& wspec = Game::GetWeaponSpec(equippedWeapon_);
                 const char* efFile = wspec.effectFile;
                 float efScale = wspec.effectScale;
                 VECTOR efOffset = wspec.effectOffset;
 
-                // ѓIѓtѓZѓbѓg‚М z ђ¬•Є‚Н‘O•ы‚ЙЏжЋZ‚µ‚Д€µ‚¤ (forward ‚рђі‹K‰»‚µ‚Д‚ў‚й‚Ѕ‚ЯЃAz ђ¬•Є‚ѕ‚Ї‚рЋg‚¤‚М‚Е‚Н‚И‚­
-                // forward ѓxѓNѓgѓ‹‚Й‘О‚µ‚Д efOffset.z ‚рЉ|‚Ї‚й)
+                // пїЅIпїЅtпїЅZпїЅbпїЅgпїЅпїЅ z пїЅпїЅпїЅпїЅпїЅН‘OпїЅпїЅпїЅЙЏпїЅZпїЅпїЅпїЅД€пїЅпїЅпїЅ (forward пїЅрђі‹KпїЅпїЅпїЅпїЅпїЅД‚пїЅпїЅй‚ЅпїЅЯЃAz пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅgпїЅпїЅпїЅМ‚Е‚Н‚И‚пїЅ
+                // forward пїЅxпїЅNпїЅgпїЅпїЅпїЅЙ‘О‚пїЅпїЅпїЅ efOffset.z пїЅпїЅпїЅ|пїЅпїЅпїЅпїЅ)
                 VECTOR pos = GetPosition();
-                // Ќ‚‚і‚р efOffset.yЃAЌ¶‰E‚Н efOffset.xЃA‘O•ы•ыЊь‚Й efOffset.z
+                // пїЅпїЅпїЅпїЅпїЅпїЅ efOffset.yпїЅAпїЅпїЅпїЅEпїЅпїЅ efOffset.xпїЅAпїЅOпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ efOffset.z
                 pos = VAdd(pos, VGet(efOffset.x, efOffset.y, 0.0f));
                 pos = VAdd(pos, VScale(forward, efOffset.z));
 
-                // PlayEffectAt ‚Нѓtѓ@ѓCѓ‹ѓpѓX‚ЖѓXѓPЃ[ѓ‹‚рЋу‚ЇЋж‚к‚й‚Ѕ‚Я‚»‚к‚з‚р“n‚·ЃB
+                // PlayEffectAt пїЅНѓtпїЅ@пїЅCпїЅпїЅпїЅpпїЅXпїЅЖѓXпїЅPпїЅ[пїЅпїЅпїЅпїЅпїЅу‚ЇЋпїЅпїЅй‚ЅпїЅЯ‚пїЅпїЅпїЅпїЅпїЅnпїЅпїЅпїЅB
                 gem->PlayEffectAt(pos, efFile, efScale);
             }
         }
     }
     prevAttackBtnDown_ = attackBtnComposite;
 
-    // ѓWѓѓѓ“ѓv“ь—Н‚МЏ€—ќ
+    // пїЅWпїЅпїЅпїЅпїЅпїЅvпїЅпїЅпїЅН‚МЏпїЅпїЅпїЅ
     if (jumpInput && onGround_) {
         unsigned int nowJ = GetNowCount();
         if (nowJ - lastJumpTimeMs_ > 200) {
             lastJumpTimeMs_ = nowJ;
-            // ѓWѓѓѓ“ѓvЉJЋn
+            // пїЅWпїЅпїЅпїЅпїЅпїЅvпїЅJпїЅn
             velY_ = jumpVelocity_;
             onGround_ = false;
-            // ѓWѓѓѓ“ѓv‚Н‘SђgѓAѓjѓЃ‚И‚М‚Еѓtѓ‹ѓЊѓCѓ„Ѓ[ЌДђ¶ЃiЏг”јђgѓAѓjѓЃ‚рѓNѓЉѓAЃj
+            // пїЅWпїЅпїЅпїЅпїЅпїЅvпїЅН‘SпїЅgпїЅAпїЅjпїЅпїЅпїЅИ‚М‚ЕѓtпїЅпїЅпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅДђпїЅпїЅiпїЅг”јпїЅgпїЅAпїЅjпїЅпїЅпїЅпїЅпїЅNпїЅпїЅпїЅAпїЅj
             PlayAnimation("jump", false, AnimLayer::Full);
         }
     }
 
-    // ’PЏѓ‚Иђ‚’ј•ыЊь•Ё—ќ‚р“ќЌ‡
+    // пїЅPпїЅпїЅпїЅИђпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅр“ќЌпїЅ
     if (!onGround_) {
         velY_ += gravity_ * dt;
         y_ += velY_ * dt;
         if (y_ <= 0.0f) {
-            // ’…’n
+            // пїЅпїЅпїЅn
             y_ = 0.0f;
             velY_ = 0.0f;
             onGround_ = true;
-            // ’…’nЋћ‚Й€Ъ“®‚Ь‚Ѕ‚НѓAѓCѓhѓ‹ѓAѓjѓЃ‚Й•њ‹A
-            if (currentAnim_ != "attack") {
-                // ѓvѓЊѓCѓ„Ѓ[‚Є€Ъ“®’†‚И‚зmoveЃA‚»‚¤‚Е‚И‚Ї‚к‚Оidle
+            // пїЅпїЅпїЅnпїЅпїЅпїЅЙ€Ъ“пїЅпїЅЬ‚пїЅпїЅНѓAпїЅCпїЅhпїЅпїЅпїЅAпїЅjпїЅпїЅпїЅЙ•пїЅпїЅA
+            if (currentAnim_ != "attack" && currentAnim_ != "attack_weapon") {
+                // пїЅvпїЅпїЅпїЅCпїЅпїЅпїЅ[пїЅпїЅпїЅЪ“пїЅпїЅпїЅпїЅИ‚пїЅmoveпїЅAпїЅпїЅпїЅпїЅпїЅЕ‚И‚пїЅпїЅпїЅпїЅidle
                 bool movingNow = (fabsf(in.moveX) > 0.0001f || fabsf(in.moveY) > 0.0001f);
-                if (movingNow) PlayAnimation("move", true, AnimLayer::Lower); else PlayAnimation("idle", true, AnimLayer::Lower);
+                if (movingNow) {
+                    PlayAnimation("move", true, AnimLayer::Lower);
+                } else {
+                    const bool hasWeapon = (equippedWeapon_ != Game::WeaponType::None);
+                    PlayAnimation(hasWeapon ? "idle_weapon" : "idle", true, AnimLayer::Lower);
+                }
             }
         }
     }
 
-    // ѓAѓjѓЃЌXђVЃiѓtѓЊЃ[ѓЂЋћЉФ‚Еђi‚Я‚йЃj
+    // пїЅAпїЅjпїЅпїЅпїЅXпїЅVпїЅiпїЅtпїЅпїЅпїЅ[пїЅпїЅпїЅпїЅпїЅФ‚ЕђiпїЅЯ‚пїЅj
     UpdateAnimation(dt);
 }

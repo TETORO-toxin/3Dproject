@@ -1,7 +1,7 @@
 // Player_AuxAndCombat.cpp
-// ŠT—v:
-//  - •â•ƒ†ƒjƒbƒgiAuxj‚ÌŠÇ—‚Æí“¬ŠÖ˜Aˆ—‚ğˆµ‚¤ƒtƒ@ƒCƒ‹B
-//  - Aux ‚Ì”­ËAƒQ[ƒW‰ñ•œAŠoÁó‘Ô‚ÌŠÇ—‚È‚Ç‚Ì API ‚ğ’ñ‹Ÿ‚µ‚Ü‚·B
+// ï¿½Tï¿½v:
+//  - ï¿½â•ï¿½ï¿½ï¿½jï¿½bï¿½gï¿½iAuxï¿½jï¿½ÌŠÇ—ï¿½ï¿½Æí“¬ï¿½Ö˜Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½B
+//  - Aux ï¿½Ì”ï¿½ï¿½ËAï¿½Qï¿½[ï¿½Wï¿½ñ•œAï¿½oï¿½ï¿½ï¿½ï¿½Ô‚ÌŠÇ—ï¿½ï¿½È‚Ç‚ï¿½ API ï¿½ï¿½ñ‹Ÿ‚ï¿½ï¿½Ü‚ï¿½ï¿½B
 
 #include "Player.h"
 #include "../Sys/Assets.h"
@@ -21,9 +21,9 @@ Game::WeaponType Player::GetEquippedWeapon() const
     return equippedWeapon_;
 }
 
-// `newWeapon` ‚ğ‘•”õ‚µ‚æ‚¤‚Æ‚·‚éBŒğŠ·‚ª”­¶‚µ‚½ê‡‚Í true ‚ğ•Ô‚µA
-// ˆÈ‘O‚Ì‘•”õ‚ğ `oldOut` ‚É‘‚«‚Şinullptr ‚Å‚È‚¯‚ê‚ÎjB
-// `newWeapon` ‚ªŒ»İ‚Ì‘•”õ‚Æ“¯‚¶‚Å•ÏX‚ª‚È‚©‚Á‚½ê‡‚Í false ‚ğ•Ô‚·B
+// `newWeapon` ï¿½ğ‘•”ï¿½ï¿½ï¿½ï¿½æ‚¤ï¿½Æ‚ï¿½ï¿½ï¿½Bï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ï¿½ true ï¿½ï¿½Ô‚ï¿½ï¿½A
+// ï¿½È‘Oï¿½Ì‘ï¿½ï¿½ï¿½ï¿½ï¿½ `oldOut` ï¿½Éï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Şinullptr ï¿½Å‚È‚ï¿½ï¿½ï¿½Îjï¿½B
+// `newWeapon` ï¿½ï¿½ï¿½ï¿½ï¿½İ‚Ì‘ï¿½ï¿½ï¿½ï¿½Æ“ï¿½ï¿½ï¿½ï¿½Å•ÏXï¿½ï¿½ï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê‡ï¿½ï¿½ false ï¿½ï¿½Ô‚ï¿½ï¿½B
 bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut)
 {
     // No-op when equipping the same weapon
@@ -36,6 +36,11 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
     if (newWeapon == Game::WeaponType::None) {
         equippedWeapon_ = Game::WeaponType::None;
         equippedWeaponModelHandle_ = -1; // explicitly invalidate
+        if (onGround_ && currentAnim_ != "move" && currentAnim_ != "jump" &&
+            currentAnim_ != "attack" && currentAnim_ != "attack_weapon" &&
+            currentAnim_ != "idle") {
+            PlayAnimation("idle", true, AnimLayer::Lower);
+        }
         return true;
     }
 
@@ -69,11 +74,16 @@ bool Player::TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut
 
     // If assets_ is null or both loads failed, equippedWeaponModelHandle_ stays -1 which
     // indicates to the renderer that no model is available for this equipped weapon.
+    if (onGround_ && currentAnim_ != "move" && currentAnim_ != "jump" &&
+        currentAnim_ != "attack" && currentAnim_ != "attack_weapon" &&
+        currentAnim_ != "idle_weapon") {
+        PlayAnimation("idle_weapon", true, AnimLayer::Lower);
+    }
     return true;
 }
 
-// Œã•ûŒİŠ·—p‚Ìƒwƒ‹ƒp[: ŒğŠ·‚ªs‚í‚ê‚½ê‡‚ÍˆÈ‘O‚Ì•Ší‚ğ•Ô‚µA
-// ‚»‚¤‚Å‚È‚¢ê‡‚Í `Game::WeaponType::None` ‚ğ•Ô‚·B
+// ï¿½ï¿½ï¿½ï¿½İŠï¿½ï¿½pï¿½Ìƒwï¿½ï¿½ï¿½pï¿½[: ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½sï¿½ï¿½ê‚½ï¿½ê‡ï¿½ÍˆÈ‘Oï¿½Ì•ï¿½ï¿½ï¿½ï¿½Ô‚ï¿½ï¿½A
+// ï¿½ï¿½ï¿½ï¿½ï¿½Å‚È‚ï¿½ï¿½ê‡ï¿½ï¿½ `Game::WeaponType::None` ï¿½ï¿½Ô‚ï¿½ï¿½B
 Game::WeaponType Player::EquipWeapon(Game::WeaponType newWeapon)
 {
     Game::WeaponType old = Game::WeaponType::None;
@@ -101,7 +111,7 @@ void Player::SetAwakened(bool v)
 {
     awakened = v;
     if (v) {
-        // ƒoƒtƒpƒ‰ƒ[ƒ^
+        // ï¿½oï¿½tï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^
         attackCooldownMs_ = baseAttackCooldownMs_ * 0.6f;
         auxGaugeRegenRate = baseAuxGaugeRegenRate * 3.0f;
         justWindowMs_ = baseJustWindowMs_ + 100;
@@ -123,12 +133,12 @@ void Player::UpdateAux(float dt, ProjectileManager& pm)
     if (auxLeft) auxLeft->Update(dt);
     if (auxRight) auxRight->Update(dt);
 
-    // ƒpƒbƒVƒu‰ñ•œ
+    // ï¿½pï¿½bï¿½Vï¿½uï¿½ï¿½
     if (!awakened) {
         auxGauge += auxGaugeRegenRate * dt;
         if (auxGauge > 100.0f) auxGauge = 100.0f;
     } else {
-        // awakenedó‘Ô: ”­ËƒRƒXƒg‚È‚µ‚¾‚ªƒQ[ƒW‚ÍãŒÀ‚Å§ŒÀ
+        // awakenedï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ËƒRï¿½Xï¿½gï¿½È‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Qï¿½[ï¿½Wï¿½Íï¿½ï¿½ï¿½Åï¿½ï¿½ï¿½
         auxGauge += auxGaugeRegenRate * dt;
         if (auxGauge > 100.0f) auxGauge = 100.0f;
     }
