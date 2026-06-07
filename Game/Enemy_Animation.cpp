@@ -1,4 +1,5 @@
 ﻿#include "Enemy.h"
+#include "Log.h"
 #include <string>
 #include <iostream>
 #include <map>
@@ -19,16 +20,32 @@ void Enemy::LoadAnimations()
         const std::string &fn2 = kv.second.second;
         int h = MV1LoadModel(fn1.c_str());
         if (h < 0) {
-            std::cerr << "Enemy: failed to load anim '" << name << "' from '" << fn1 << "'\n";
-            // try fallback mirai
+            LogMsg(std::string("Enemy: failed to load anim '") + name + "' from '" + fn1 + "'");
+            // try fallback mirai (with provided variant)
             h = MV1LoadModel(fn2.c_str());
             if (h < 0) {
-                std::cerr << "Enemy: failed to load anim '" << name << "' from fallback '" << fn2 << "'\n";
+                // try additional common variants (lowercase/Capitalized)
+                std::string alt1 = std::string("assets/models/mirai_") + name + ".mv1";
+                h = MV1LoadModel(alt1.c_str());
+                if (h < 0) {
+                    std::string cap = name;
+                    if (!cap.empty()) cap[0] = (char)toupper((unsigned char)cap[0]);
+                    std::string alt2 = std::string("assets/models/mirai_") + cap + ".mv1";
+                    h = MV1LoadModel(alt2.c_str());
+                    if (h >= 0) {
+                        LogMsg(std::string("Enemy: loaded anim '") + name + "' from variant '" + alt2 + "' (handle=" + std::to_string(h) + ")");
+                    }
+                } else {
+                    LogMsg(std::string("Enemy: loaded anim '") + name + "' from variant '" + alt1 + "' (handle=" + std::to_string(h) + ")");
+                }
+                if (h < 0) {
+                    LogMsg(std::string("Enemy: failed to load anim '") + name + "' from fallback '" + fn2 + "'");
+                }
             } else {
-                std::cerr << "Enemy: loaded anim '" << name << "' from fallback '" << fn2 << "' (handle=" << h << ")\n";
+                LogMsg(std::string("Enemy: loaded anim '") + name + "' from fallback '" + fn2 + "' (handle=" + std::to_string(h) + ")");
             }
         } else {
-            std::cerr << "Enemy: loaded anim '" << name << "' from '" << fn1 << "' (handle=" << h << ")\n";
+            LogMsg(std::string("Enemy: loaded anim '") + name + "' from '" + fn1 + "' (handle=" + std::to_string(h) + ")");
         }
         animModelHandles_[name] = h;
         if (h >= 0) {
@@ -48,13 +65,13 @@ void Enemy::PlayAnimation(const std::string& name, bool loop)
                 if (attachedAnimAttachIndex_ >= 0) {
                     attachedAnimTotalTime_ = MV1GetAttachAnimTotalTime(modelHandle_, attachedAnimAttachIndex_);
                     if (attachedAnimTotalTime_ <= 0.0f) {
-                        std::cerr << "Enemy: attach succeeded but total time is <= 0 for anim '" << name << "' (attachIndex=" << attachedAnimAttachIndex_ << ", totalTime=" << attachedAnimTotalTime_ << ")\n";
+                        LogMsg(std::string("Enemy: attach succeeded but total time is <= 0 for anim '") + name + "' (attachIndex=" + std::to_string(attachedAnimAttachIndex_) + ", totalTime=" + std::to_string(attachedAnimTotalTime_) + ")");
                     }
                     MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, 0.0f);
                     MV1SetAttachAnimBlendRate(modelHandle_, attachedAnimAttachIndex_, 1.0f);
-                    std::cerr << "Enemy: attached anim '" << name << "' (attachIndex=" << attachedAnimAttachIndex_ << ", totalTime=" << attachedAnimTotalTime_ << ")\n";
+                    LogMsg(std::string("Enemy: attached anim '") + name + "' (attachIndex=" + std::to_string(attachedAnimAttachIndex_) + ", totalTime=" + std::to_string(attachedAnimTotalTime_) + ")");
                 } else {
-                    std::cerr << "Enemy: MV1AttachAnim failed for anim '" << name << "' (modelHandle=" << modelHandle_ << ", animModel=" << itRe->second << ")\n";
+                    LogMsg(std::string("Enemy: MV1AttachAnim failed for anim '") + name + "' (modelHandle=" + std::to_string(modelHandle_) + ", animModel=" + std::to_string(itRe->second) + ")");
                 }
             } else {
                 std::cerr << "Enemy: no anim model available to attach for '" << name << "' (currentAnim_='" << currentAnim_ << "')\n";
@@ -82,22 +99,29 @@ void Enemy::PlayAnimation(const std::string& name, bool loop)
 
     int animModel = it->second;
     if (modelHandle_ >= 0) {
-        // attach animation
-        attachedAnimAttachIndex_ = MV1AttachAnim(modelHandle_, animModel);
-        if (attachedAnimAttachIndex_ >= 0) {
-            attachedAnimTotalTime_ = MV1GetAttachAnimTotalTime(modelHandle_, attachedAnimAttachIndex_);
-            // start at 0
-            MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, 0.0f);
-            // set blend rate to immediate for simplicity
-            MV1SetAttachAnimBlendRate(modelHandle_, attachedAnimAttachIndex_, 1.0f);
-            if (attachedAnimTotalTime_ <= 0.0f) {
-                std::cerr << "Enemy: attached anim '" << name << "' but total time <= 0 (attachIndex=" << attachedAnimAttachIndex_ << ")\n";
-            } else {
-                std::cerr << "Enemy: attached anim '" << name << "' (attachIndex=" << attachedAnimAttachIndex_ << ", totalTime=" << attachedAnimTotalTime_ << ")\n";
+        // attach animation (only try once per anim to avoid flooding logs)
+        if (!attachAttempted_[name]) {
+            attachedAnimAttachIndex_ = MV1AttachAnim(modelHandle_, animModel);
+            if (attachedAnimAttachIndex_ >= 0) {
+                attachedAnimTotalTime_ = MV1GetAttachAnimTotalTime(modelHandle_, attachedAnimAttachIndex_);
+                // start at 0
+                MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, 0.0f);
+                // set blend rate to immediate for simplicity
+                MV1SetAttachAnimBlendRate(modelHandle_, attachedAnimAttachIndex_, 1.0f);
+                // clear any direct-draw fallback since attach succeeded
+                animDirectModelHandle_ = -1;
+                if (attachedAnimTotalTime_ <= 0.0f) {
+                    LogMsg(std::string("Enemy: attached anim '") + name + "' but total time <= 0 (attachIndex=" + std::to_string(attachedAnimAttachIndex_) + ")");
+                } else {
+                    LogMsg(std::string("Enemy: attached anim '") + name + "' (attachIndex=" + std::to_string(attachedAnimAttachIndex_) + ", totalTime=" + std::to_string(attachedAnimTotalTime_) + ")");
+                }
             }
-        }
-        else {
-            std::cerr << "Enemy: MV1AttachAnim failed for anim '" << name << "' (modelHandle=" << modelHandle_ << ", animModel=" << animModel << ")\n";
+            else {
+                LogMsg(std::string("Enemy: MV1AttachAnim failed for anim '") + name + "' (modelHandle=" + std::to_string(modelHandle_) + ", animModel=" + std::to_string(animModel) + ")");
+                // fallback: use anim model directly for drawing if attach fails
+                animDirectModelHandle_ = animModel;
+            }
+            attachAttempted_[name] = true;
         }
     }
 
@@ -108,14 +132,36 @@ void Enemy::PlayAnimation(const std::string& name, bool loop)
 
 void Enemy::UpdateAnimation(float dt)
 {
-    if (attachedAnimAttachIndex_ < 0 || modelHandle_ < 0) return;
-    if (attachedAnimTotalTime_ <= 0.0f) return;
-
-    animTime_ += dt;
-    if (animLoop_) {
-        while (animTime_ > attachedAnimTotalTime_) animTime_ -= attachedAnimTotalTime_;
-    } else {
-        if (animTime_ > attachedAnimTotalTime_) animTime_ = attachedAnimTotalTime_;
+    // If we have an attached animation, update its playhead.
+    if (attachedAnimAttachIndex_ >= 0 && modelHandle_ >= 0) {
+        animTime_ += dt;
+        if (attachedAnimTotalTime_ > 0.0f) {
+            if (animLoop_) {
+                while (animTime_ > attachedAnimTotalTime_) animTime_ -= attachedAnimTotalTime_;
+            } else {
+                if (animTime_ > attachedAnimTotalTime_) animTime_ = attachedAnimTotalTime_;
+            }
+        }
+        // Even if attachedAnimTotalTime_ <= 0, try to set time anyway.
+        MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, animTime_);
+        return;
     }
-    MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, animTime_);
+
+    // Fallback: if attach failed and we have an anim model, advance its internal animation
+    // and draw it directly during Draw(). We still keep animTime_ and looping semantics.
+    if (animDirectModelHandle_ >= 0) {
+        animTime_ += dt;
+        float total = MV1GetAnimTotalTime(animDirectModelHandle_, 0);
+        if (total > 0.0f) {
+            if (animLoop_) {
+                while (animTime_ > total) animTime_ -= total;
+            } else {
+                if (animTime_ > total) animTime_ = total;
+            }
+        }
+        // Note: DxLib in this build may not expose a function to set anim time
+        // for standalone anim models. We still advance `animTime_` for bookkeeping
+        // and draw the anim model directly in Draw(). If needed, add time control
+        // when a suitable API is available.
+    }
 }

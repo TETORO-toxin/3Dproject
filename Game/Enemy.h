@@ -42,7 +42,11 @@ private:
 
     // Animation / model attachments
     std::unordered_map<std::string,int> animModelHandles_;
+    std::unordered_map<std::string,bool> attachAttempted_;
     int attachedAnimAttachIndex_ = -1;
+    // When attachment is not possible, draw the anim model directly as a fallback.
+    // Stores the anim model handle to draw instead of relying on attach API.
+    int animDirectModelHandle_ = -1;
     float attachedAnimTotalTime_ = 0.0f;
     std::string currentAnim_;
     float animTime_ = 0.0f;

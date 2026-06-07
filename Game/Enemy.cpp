@@ -1,9 +1,15 @@
 #include "Enemy.h"
+#include "Log.h"
 #include <cmath>
 #include <string>
 #include <iostream>
+#include <cstdio>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "NavMesh.h"
 #include <vector>
+
 
 static float NormalizeAngle(float a)
 {
@@ -28,17 +34,18 @@ Enemy::Enemy(const VECTOR& pos)
     : pos_(pos)
 {
     // try to load base model: prefer NX, fall back to mirai
+    LogMsg("Enemy: constructor start");
     modelHandle_ = MV1LoadModel("assets/models/NX.mv1");
     if (modelHandle_ < 0) {
         // try mirai fallback
         modelHandle_ = MV1LoadModel("assets/models/mirai.mv1");
         if (modelHandle_ >= 0) {
-            std::cerr << "Enemy: loaded base model from 'assets/models/mirai.mv1' (handle=" << modelHandle_ << ")\n";
+            LogMsg(std::string("Enemy: loaded base model from 'assets/models/mirai.mv1' (handle=") + std::to_string(modelHandle_) + ")");
         } else {
-            std::cerr << "Enemy: failed to load base model from NX and mirai\n";
+            LogMsg("Enemy: failed to load base model from NX and mirai");
         }
     } else {
-        std::cerr << "Enemy: loaded base model from 'assets/models/NX.mv1' (handle=" << modelHandle_ << ")\n";
+        LogMsg(std::string("Enemy: loaded base model from 'assets/models/NX.mv1' (handle=") + std::to_string(modelHandle_) + ")");
     }
     // scale down base model for visual size
     if (modelHandle_ >= 0) {
@@ -85,9 +92,19 @@ void Enemy::Update(float dt)
             velY = 0.0f;
         }
     }
-    // check if current animation needs to be reattached
-    if (currentAnim_ == "move" && attachedAnimAttachIndex_ == -1) {
-        PlayAnimation("move", true);
+    // ensure current animation is attached; retry attach if missing
+    if (attachedAnimAttachIndex_ == -1 && modelHandle_ >= 0 && !currentAnim_.empty()) {
+        PlayAnimation(currentAnim_, animLoop_);
+
+        // limited debug logging when attach still missing
+        static std::string lastMissingAnim;
+        if (attachedAnimAttachIndex_ == -1 && lastMissingAnim != currentAnim_) {
+            std::cerr << "Enemy: attach missing for anim '" << currentAnim_ << "' (modelHandle=" << modelHandle_ << ")\n";
+            for (auto &p : animModelHandles_) {
+                std::cerr << "  anim candidate '" << p.first << "' -> handle=" << p.second << "\n";
+            }
+            lastMissingAnim = currentAnim_;
+        }
     }
 
     // path-following: if navMesh_ is set, periodically request path to targetPos_
@@ -138,6 +155,15 @@ void Enemy::Update(float dt)
 
 void Enemy::Draw() const
 {
+    // If attach failed for current animation, we may draw the anim model directly as a fallback.
+    if (animDirectModelHandle_ >= 0) {
+        MV1SetPosition(animDirectModelHandle_, pos_);
+        VECTOR rot = VGet(0.0f, yaw_, 0.0f);
+        MV1SetRotationXYZ(animDirectModelHandle_, rot);
+        MV1DrawModel(animDirectModelHandle_);
+        return;
+    }
+
     if (modelHandle_ >= 0) {
         // set position and rotation then draw
         MV1SetPosition(modelHandle_, pos_);
