@@ -97,6 +97,8 @@ void SceneMgr::Init()
     enemies_.push_back(new Enemy(VGet(6.0f, 0.0f, 10.0f)));
     enemies_.push_back(new Enemy(VGet(-8.0f, 0.0f, 18.0f)));
     enemies_.push_back(new Enemy(VGet(2.0f, 0.0f, 26.0f)));
+    // NavMesh を敵に渡す（Enemy::RequestPathTo は navMesh_ が nullptr の場合何もしない）
+    for (auto e : enemies_) { e->SetNavMesh(&navMesh_); }
 
     prevTimeMs_ = GetNowCount();
 
@@ -206,6 +208,8 @@ void SceneMgr::Update()
 
     // 地面平面に沿ったグリッドを描画（平面上の真の 3D グリッド）
     DrawGroundGrid(groundPoint_, groundNormal_, 60.0f, 1.0f);
+    // NavMesh の状態を可視化（緑=通行可, 赤=障害）
+    navMesh_.DebugDraw();
 
     // ロックオン選択: スコア = 角度差 * 重み + 距離
     float bestScore = 1e9f;
@@ -251,7 +255,8 @@ void SceneMgr::Update()
     else fwd = VGet(fwd.x/fl, fwd.y/fl, fwd.z/fl);
 
     for (auto e : enemies_) {
-        // 敵のロジックを更新
+        // 敵のターゲットをプレイヤー位置に設定してからロジックを更新
+        e->SetTarget(ppos);
         e->Update(dt);
 
         VECTOR epos = e->GetPosition();
