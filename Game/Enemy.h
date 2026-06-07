@@ -51,6 +51,7 @@ private:
     // orientation and movement
     float yaw_ = 0.0f;
     float moveSpeed_ = 3.5f;
+    float turnSpeed_ = 8.0f;
     VECTOR targetPos_;
     // NavMesh path following
     const NavMesh* navMesh_ = nullptr;

@@ -130,13 +130,40 @@ std::vector<VECTOR> NavMesh::FindPath(const VECTOR& start, const VECTOR& goal) c
         if (cur < 0) break;
         rev.push_back(cur);
     }
-    // reverse to get start->goal
+    // reverse to get start->goal into ordered vector
+    std::vector<int> ordered;
     for (int i = (int)rev.size() - 1; i >= 0; --i) {
-        int ci = rev[i];
-        int cx = ci % width_;
-        int cz = ci / width_;
-        out.push_back(CellToWorld(cx, cz));
+        ordered.push_back(rev[i]);
     }
+
+    if (ordered.empty()) return out;
+
+    // always include start
+    out.push_back(CellToWorld(ordered[0] % width_, ordered[0] / width_));
+
+    // include only points where direction changes
+    for (int i = 1; i + 1 < (int)ordered.size(); ++i) {
+        int prev = ordered[i - 1];
+        int cur  = ordered[i];
+        int next = ordered[i + 1];
+
+        int px = prev % width_, pz = prev / width_;
+        int cx = cur  % width_, cz = cur  / width_;
+        int nx = next % width_, nz = next / width_;
+
+        int dx1 = cx - px;
+        int dz1 = cz - pz;
+        int dx2 = nx - cx;
+        int dz2 = nz - cz;
+
+        if (dx1 != dx2 || dz1 != dz2) {
+            out.push_back(CellToWorld(cx, cz));
+        }
+    }
+
+    // include goal
+    int last = ordered.back();
+    out.push_back(CellToWorld(last % width_, last / width_));
     return out;
 }
 

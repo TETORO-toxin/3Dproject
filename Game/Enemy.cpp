@@ -5,6 +5,21 @@
 #include "NavMesh.h"
 #include <vector>
 
+static float NormalizeAngle(float a)
+{
+    while (a > 3.14159265f) a -= 6.2831853f;
+    while (a < -3.14159265f) a += 6.2831853f;
+    return a;
+}
+
+static float ApproachAngle(float current, float target, float maxDelta)
+{
+    float diff = NormalizeAngle(target - current);
+    if (diff > maxDelta) diff = maxDelta;
+    if (diff < -maxDelta) diff = -maxDelta;
+    return NormalizeAngle(current + diff);
+}
+
 // DXLib functions used: MV1LoadModel, MV1SetPosition, MV1SetRotationXYZ, MV1DrawModel,
 // MV1DeleteModel, MV1AttachAnim, MV1GetAttachAnimTotalTime, MV1SetAttachAnimTime,
 // MV1DetachAnim
@@ -78,13 +93,15 @@ void Enemy::Update(float dt)
     // path-following: if navMesh_ is set, periodically request path to targetPos_
     pathRecalcTimer_ -= dt;
     if (navMesh_ && pathRecalcTimer_ <= 0.0f) {
-        pathRecalcTimer_ = 0.5f; // half-second throttle
+        pathRecalcTimer_ = 0.2f; // more frequent path updates for smoother pursuit
         RequestPathTo(targetPos_);
     }
 
     VECTOR moveTarget = targetPos_;
     if (!path_.empty() && currentPathIndex_ < (int)path_.size()) {
-        moveTarget = path_[currentPathIndex_];
+        int lookAhead = currentPathIndex_ + 1;
+        if (lookAhead >= (int)path_.size()) lookAhead = currentPathIndex_;
+        moveTarget = path_[lookAhead];
     }
 
     // simple AI: move towards moveTarget on XZ plane
@@ -93,15 +110,10 @@ void Enemy::Update(float dt)
     float dz = diff.z;
     float distXZ = sqrtf(dx*dx + dz*dz);
     // snap to target when very close to avoid tiny residual motion preventing idle
-    if (distXZ <= 0.2f) {
-        // reached current waypoint
-        pos_.x = moveTarget.x;
-        pos_.z = moveTarget.z;
+    if (distXZ <= 0.35f) {
         if (!path_.empty() && currentPathIndex_ < (int)path_.size() - 1) {
             currentPathIndex_++;
-        }
-        if (currentPathIndex_ >= (int)path_.size()) {
-            // reached final goal
+        } else {
             if (currentAnim_ != "idle") PlayAnimation("idle", true);
         }
     } else if (distXZ > 0.01f) {
@@ -111,8 +123,9 @@ void Enemy::Update(float dt)
         if (move > distXZ) move = distXZ;
         pos_.x += nx * move;
         pos_.z += nz * move;
-        // face movement direction (yaw around Y)
-        yaw_ = atan2f(nx, nz);
+        // face movement direction (yaw around Y) with interpolation
+        float targetYaw = atan2f(nx, nz);
+        yaw_ = ApproachAngle(yaw_, targetYaw, turnSpeed_ * dt);
         // play move anim
         if (currentAnim_ != "move") PlayAnimation("move", true);
     } else {
