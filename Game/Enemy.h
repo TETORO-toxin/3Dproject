@@ -2,6 +2,9 @@
 #include "DxLib.h"
 #include <unordered_map>
 #include <string>
+#include <vector>
+
+class NavMesh;
 
 class Enemy
 {
@@ -30,6 +33,8 @@ public:
 
     // Simple AI / movement target
     void SetTarget(const VECTOR& t) { targetPos_ = t; }
+    void SetNavMesh(const NavMesh* nav) { navMesh_ = nav; }
+    void RequestPathTo(const VECTOR& goal);
 
 private:
     int modelHandle_ = -1;
@@ -47,6 +52,11 @@ private:
     float yaw_ = 0.0f;
     float moveSpeed_ = 3.5f;
     VECTOR targetPos_;
+    // NavMesh path following
+    const NavMesh* navMesh_ = nullptr;
+    std::vector<VECTOR> path_;
+    int currentPathIndex_ = 0;
+    float pathRecalcTimer_ = 0.0f;
 
     // WEAK / airborne
     float weakGauge = 0.0f; // 0..100

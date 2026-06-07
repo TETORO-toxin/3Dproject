@@ -72,6 +72,16 @@ void SceneMgr::Init()
     camera_ = new CameraRig();
     player_->SetCamera(camera_);
 
+    // initialize a simple NavMesh covering reasonable play area
+    // cellSize = 1.0, origin at (-50,0,-50) covering 100x100
+    navMesh_.Initialize(100, 100, 1.0f, VGet(-50.0f, 0.0f, -50.0f));
+    // mark some rectangular obstacles (example)
+    for (int z = 20; z < 30; ++z) {
+        for (int x = 40; x < 50; ++x) {
+            navMesh_.SetBlocked(x, z, true);
+        }
+    }
+
     // グローバルな EffectManager が未設定の場合のみ生成する。
     // 既に別の所有者がいる場合は所有権を取らない。
     EffectManager* existing = GetGlobalEffectManager();

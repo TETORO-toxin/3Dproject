@@ -2,6 +2,8 @@
 #include <cmath>
 #include <string>
 #include <iostream>
+#include "NavMesh.h"
+#include <vector>
 
 // DXLib functions used: MV1LoadModel, MV1SetPosition, MV1SetRotationXYZ, MV1DrawModel,
 // MV1DeleteModel, MV1AttachAnim, MV1GetAttachAnimTotalTime, MV1SetAttachAnimTime,
@@ -40,6 +42,13 @@ Enemy::Enemy(const VECTOR& pos)
     if (modelHandle_ >= 0) PlayAnimation("idle", true);
 }
 
+void Enemy::RequestPathTo(const VECTOR& goal)
+{
+    if (!navMesh_) return;
+    path_ = navMesh_->FindPath(pos_, goal);
+    currentPathIndex_ = 0;
+}
+
 Enemy::~Enemy()
 {
     // delete loaded models if owned
@@ -66,16 +75,35 @@ void Enemy::Update(float dt)
         PlayAnimation("move", true);
     }
 
-    // simple AI: move towards targetPos_ on XZ plane
-    VECTOR diff = VSub(targetPos_, pos_);
+    // path-following: if navMesh_ is set, periodically request path to targetPos_
+    pathRecalcTimer_ -= dt;
+    if (navMesh_ && pathRecalcTimer_ <= 0.0f) {
+        pathRecalcTimer_ = 0.5f; // half-second throttle
+        RequestPathTo(targetPos_);
+    }
+
+    VECTOR moveTarget = targetPos_;
+    if (!path_.empty() && currentPathIndex_ < (int)path_.size()) {
+        moveTarget = path_[currentPathIndex_];
+    }
+
+    // simple AI: move towards moveTarget on XZ plane
+    VECTOR diff = VSub(moveTarget, pos_);
     float dx = diff.x;
     float dz = diff.z;
     float distXZ = sqrtf(dx*dx + dz*dz);
     // snap to target when very close to avoid tiny residual motion preventing idle
-    if (distXZ <= 0.05f) {
-        pos_.x = targetPos_.x;
-        pos_.z = targetPos_.z;
-        if (currentAnim_ != "idle") PlayAnimation("idle", true);
+    if (distXZ <= 0.2f) {
+        // reached current waypoint
+        pos_.x = moveTarget.x;
+        pos_.z = moveTarget.z;
+        if (!path_.empty() && currentPathIndex_ < (int)path_.size() - 1) {
+            currentPathIndex_++;
+        }
+        if (currentPathIndex_ >= (int)path_.size()) {
+            // reached final goal
+            if (currentAnim_ != "idle") PlayAnimation("idle", true);
+        }
     } else if (distXZ > 0.01f) {
         float nx = dx / distXZ;
         float nz = dz / distXZ;

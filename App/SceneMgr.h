@@ -11,6 +11,7 @@ class TitleScene;
 class EffectManager;
 
 #include "../Game/WeaponPickup.h"
+#include "../Game/NavMesh.h"
 
 class SceneMgr
 {
@@ -33,6 +34,8 @@ private:
     Scene currentScene_ = Scene::Title;
     Player* player_ = nullptr;
     CameraRig* camera_ = nullptr;
+    // navigation mesh for AI pathfinding
+    NavMesh navMesh_;
     AssetsMgr* assets_ = nullptr;
     std::vector<Enemy*> enemies_;
     VECTOR target_ = VGet(0,0,1);
