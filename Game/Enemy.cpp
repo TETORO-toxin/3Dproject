@@ -1,6 +1,7 @@
 #include "Enemy.h"
 #include <cmath>
 #include <string>
+#include <iostream>
 
 // DXLib functions used: MV1LoadModel, MV1SetPosition, MV1SetRotationXYZ, MV1DrawModel,
 // MV1DeleteModel, MV1AttachAnim, MV1GetAttachAnimTotalTime, MV1SetAttachAnimTime,
@@ -9,8 +10,19 @@
 Enemy::Enemy(const VECTOR& pos)
     : pos_(pos)
 {
-    // try to load base model
+    // try to load base model: prefer NX, fall back to mirai
     modelHandle_ = MV1LoadModel("assets/models/NX.mv1");
+    if (modelHandle_ < 0) {
+        // try mirai fallback
+        modelHandle_ = MV1LoadModel("assets/models/mirai.mv1");
+        if (modelHandle_ >= 0) {
+            std::cerr << "Enemy: loaded base model from 'assets/models/mirai.mv1' (handle=" << modelHandle_ << ")\n";
+        } else {
+            std::cerr << "Enemy: failed to load base model from NX and mirai\n";
+        }
+    } else {
+        std::cerr << "Enemy: loaded base model from 'assets/models/NX.mv1' (handle=" << modelHandle_ << ")\n";
+    }
     // scale down base model for visual size
     if (modelHandle_ >= 0) {
         MV1SetScale(modelHandle_, VGet(0.04f, 0.04f, 0.04f));
