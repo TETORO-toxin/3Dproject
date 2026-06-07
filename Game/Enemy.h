@@ -1,5 +1,7 @@
 #pragma once
 #include "DxLib.h"
+#include <unordered_map>
+#include <string>
 
 class Enemy
 {
@@ -21,10 +23,30 @@ public:
     void ApplyHitWEAK(float weakGain);
     void Launch();
     void FinishAssault();
+    // Animation
+    void LoadAnimations();
+    void PlayAnimation(const std::string& name, bool loop = false);
+    void UpdateAnimation(float dt);
+
+    // Simple AI / movement target
+    void SetTarget(const VECTOR& t) { targetPos_ = t; }
 
 private:
     int modelHandle_ = -1;
     VECTOR pos_;
+
+    // Animation / model attachments
+    std::unordered_map<std::string,int> animModelHandles_;
+    int attachedAnimAttachIndex_ = -1;
+    float attachedAnimTotalTime_ = 0.0f;
+    std::string currentAnim_;
+    float animTime_ = 0.0f;
+    bool animLoop_ = true;
+
+    // orientation and movement
+    float yaw_ = 0.0f;
+    float moveSpeed_ = 3.5f;
+    VECTOR targetPos_;
 
     // WEAK / airborne
     float weakGauge = 0.0f; // 0..100
