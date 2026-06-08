@@ -2,9 +2,57 @@
 #include "../Game/WeaponTypes.h"
 #include <cstdio>
 #include "DebugPrint.h"
+#include <algorithm>
+#include <cctype>
+#include <vector>
 
 AssetsMgr::AssetsMgr()
 {
+}
+
+int AssetsMgr::GetEnemyBaseModelHandle()
+{
+    // Preferred base model paths
+    const std::string p1 = "assets/models/NX.mv1";
+    const std::string p2 = "assets/models/mirai.mv1";
+    int h = LoadModel(p1);
+    if (h >= 0) return h;
+    return LoadModel(p2);
+}
+
+int AssetsMgr::CreateEnemyModelInstance()
+{
+    int base = GetEnemyBaseModelHandle();
+    if (base == -1) return -1;
+    int dup = MV1DuplicateModel(base);
+    if (dup == -1) {
+        DebugPrint("AssetsMgr::CreateEnemyModelInstance: MV1DuplicateModel FAILED base=%d\n", base);
+        return -1;
+    }
+    return dup;
+}
+
+int AssetsMgr::GetEnemyAnimModelHandle(const std::string& animName)
+{
+    // try a set of filename candidates similar to previous Enemy logic
+    std::vector<std::string> candidates;
+    candidates.push_back(std::string("assets/models/NX_") + animName + ".mv1");
+    candidates.push_back(std::string("assets/models/NX_") + animName + "2.mv1");
+    // capitalized variant
+    std::string cap = animName;
+    if (!cap.empty()) cap[0] = static_cast<char>(std::toupper((unsigned char)cap[0]));
+    candidates.push_back(std::string("assets/models/NX_") + cap + ".mv1");
+    // mirai style
+    candidates.push_back(std::string("assets/models/mirai_") + animName + ".mv1");
+    candidates.push_back(std::string("assets/models/mirai_") + cap + ".mv1");
+    // some explicit known names
+    candidates.push_back(std::string("assets/models/mirai_") + std::string("Idle") + ".mv1");
+
+    for (const auto &p : candidates) {
+        int h = LoadModel(p);
+        if (h >= 0) return h;
+    }
+    return -1;
 }
 
 AssetsMgr::~AssetsMgr()
@@ -16,6 +64,11 @@ AssetsMgr::~AssetsMgr()
     // weaponModelHandles_ entries point into modelCache_ values, so no separate deletion
 }
 
+AssetsMgr& GetAssetsMgr()
+{
+    static AssetsMgr g;
+    return g;
+}
 
 void AssetsMgr::Init()
 {

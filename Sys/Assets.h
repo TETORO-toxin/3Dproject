@@ -28,10 +28,27 @@ public:
     // Returns -1 on failure.
     int CreateWeaponModelInstance(Game::WeaponType type, bool equip = false);
 
+    // Enemy base/animation helpers
+    // Ensure the enemy base model is loaded and return the cached handle (shared).
+    // Returns -1 on failure.
+    int GetEnemyBaseModelHandle();
+
+    // Create a duplicated model instance for an enemy. Returns duplicated handle
+    // (caller owns and must delete with MV1DeleteModel) or -1 on failure.
+    int CreateEnemyModelInstance();
+
+    // Obtain a cached enemy animation model handle for a named animation (e.g. "idle").
+    // The implementation will try common filename variants. Returns -1 on failure.
+    int GetEnemyAnimModelHandle(const std::string& animName);
+
 private:
     // cache path -> MV1 handle
     std::unordered_map<std::string, int> modelCache_;
 
     // map (weaponType<<1 | equipFlag) -> handle
     std::unordered_map<int, int> weaponModelHandles_;
+    // Optionally cache a resolved enemy base path -> handle under modelCache_.
 };
+
+// Global accessor for the singleton AssetsMgr instance
+AssetsMgr& GetAssetsMgr();

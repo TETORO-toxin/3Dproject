@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cctype>
 #include <vector>
+#include <fstream>
+#include "../Sys/Assets.h"
 
 void Enemy::LoadAnimations()
 {
@@ -21,20 +23,40 @@ void Enemy::LoadAnimations()
         const std::string &name = kv.first;
         const std::string &fn1 = kv.second.first;
         const std::string &fn2 = kv.second.second; 
-        int h = MV1LoadModel(fn1.c_str());
-        if (h < 0) {
-            LogMsg(std::string("Enemy: failed to load anim '") + name + "' from '" + fn1 + "'");
-            // try fallback mirai (with provided variant)
-            h = MV1LoadModel(fn2.c_str());
-            if (h < 0) {
+        // Use AssetsMgr to obtain a cached anim model handle. Try explicit preferred
+        // filenames first (fn1 then fn2) to respect ordering like NX_move2 before NX_move.
+        AssetsMgr& am = GetAssetsMgr();
+        int h = -1;
+        // Prefer fn1 if the file exists on disk
+        std::ifstream f1(fn1.c_str());
+        if (f1.good()) {
+            f1.close();
+            h = am.LoadModel(fn1);
+            if (h >= 0) {
+                LogMsg(std::string("Enemy: loaded anim '") + name + "' from '" + fn1 + "' (handle=" + std::to_string(h) + ")");
+            } else {
+                LogMsg(std::string("Enemy: failed to load anim '") + name + "' from '" + fn1 + "'");
+            }
+        } else {
+            // try mirai fallback if fn1 not present
+            std::ifstream f2(fn2.c_str());
+            if (f2.good()) {
+                f2.close();
+                h = am.LoadModel(fn2);
+                if (h >= 0) {
+                    LogMsg(std::string("Enemy: loaded anim '") + name + "' from fallback '" + fn2 + "' (handle=" + std::to_string(h) + ")");
+                } else {
+                    LogMsg(std::string("Enemy: failed to load anim '") + name + "' from fallback '" + fn2 + "'");
+                }
+            } else {
                 // try additional common variants (lowercase/Capitalized)
                 std::string alt1 = std::string("assets/models/NX_") + name + ".mv1";
-                h = MV1LoadModel(alt1.c_str());
+                h = am.LoadModel(alt1);
                 if (h < 0) {
                     std::string cap = name;
                     if (!cap.empty()) cap[0] = (char)toupper((unsigned char)cap[0]);
                     std::string alt2 = std::string("assets/models/NX_") + cap + ".mv1";
-                    h = MV1LoadModel(alt2.c_str());
+                    h = am.LoadModel(alt2);
                     if (h >= 0) {
                         LogMsg(std::string("Enemy: loaded anim '") + name + "' from variant '" + alt2 + "' (handle=" + std::to_string(h) + ")");
                     }
@@ -42,15 +64,11 @@ void Enemy::LoadAnimations()
                     LogMsg(std::string("Enemy: loaded anim '") + name + "' from variant '" + alt1 + "' (handle=" + std::to_string(h) + ")");
                 }
                 if (h < 0) {
-                    LogMsg(std::string("Enemy: failed to load anim '") + name + "' from fallback '" + fn2 + "'");
+                    LogMsg(std::string("Enemy: failed to find any anim file for '") + name + "'");
                 }
-            } else {
-                LogMsg(std::string("Enemy: loaded anim '") + name + "' from fallback '" + fn2 + "' (handle=" + std::to_string(h) + ")");
             }
-        } else {
-            LogMsg(std::string("Enemy: loaded anim '") + name + "' from '" + fn1 + "' (handle=" + std::to_string(h) + ")");
         }
-        animModelHandles_[name] = h;
+        animModelHandles_[name] = h; // may be -1
         // Determine animation index inside the anim model so we can attach the correct anim
         if (h >= 0) {
             int animIndex = 0;
@@ -115,9 +133,15 @@ void Enemy::PlayAnimation(const std::string& name, bool loop)
                 auto aiRe = animModelAnimIndex_.find(name);
                 if (aiRe != animModelAnimIndex_.end()) animIndex = aiRe->second;
                 // try attaching with explicit anim index and disable auto-copy (match player implementation)
-                attachedAnimAttachIndex_ = MV1AttachAnim(modelHandle_, animIndex, itRe->second, FALSE);
+                attachedAnimAttachIndex_ = MV1AttachAnim(modelHandle_, animIndex, itRe->second, TRUE);
                 if (attachedAnimAttachIndex_ >= 0) {
                     attachedAnimTotalTime_ = MV1GetAttachAnimTotalTime(modelHandle_, attachedAnimAttachIndex_);
+#ifdef MV1GetAnimName
+                    const char* chosenAnimName = MV1GetAnimName(itRe->second, animIndex);
+                    if (chosenAnimName) {
+                        LogMsg(std::string("Enemy: attaching anim resource name='") + chosenAnimName + "'");
+                    }
+#endif
                     if (attachedAnimTotalTime_ <= 0.0f) {
                         LogMsg(std::string("Enemy: attach succeeded but total time is <= 0 for anim '") + name + "' (attachIndex=" + std::to_string(attachedAnimAttachIndex_) + ", totalTime=" + std::to_string(attachedAnimTotalTime_) + ")");
                     }
@@ -159,9 +183,16 @@ void Enemy::PlayAnimation(const std::string& name, bool loop)
                 int animIndex = 0;
                 auto aiIt = animModelAnimIndex_.find(name);
                 if (aiIt != animModelAnimIndex_.end()) animIndex = aiIt->second;
-                attachedAnimAttachIndex_ = MV1AttachAnim(modelHandle_, animIndex, animModel, FALSE);
+                attachedAnimAttachIndex_ = MV1AttachAnim(modelHandle_, animIndex, animModel, TRUE);
                 if (attachedAnimAttachIndex_ >= 0) {
                     attachedAnimTotalTime_ = MV1GetAttachAnimTotalTime(modelHandle_, attachedAnimAttachIndex_);
+                    // log which anim inside the animModel is being used
+#ifdef MV1GetAnimName
+                    const char* chosenAnimName = MV1GetAnimName(animModel, animIndex);
+                    if (chosenAnimName) {
+                        LogMsg(std::string("Enemy: attached anim resource name='") + chosenAnimName + "'");
+                    }
+#endif
                     // start at 0
                     MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, 0.0f);
                     // set blend rate to immediate for simplicity
@@ -207,6 +238,16 @@ void Enemy::UpdateAnimation(float dt)
         }
         // Even if attachedAnimTotalTime_ <= 0, try to set time anyway.
         MV1SetAttachAnimTime(modelHandle_, attachedAnimAttachIndex_, animTime_);
+
+        // Periodic debug logging to help diagnose in-place vs root-motion issues.
+        static float debugLogAcc = 0.0f;
+        debugLogAcc += dt;
+        if (debugLogAcc >= 0.5f) {
+            debugLogAcc = 0.0f;
+            LogMsg(std::string("Enemy: anim debug current='") + currentAnim_ + "' attachIndex=" + std::to_string(attachedAnimAttachIndex_) +
+                   " animTime=" + std::to_string(animTime_) + " totalTime=" + std::to_string(attachedAnimTotalTime_) +
+                   " modelHandle=" + std::to_string(modelHandle_) + " animDirectModel=" + std::to_string(animDirectModelHandle_));
+        }
         return;
     }
 

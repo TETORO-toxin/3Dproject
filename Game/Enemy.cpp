@@ -1,5 +1,6 @@
 #include "Enemy.h"
 #include "Log.h"
+#include "../Sys/Assets.h"
 #include <cmath>
 #include <algorithm>
 #include <string>
@@ -36,17 +37,13 @@ Enemy::Enemy(const VECTOR& pos)
 {
     // try to load base model: prefer NX, fall back to mirai
     LogMsg("Enemy: constructor start");
-    modelHandle_ = MV1LoadModel("assets/models/NX.mv1");
-    if (modelHandle_ < 0) {
-        // try mirai fallback
-        modelHandle_ = MV1LoadModel("assets/models/mirai.mv1");
-        if (modelHandle_ >= 0) {
-            LogMsg(std::string("Enemy: loaded base model from 'assets/models/NX.mv1' (handle=") + std::to_string(modelHandle_) + ")");
-        } else {
-            LogMsg("Enemy: failed to load base model from NX and mirai");
-        }
+    // Use AssetsMgr to obtain a duplicated instance of the shared base model.
+    AssetsMgr& am = GetAssetsMgr();
+    modelHandle_ = am.CreateEnemyModelInstance();
+    if (modelHandle_ >= 0) {
+        LogMsg(std::string("Enemy: created duplicated base model (handle=") + std::to_string(modelHandle_) + ")");
     } else {
-        LogMsg(std::string("Enemy: loaded base model from 'assets/models/NX.mv1' (handle=") + std::to_string(modelHandle_) + ")");
+        LogMsg("Enemy: failed to create duplicated base model from shared assets");
     }
     // scale down base model for visual size
     if (modelHandle_ >= 0) {
@@ -123,10 +120,9 @@ bool Enemy::HasLineOfSight(const VECTOR& a, const VECTOR& b) const
 Enemy::~Enemy()
 {
     // delete loaded models if owned
+    // modelHandle_ is a duplicated instance created via AssetsMgr::CreateEnemyModelInstance
     if (modelHandle_ >= 0) MV1DeleteModel(modelHandle_);
-    for (auto &p : animModelHandles_) {
-        if (p.second >= 0) MV1DeleteModel(p.second);
-    }
+    // animModelHandles_ store shared cached handles from AssetsMgr; do NOT delete them here.
 }
 
 void Enemy::Update(float dt)
