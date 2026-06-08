@@ -25,12 +25,12 @@ void Enemy::LoadAnimations()
             h = MV1LoadModel(fn2.c_str());
             if (h < 0) {
                 // try additional common variants (lowercase/Capitalized)
-                std::string alt1 = std::string("assets/models/mirai_") + name + ".mv1";
+                std::string alt1 = std::string("assets/models/NX_") + name + ".mv1";
                 h = MV1LoadModel(alt1.c_str());
                 if (h < 0) {
                     std::string cap = name;
                     if (!cap.empty()) cap[0] = (char)toupper((unsigned char)cap[0]);
-                    std::string alt2 = std::string("assets/models/mirai_") + cap + ".mv1";
+                    std::string alt2 = std::string("assets/models/NX_") + cap + ".mv1";
                     h = MV1LoadModel(alt2.c_str());
                     if (h >= 0) {
                         LogMsg(std::string("Enemy: loaded anim '") + name + "' from variant '" + alt2 + "' (handle=" + std::to_string(h) + ")");
