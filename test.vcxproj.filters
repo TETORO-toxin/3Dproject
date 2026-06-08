@@ -138,14 +138,14 @@
     <ClCompile Include="Game\CameraRig.cpp">
       <Filter>ソース ファイル\Game\CameraRig</Filter>
     </ClCompile>
-    <ClCompile Include="Game\WeaponPickup.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Game\Enemy_Animation.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\Game\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\WeaponPickup.cpp">
+      <Filter>ソース ファイル\Game\Support</Filter>
     </ClCompile>
     <ClCompile Include="Game\NavMesh.cpp">
-      <Filter>ソース ファイル</Filter>
+      <Filter>ソース ファイル\Game\Enemy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -206,20 +206,20 @@
     <ClInclude Include="Game\CameraRig.h">
       <Filter>ソース ファイル\Game\CameraRig</Filter>
     </ClInclude>
-    <ClInclude Include="Sys\InputActions.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\WeaponPickup.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\WeaponTypes.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\NavMesh.h">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Log.h">
       <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Sys\InputActions.h">
+      <Filter>ソース ファイル\Game\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\WeaponPickup.h">
+      <Filter>ソース ファイル\Game\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\WeaponTypes.h">
+      <Filter>ソース ファイル\Game\Support</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\NavMesh.h">
+      <Filter>ソース ファイル\Game\Enemy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
