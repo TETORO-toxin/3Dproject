@@ -18,6 +18,9 @@ public:
 
     VECTOR GetPosition() const;
 
+    // Nudge position by delta (used by scene manager separation pass)
+    void NudgePosition(const VECTOR& delta);
+
     // Combat-related
     float GetWeakGauge() const { return weakGauge; }
     bool  IsWeak() const { return isWeak; }
@@ -30,11 +33,15 @@ public:
     void LoadAnimations();
     void PlayAnimation(const std::string& name, bool loop = false);
     void UpdateAnimation(float dt);
+    void SetAnimationSpeed(const std::string& name, float speed) { animPlaybackSpeed_[name] = speed; }
 
     // Simple AI / movement target
     void SetTarget(const VECTOR& t) { targetPos_ = t; }
     void SetNavMesh(const NavMesh* nav) { navMesh_ = nav; }
     void RequestPathTo(const VECTOR& goal);
+
+    // Line-of-sight check using NavMesh occupancy (samples along segment)
+    bool HasLineOfSight(const VECTOR& a, const VECTOR& b) const;
 
 private:
     int modelHandle_ = -1;
@@ -42,7 +49,11 @@ private:
 
     // Animation / model attachments
     std::unordered_map<std::string,int> animModelHandles_;
+    // optional: map animation name -> animation index inside anim model
+    std::unordered_map<std::string,int> animModelAnimIndex_;
     std::unordered_map<std::string,bool> attachAttempted_;
+    // per-animation playback speed multiplier (1.0 = normal)
+    std::unordered_map<std::string,float> animPlaybackSpeed_;
     int attachedAnimAttachIndex_ = -1;
     // When attachment is not possible, draw the anim model directly as a fallback.
     // Stores the anim model handle to draw instead of relying on attach API.

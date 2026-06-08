@@ -282,6 +282,62 @@ void SceneMgr::Update()
         edepths.push_back({e, zcam, uiVis, sZ, sX, sY});
     }
 
+    // Separation pass: nudge overlapping grounded enemies apart so they don't visually stack.
+    const float minSeparation = 1.0f; // desired minimum distance on XZ plane
+    const float minSepSq = minSeparation * minSeparation;
+    for (size_t i = 0; i < edepths.size(); ++i) {
+        for (size_t j = i + 1; j < edepths.size(); ++j) {
+            Enemy* a = edepths[i].e;
+            Enemy* b = edepths[j].e;
+            // don't push airborne enemies
+            if (a->IsAirborne() || b->IsAirborne()) continue;
+            VECTOR pa = a->GetPosition();
+            VECTOR pb = b->GetPosition();
+            float dx = pb.x - pa.x;
+            float dz = pb.z - pa.z;
+            float d2 = dx*dx + dz*dz;
+            if (d2 < minSepSq) {
+                float d = sqrtf(d2);
+                if (d < 1e-5f) {
+                    // exactly overlapping: separate along X axis
+                    float push = minSeparation * 0.5f;
+                    a->NudgePosition(VGet(-push, 0.0f, 0.0f));
+                    b->NudgePosition(VGet(push, 0.0f, 0.0f));
+                } else {
+                    float overlap = minSeparation - d;
+                    float half = overlap * 0.5f;
+                    float nx = dx / d;
+                    float nz = dz / d;
+                    // move a negative direction, b positive direction along the line
+                    a->NudgePosition(VGet(-nx * half, 0.0f, -nz * half));
+                    b->NudgePosition(VGet(nx * half, 0.0f, nz * half));
+                }
+            }
+        }
+    }
+
+    // After nudging, recompute depth/screen positions used for UI and ordering
+    for (auto &ed : edepths) {
+        VECTOR epos = ed.e->GetPosition();
+        VECTOR camTo = VSub(epos, camPos);
+        ed.z = fwd.x * camTo.x + fwd.y * camTo.y + fwd.z * camTo.z;
+
+        VECTOR head = VAdd(epos, VGet(0.0f, 2.0f, 0.0f));
+        VECTOR camToHead = VSub(head, camPos);
+        float zcamHead = fwd.x * camToHead.x + fwd.y * camToHead.y + fwd.z * camToHead.z;
+        ed.uiVisible = false;
+        ed.screenX = 0; ed.screenY = 0; ed.screenZ = 0;
+        if (zcamHead > 0.001f) {
+            VECTOR scr = ConvWorldPosToScreenPos(head);
+            ed.screenX = scr.x; ed.screenY = scr.y; ed.screenZ = scr.z;
+            const float minFrontZ = 0.01f;
+            const float screenPosLimit = 10000.0f;
+            if (scr.z > minFrontZ && std::fabs(scr.x) < screenPosLimit && std::fabs(scr.y) < screenPosLimit) {
+                ed.uiVisible = true;
+            }
+        }
+    }
+
     // 敵の UI オーバーレイを描画（描画順に依存しない） - 既存挙動を維持
     Enemy* bestForUI = best;
     for (const auto &ed : edepths) {
