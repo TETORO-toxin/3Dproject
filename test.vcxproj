@@ -24,8 +24,10 @@
     <ClCompile Include="Code\DxLibMain.cpp" />
     <ClCompile Include="Game\AuxUnit.cpp" />
     <ClCompile Include="Game\CameraRig.cpp" />
+    <ClCompile Include="Game\Coin.cpp" />
     <ClCompile Include="Game\Enemy.cpp" />
     <ClCompile Include="Game\Enemy_Animation.cpp" />
+    <ClCompile Include="Game\JustTimingSystem.cpp" />
     <ClCompile Include="Game\NavMesh.cpp" />
     <ClCompile Include="Game\Player.cpp" />
     <ClCompile Include="Game\Player_Animation.cpp" />
@@ -35,6 +37,7 @@
     <ClCompile Include="Game\Player_InputAndMovement.cpp" />
     <ClCompile Include="Game\Projectile.cpp" />
     <ClCompile Include="Game\SupportSystem.cpp" />
+    <ClCompile Include="Game\TimescaleManager.cpp" />
     <ClCompile Include="Game\UI3D2D.cpp" />
     <ClCompile Include="Game\WeaponPickup.cpp" />
     <ClCompile Include="main.cpp" />
@@ -50,13 +53,17 @@
     <ClInclude Include="App\TitleScene.h" />
     <ClInclude Include="Game\AuxUnit.h" />
     <ClInclude Include="Game\CameraRig.h" />
+    <ClInclude Include="Game\Coin.h" />
     <ClInclude Include="Game\Enemy.h" />
+    <ClInclude Include="Game\GameParams.h" />
+    <ClInclude Include="Game\JustTimingSystem.h" />
     <ClInclude Include="Game\Log.h" />
     <ClInclude Include="Game\NavMesh.h" />
     <ClInclude Include="Game\Player.h" />
     <ClInclude Include="Game\Projectile.h" />
     <ClInclude Include="Game\Support.h" />
     <ClInclude Include="Game\SupportSystem.h" />
+    <ClInclude Include="Game\TimescaleManager.h" />
     <ClInclude Include="Game\UI3D2D.h" />
     <ClInclude Include="Game\WeaponPickup.h" />
     <ClInclude Include="Game\WeaponTypes.h" />

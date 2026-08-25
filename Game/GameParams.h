@@ -20,7 +20,7 @@ namespace Params {
     constexpr float SLOW_TRANSITION_SPEED = 5.0f;    // frames to transition into slow
 
     // ========== Just Timing ==========
-    constexpr int JUST_TOLERANCE_FRAMES = 3;         // ±3 frames @ 60fps = ~100ms
+    constexpr int JUST_TOLERANCE_FRAMES = 3;         // ±3 frames 60fps = ~100ms
     constexpr float JUST_HIT_DAMAGE_MULT = 2.5f;     // Damage multiplier on just hit
 
     // ========== Reload System ==========
@@ -33,7 +33,7 @@ namespace Params {
     constexpr float SELF_HIT_DAMAGE = 5.0f;          // Damage if shot misses and hits self
 
     // ========== Audio ==========
-    // Sound file paths (to be populated later when assets are ready)
+    // Sound file paths 
     constexpr const char* SOUND_KIN = "assets/sounds/kin.mp3";          // 「キン！」音
     constexpr const char* SOUND_SHOOT = "assets/sounds/shoot.mp3";      // 射撃音
     constexpr const char* SOUND_SELFHIT = "assets/sounds/selfhit.mp3";  // 自傷音
