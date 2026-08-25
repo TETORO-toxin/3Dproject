@@ -37,6 +37,7 @@
     <ClCompile Include="Game\Player_Init.cpp" />
     <ClCompile Include="Game\Player_InputAndMovement.cpp" />
     <ClCompile Include="Game\Projectile.cpp" />
+    <ClCompile Include="Game\SlowmotionManager.cpp" />
     <ClCompile Include="Game\SupportSystem.cpp" />
     <ClCompile Include="Game\TimescaleManager.cpp" />
     <ClCompile Include="Game\UI3D2D.cpp" />
