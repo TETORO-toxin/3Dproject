@@ -63,6 +63,7 @@
     <ClInclude Include="Game\NavMesh.h" />
     <ClInclude Include="Game\Player.h" />
     <ClInclude Include="Game\Projectile.h" />
+    <ClInclude Include="Game\SlowmotionManager.h" />
     <ClInclude Include="Game\Support.h" />
     <ClInclude Include="Game\SupportSystem.h" />
     <ClInclude Include="Game\TimescaleManager.h" />

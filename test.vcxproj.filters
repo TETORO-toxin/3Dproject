@@ -248,5 +248,8 @@
     <ClInclude Include="Game\ComboSystem.h">
       <Filter>ソース ファイル\Game</Filter>
     </ClInclude>
+    <ClInclude Include="Game\SlowmotionManager.h">
+      <Filter>ソース ファイル\Game</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

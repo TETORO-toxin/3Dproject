@@ -2,6 +2,7 @@
 #include "DxLib.h"
 #include "Coin.h"
 #include <vector>
+#include "GameParams.h"
 
 namespace Game {
 

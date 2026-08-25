@@ -1,5 +1,6 @@
 #include "JustTimingSystem.h"
 #include "GameParams.h"
+#include <algorithm>
 
 namespace Game {
 
@@ -10,7 +11,7 @@ void JustTimingSystem::StartJustWindow(int coinIndex)
     // Add a new just window for this coin
     JustWindow window;
     window.coinIndex = coinIndex;
-    window.framesRemaining = Params::JUST_WINDOW_FRAMES;
+    window.framesRemaining = Params::JUST_TOLERANCE_FRAMES;
     justWindows_.push_back(window);
 }
 
