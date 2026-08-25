@@ -242,5 +242,8 @@
     <ClInclude Include="Game\TimescaleManager.h">
       <Filter>ソース ファイル\Game</Filter>
     </ClInclude>
+    <ClInclude Include="Game\ComboSystem.h">
+      <Filter>ソース ファイル\Game</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

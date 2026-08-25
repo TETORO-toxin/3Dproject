@@ -54,6 +54,7 @@
     <ClInclude Include="Game\AuxUnit.h" />
     <ClInclude Include="Game\CameraRig.h" />
     <ClInclude Include="Game\Coin.h" />
+    <ClInclude Include="Game\ComboSystem.h" />
     <ClInclude Include="Game\Enemy.h" />
     <ClInclude Include="Game\GameParams.h" />
     <ClInclude Include="Game\JustTimingSystem.h" />
