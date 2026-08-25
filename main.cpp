@@ -54,8 +54,8 @@ static void ReleaseCursorClip()
 }
 
 //-------------------------------------------------------//
-//　　　　　　　　【なつやすみかだい】　　　　　　　　   //
-// 自分の好きなゲームを作ってみよう！ 　　　　　　　　   //
+//　　　　　　　　【なつやすみかだい】　　　　　　　　   　　//
+// 自分の好きなゲームを作ってみよう！ 　　　　　　　　  //
 //                                                       //
 // Init(),Update()に処理を実装しよう！　　　　　　　　   //
 // 必要な変数,関数はmain.hに追加してみよう！　　　　     //
@@ -168,7 +168,7 @@ static int RunApp()
             ReleaseCursorClip();
         }
 
-        // 高レベルな例: Resultに達したらEnterでTitleに戻る
+        //Resultに達したらEnterでTitleに戻る
         if (currScene == SceneMgr::Scene::Result) {
             DrawFormatString(300, 560, GetColor(255,180,100), "Press Enter to return to Title");
             if (CheckHitKey(KEY_INPUT_RETURN)) {
