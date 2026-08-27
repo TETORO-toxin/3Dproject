@@ -219,7 +219,7 @@ void TitleScene::Draw()
     }
 
     // UIÅimSceneGraphè„Ç…ï`Ç≠Åj
-    DrawStringToHandle(60, 70, "ORBITAL STATION : ENGINE SECTOR", GetColor(200, 240, 255), mFontTitle);
+    DrawStringToHandle(60, 70, "THROALL`IN", GetColor(200, 240, 255), mFontTitle);
 
     int blinkA = (int)(120 + 120 * (0.5f + 0.5f * sinf(mTime * 3.0f)));
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, blinkA);
