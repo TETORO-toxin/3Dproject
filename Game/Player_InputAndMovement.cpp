@@ -1,4 +1,3 @@
-
 #include "Player.h"
 #include "../Sys/Input.h"
 #include "../Sys/DebugPrint.h"
@@ -24,9 +23,100 @@ static VECTOR GetPlayerForward(const Player* player, const CameraRig* camera)
 
 void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<Enemy*>& enemies)
 {
-    (void)dt;
-    (void)in;
-    (void)enemies;
+    bool attackKeyDown = in.attackLightDown || in.attackHeavyDown || in.mouseLeft || in.mouseRight;
+    bool attackKeyPressed = in.attackLightPressed || in.attackHeavyPressed || in.mouseLeft || in.mouseRight;
+
+    if (state_ == PlayerState::STATE_NORMAL)
+    {
+        if (attackKeyPressed)
+        {
+            state_ = PlayerState::STATE_THROW_CHARGING;
+            chargeTime_ = 0.0f;
+            coinAlive_ = true;
+            attackKeyHeld_ = true;
+            reflectHitEnemy_ = nullptr;
+
+            VECTOR forward = GetPlayerForward(this, camera_);
+            VECTOR muzzlePos = VAdd(GetPosition(), VGet(0.0f, 1.5f, 0.0f));
+            muzzlePos = VAdd(muzzlePos, VScale(forward, 1.5f));
+
+            coinPos_ = muzzlePos;
+            coinVel_ = VGet(forward.x * 6.5f, 5.5f, forward.z * 6.5f);
+            currentTimeScale_ = slowMotionScale_;
+            reflectShotDrawn_ = false;
+            reflectHit_ = false;
+            reflectTarget_ = coinPos_;
+            reflectDrawTimer_ = 0.0f;
+        }
+    }
+
+    if (state_ == PlayerState::STATE_THROW_CHARGING)
+    {
+        attackKeyHeld_ = attackKeyDown;
+        float scaledDt = dt * slowMotionScale_;
+        chargeTime_ += scaledDt;
+
+        coinVel_.y -= 18.0f * scaledDt;
+        coinPos_ = VAdd(coinPos_, VScale(coinVel_, scaledDt));
+
+        if (coinPos_.y <= 0.0f)
+        {
+            coinPos_.y = 0.0f;
+            coinAlive_ = false;
+            state_ = PlayerState::STATE_NORMAL;
+            currentTimeScale_ = 1.0f;
+            reflectShotDrawn_ = false;
+            return;
+        }
+
+        coinFocusTarget_ = coinPos_;
+
+        if (!attackKeyDown)
+        {
+            Enemy* bestEnemy = nullptr;
+            float bestDistSq = 999999.0f;
+
+            for (Enemy* e : enemies)
+            {
+                if (!e) continue;
+                VECTOR diff = VSub(e->GetPosition(), coinPos_);
+                float distSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+                if (distSq < bestDistSq)
+                {
+                    bestDistSq = distSq;
+                    bestEnemy = e;
+                }
+            }
+
+            reflectHitEnemy_ = nullptr;
+            bool hitEnemy = (bestEnemy != nullptr && bestDistSq < 25.0f);
+            if (hitEnemy)
+            {
+                reflectHitEnemy_ = bestEnemy;
+                reflectHit_ = true;
+                reflectTarget_ = bestEnemy->GetPosition();
+                bestEnemy->ApplyHitWEAK(100.0f);
+                bestEnemy->Launch();
+                DebugPrint("Enemy weak-hit confirmed: enemy at (%.2f, %.2f, %.2f)\n",
+                    reflectTarget_.x, reflectTarget_.y, reflectTarget_.z);
+            }
+            else
+            {
+                reflectHit_ = false;
+                reflectTarget_ = VAdd(coinPos_, VGet(
+                    (GetRand(200) - 100) * 0.05f,
+                    1.0f + (GetRand(100) * 0.02f),
+                    (GetRand(200) - 100) * 0.05f));
+            }
+
+            reflectShotDrawn_ = true;
+            reflectDrawTimer_ = 0.8f;
+            coinAlive_ = false;
+            state_ = PlayerState::STATE_NORMAL;
+            currentTimeScale_ = 1.0f;
+            return;
+        }
+    }
 }
 
 void Player::UpdateLogic(float dt, const InputState& in)
