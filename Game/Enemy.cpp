@@ -129,7 +129,7 @@ void Enemy::Update(float dt)
 {
     // airborne vertical physics
     if (airborne) {
-        velY -= 9.8f * dt; // �d��
+        velY -= 9.8f * dt; // 重力
         pos_.y += velY * dt;
         if (pos_.y <= 0.0f) {
             pos_.y = 0.0f;
@@ -184,35 +184,34 @@ void Enemy::Update(float dt)
         moveTarget = pos_;
     }
 
-    // Keep a reasonable attack distance from the player instead of closing to zero.
-    // This prevents the enemy from overlapping the player and feeling stuck in contact.
+    // Keep a safe chase distance from the player so enemies do not close to zero distance.
+    // This ensures they approach, but stop short of overlapping the player.
     const float desiredKeepDistance = 1.8f;
-    const float keepDistanceError = 0.25f;
+    const float arrivalThreshold = 0.25f;
 
-    VECTOR chaseTarget = moveTarget;
-    VECTOR toTarget = VSub(chaseTarget, pos_);
+    VECTOR chasePos = moveTarget;
+    VECTOR toTarget = VSub(chasePos, pos_);
     float targetDistXZ = sqrtf(toTarget.x*toTarget.x + toTarget.z*toTarget.z);
-    if (targetDistXZ > 0.0001f) {
-        const float targetScale = 1.0f / targetDistXZ;
-        VECTOR dir = VGet(toTarget.x * targetScale, 0.0f, toTarget.z * targetScale);
-        VECTOR desiredPos = VAdd(chaseTarget, VScale(dir, -desiredKeepDistance));
 
-        // Use the keep-distance point as the actual movement target.
-        // If the enemy is already within the desired range, it will hover rather than
-        // closing to zero distance; if it is farther away, it advances toward this point.
-        VECTOR desiredDiff = VSub(desiredPos, pos_);
-        float desiredDistXZ = sqrtf(desiredDiff.x*desiredDiff.x + desiredDiff.z*desiredDiff.z);
-        if (desiredDistXZ > 0.0001f) {
-            float nx = desiredDiff.x / desiredDistXZ;
-            float nz = desiredDiff.z / desiredDistXZ;
+    if (targetDistXZ > 0.0001f) {
+        // Move toward a point slightly behind the target instead of directly on top of it.
+        VECTOR dir = VGet(toTarget.x / targetDistXZ, 0.0f, toTarget.z / targetDistXZ);
+        VECTOR desiredPos = VAdd(chasePos, VScale(dir, -desiredKeepDistance));
+
+        VECTOR diff = VSub(desiredPos, pos_);
+        float distXZ = sqrtf(diff.x*diff.x + diff.z*diff.z);
+
+        if (distXZ > arrivalThreshold) {
+            float nx = diff.x / distXZ;
+            float nz = diff.z / distXZ;
             float move = moveSpeed_ * dt;
-            if (move > desiredDistXZ) move = desiredDistXZ;
+            if (move > distXZ) move = distXZ;
             pos_.x += nx * move;
             pos_.z += nz * move;
         }
 
-        // Face the player, but keep a stable offset so the model does not end up
-        // turning as if it were standing directly on top of the player.
+        // Face the player, but keep a stable offset so the model doesn't end up turning as if
+        // it were standing directly on top of the player.
         VECTOR lookDiff = VSub(targetPos_, pos_);
         float ldx = lookDiff.x;
         float ldz = lookDiff.z;
@@ -223,15 +222,8 @@ void Enemy::Update(float dt)
         }
 
         if (currentAnim_ != "move") PlayAnimation("move", true);
-
-        // If the enemy is too close to the player, back off slightly instead of staying in contact.
-        if (targetDistXZ < desiredKeepDistance - keepDistanceError) {
-            float nudge = (desiredKeepDistance - targetDistXZ) * 0.5f;
-            if (targetDistXZ > 0.0001f) {
-                pos_.x -= (toTarget.x / targetDistXZ) * nudge;
-                pos_.z -= (toTarget.z / targetDistXZ) * nudge;
-            }
-        }
+    } else {
+        if (currentAnim_ != "idle") PlayAnimation("idle", true);
     }
 
     // update animation playhead
