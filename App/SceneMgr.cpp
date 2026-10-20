@@ -21,27 +21,21 @@ static void DrawGroundGrid(const VECTOR& planePoint, const VECTOR& planeNormal, 
     unsigned int col = GetColor(60, 60, 60);
     unsigned int centerCol = GetColor(120, 120, 160);
 
-    // •½–Êã‚Ì’¼Œğ’PˆÊŠî’ê (u, v) ‚ğ\’z
     VECTOR n = planeNormal;
-    // n ‚ğ³‹K‰»
     float nlen = sqrtf(n.x*n.x + n.y*n.y + n.z*n.z);
     if (nlen < 1e-6f) n = VGet(0.0f, 1.0f, 0.0f);
     else n = VGet(n.x / nlen, n.y / nlen, n.z / nlen);
 
-    // Œğ·‚³‚¹‚é”CˆÓ‚ÌƒxƒNƒgƒ‹‚ğ‘I‘ğin ‚Æ•½s‚Å‚È‚¢‚à‚Ìj
     VECTOR arbitrary = (fabsf(n.x) < 0.9f) ? VGet(1.0f, 0.0f, 0.0f) : VGet(0.0f, 1.0f, 0.0f);
-    // u = normalize(cross(arbitrary, n)) -> Úü•ûŒü1
     VECTOR u = VCross(arbitrary, n);
     float ulen = sqrtf(u.x*u.x + u.y*u.y + u.z*u.z);
     if (ulen < 1e-6f) u = VGet(1.0f, 0.0f, 0.0f);
     else u = VGet(u.x / ulen, u.y / ulen, u.z / ulen);
-    // v = cross(n, u) iÚü•ûŒü2j
     VECTOR v = VCross(n, u);
     float vlen = sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
     if (vlen < 1e-6f) v = VGet(0.0f, 0.0f, 1.0f);
     else v = VGet(v.x / vlen, v.y / vlen, v.z / vlen);
 
-    // u ‚ÌƒIƒtƒZƒbƒg‚²‚Æ‚É v ‚É•½s‚Èü‚ğ•`‰æ
     for (float du = -size; du <= size; du += step) {
         VECTOR offset = VAdd(VScale(u, du), planePoint);
         VECTOR a = VAdd(offset, VScale(v, -size));
@@ -49,7 +43,6 @@ static void DrawGroundGrid(const VECTOR& planePoint, const VECTOR& planeNormal, 
         unsigned int c = (fabsf(du) < 1e-6f) ? centerCol : col;
         DrawLine3D(a, b, c);
     }
-    // v ‚ÌƒIƒtƒZƒbƒg‚²‚Æ‚É u ‚É•½s‚Èü‚ğ•`‰æ
     for (float dv = -size; dv <= size; dv += step) {
         VECTOR offset = VAdd(VScale(v, dv), planePoint);
         VECTOR a = VAdd(offset, VScale(u, -size));
@@ -61,120 +54,91 @@ static void DrawGroundGrid(const VECTOR& planePoint, const VECTOR& planeNormal, 
 
 void SceneMgr::Init()
 {
-    // Å¬ŒÀ‚ÌƒVƒXƒeƒ€‚ğì¬
     assets_ = new AssetsMgr();
     assets_->Init();
 
-    // ƒ‰ƒCƒeƒBƒ“ƒOiŠÂ‹«Œõ/”wŒij‚ğ‰Šú‰»
     Lighting::InitDefault();
 
     player_ = new Player(assets_);
     camera_ = new CameraRig();
     player_->SetCamera(camera_);
 
-    // initialize a simple NavMesh covering reasonable play area
-    // cellSize = 1.0, origin at (-50,0,-50) covering 100x100
     navMesh_.Initialize(100, 100, 1.0f, VGet(-50.0f, 0.0f, -50.0f));
-    // mark some rectangular obstacles (example)
     for (int z = 20; z < 30; ++z) {
         for (int x = 40; x < 50; ++x) {
             navMesh_.SetBlocked(x, z, true);
         }
     }
 
-    // ƒOƒ[ƒoƒ‹‚È EffectManager ‚ª–¢İ’è‚Ìê‡‚Ì‚İ¶¬‚·‚éB
-    // Šù‚É•Ê‚ÌŠ—LÒ‚ª‚¢‚éê‡‚ÍŠ—LŒ ‚ğæ‚ç‚È‚¢B
     EffectManager* existing = GetGlobalEffectManager();
     if (existing == nullptr) {
         effects_ = new EffectManager();
         SetGlobalEffectManager(effects_);
     } else {
-        effects_ = nullptr; // Š—L‚µ‚È‚¢
-        // Šù‘¶‚ÌƒOƒ[ƒoƒ‹ƒ}ƒl[ƒWƒƒ[‚ğ‚»‚Ì‚Ü‚ÜˆÛ‚·‚é
+        effects_ = nullptr;
     }
 
-    // ƒTƒ“ƒvƒ‹‚Ì“G‚ğ¶¬
     enemies_.push_back(new Enemy(VGet(6.0f, 0.0f, 10.0f)));
     enemies_.push_back(new Enemy(VGet(-8.0f, 0.0f, 18.0f)));
     enemies_.push_back(new Enemy(VGet(2.0f, 0.0f, 26.0f)));
-    // NavMesh ‚ğ“G‚É“n‚·iEnemy::RequestPathTo ‚Í navMesh_ ‚ª nullptr ‚Ìê‡‰½‚à‚µ‚È‚¢j
     for (auto e : enemies_) { e->SetNavMesh(&navMesh_); }
 
     prevTimeMs_ = GetNowCount();
 
-    // ƒ^ƒCƒgƒ‹ƒV[ƒ“‚ğ‰Šú‰»
     titleScene_ = new TitleScene();
     titleScene_->Init(player_, camera_, assets_);
 
-    // ƒJƒƒ‰‚É’n–Ê•½–Ê‚ğ’Ê’miƒfƒtƒHƒ‹ƒg‚Í y=0 ‚Ì…•½–Êj
     groundPoint_ = VGet(0.0f, 0.0f, 0.0f);
     groundNormal_ = VGet(0.0f, 1.0f, 0.0f);
     camera_->SetGroundPlane(groundPoint_, groundNormal_);
 
-    // ƒtƒB[ƒ‹ƒh‚É“SƒpƒCƒv‚ğ”z’u‚·‚é (ƒvƒŒƒCƒ„[‚Ì‘O•û‚É‚¢‚­‚Â‚©)
     VECTOR ppos = player_->GetPosition();
-    // 1‚Â–Ú: ­‚µ‘O (AssetsMgr ‚ğ“n‚µ‚Äƒ‚ƒfƒ‹‹¤—L)
     weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(0.0f, 0.0f, 3.0f)), assets_));
-    // 2‚Â–Ú: ‰E‘O
     weaponPickups_.push_back(Game::WeaponPickup(Game::WeaponType::IronPipe, VAdd(ppos, VGet(2.0f, 0.0f, 4.0f)), assets_));
 }
 
 SceneMgr::~SceneMgr()
 {
-    // ƒ^ƒCƒgƒ‹ƒV[ƒ“‚ğíœ
     if (titleScene_) { delete titleScene_; titleScene_ = nullptr; }
-
-    // “G‚ğíœ
     for (auto e : enemies_) { delete e; }
     enemies_.clear();
-
-    // ƒJƒƒ‰‚ÆƒvƒŒƒCƒ„[‚ğíœ
     if (camera_) { delete camera_; camera_ = nullptr; }
     if (player_) { delete player_; player_ = nullptr; }
-
-    // ƒAƒZƒbƒg‚ğíœ
     if (assets_) { delete assets_; assets_ = nullptr; }
-
-    // ƒOƒ[ƒoƒ‹‚ÌƒGƒtƒFƒNƒgƒ}ƒl[ƒWƒƒ[‚ğ‚±‚±‚ÅíœEƒNƒŠƒA‚µ‚Ä‚Í‚¢‚¯‚È‚¢B
-    // ƒOƒ‰ƒtƒBƒbƒNƒX/ƒfƒoƒCƒX‚ÌI—¹ˆ—‹£‡‚ğ”ğ‚¯‚é‚½‚ßADxLib I—¹Œã‚ÉƒAƒvƒŠƒP[ƒVƒ‡ƒ“‘¤‚ÅƒNƒŠ[ƒ“ƒAƒbƒv‚³‚ê‚éB
     effects_ = nullptr;
 }
 
 void SceneMgr::Update()
 {
-    // ƒtƒŒ[ƒ€ŠJn‚Éˆê“x‚¾‚¯“ü—Í‚ğæ“¾‚µŠeƒVƒXƒeƒ€‚É”z•z‚·‚éB
-    // ‚±‚ê‚É‚æ‚è“ü—Íˆ—‚ğW’†‰»‚µAPlayer / UI / Pickup “™‚Å‚Ì‹£‡‚ğ§Œä‚Å‚«‚éB
     InputState in = PollInput();
-    // •K—v‚É‰‚¶‚ÄƒfƒoƒbƒO‚âƒƒbƒNƒIƒ“‚Ì—á‚Ì‚½‚ß‚Éƒpƒbƒh‚Ì¶î•ñæ“¾‚à‹–‰Â‚·‚é
     PadState pad = PollPad();
-    bool lockButton = IsButtonDown(pad, PAD_INPUT_4); // —á¦—pƒ{ƒ^ƒ“
+    bool lockButton = IsButtonDown(pad, PAD_INPUT_4);
 
     unsigned int now = GetNowCount();
     float dt = (now - prevTimeMs_) / 1000.0f;
     prevTimeMs_ = now;
 
-    // ˆê’â~‚âƒEƒBƒ“ƒhƒEˆÚ“®‚È‚Ç‚Ì‘å‚«‚ÈƒWƒƒƒ“ƒv‚ğ”ğ‚¯‚é‚½‚ß dt ‚ğƒNƒ‰ƒ“ƒv
     if (dt < 0.0f) dt = 0.0f;
-    if (dt > 0.05f) dt = 0.05f; // max 50ms
+    if (dt > 0.05f) dt = 0.05f;
 
     if (currentScene_ == Scene::Title) {
-        // ƒ^ƒCƒgƒ‹ƒV[ƒ“‚ğXVE•`‰æ
         bool start = titleScene_->Update();
         titleScene_->Draw();
-        if (start) {
-            ChangeScene(Scene::Base);
-        }
+        if (start) ChangeScene(Scene::Base);
         return;
     }
 
-    // ƒvƒŒƒCƒ„[‚ÌƒƒWƒbƒN‚Ì‚İXVi•`‰æ‚Í‘¼‚Ì•`‰æŒã‚És‚¢AƒvƒŒƒCƒ„[‚Å•¢‚¢‰B‚¹‚é‚æ‚¤‚É‚·‚éj
     player_->UpdateLogic(dt, in);
     VECTOR ppos = player_->GetPosition();
 
-    // ƒOƒ[ƒoƒ‹ƒGƒtƒFƒNƒgƒ}ƒl[ƒWƒƒ[‚ÌƒƒWƒbƒN‚ğƒvƒŒƒCƒ„[ˆÊ’u‚ÅXV‚µAÄ¶ˆÊ’u‚ªƒvƒŒƒCƒ„[‚É’Ç]‚·‚é‚æ‚¤‚É‚·‚é
+    std::vector<VECTOR> enemyPositions;
+    for (auto e : enemies_) {
+        enemyPositions.push_back(e->GetPosition());
+    }
+    player_->UpdateCoinThrow(dt, in, enemyPositions);
+
     EffectManager* gem = GetGlobalEffectManager();
     if (gem) {
-        // ƒvƒŒƒCƒ„[ƒGƒtƒFƒNƒg—p‚Ì‘O•û•ûŒü‚ğŒvZ: ƒJƒƒ‰‚Ì XZ ‘O•û‚ğ—DæA–³‚¯‚ê‚Î +Z ‚ğg—p
         VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
         if (camera_) forward = camera_->GetForwardXZ();
         float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
@@ -183,42 +147,15 @@ void SceneMgr::Update()
         gem->Update(ppos, forward);
     }
 
-    // ƒfƒoƒbƒO: F1 ‚ğ‰Ÿ‚·‚ÆƒvƒŒƒCƒ„[‘O•û‚ÉƒGƒtƒFƒNƒg‚ğ¶¬‚µ‚ÄÄ¶/‰Â‹«‚ğŠm”F
-    if (CheckHitKey(KEY_INPUT_F1)) {
-        if (gem) {
-            // ƒJƒƒ‰Šî€‚Å¶¬iBj: ƒJƒƒ‰ˆÊ’u‚Ì­‚µ‘O‚Éo‚µ‚ÄŠmÀ‚ÉŒ©‚¦‚é‚æ‚¤‚É‚·‚é
-            VECTOR camPos = camera_->GetCameraPosition();
-            VECTOR forwardCam = camera_->GetForwardXZ();
-            float fl = sqrtf(forwardCam.x*forwardCam.x + forwardCam.y*forwardCam.y + forwardCam.z*forwardCam.z);
-            if (fl > 1e-6f) forwardCam = VGet(forwardCam.x/fl, forwardCam.y/fl, forwardCam.z/fl);
-            VECTOR posCam = VAdd(camPos, VAdd(VScale(forwardCam, 4.0f), VGet(0.0f, 0.0f, 0.0f)));
-            DebugPrint("F1 spawn effect (camera-front) at %.2f,%.2f,%.2f\n", posCam.x, posCam.y, posCam.z);
-            gem->PlayEffectAt(posCam, nullptr, 3.0f);
-
-            // ”äŠr‚Ì‚½‚ßƒvƒŒƒCƒ„[‘O•û‚É‚à¶¬
-            VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
-            if (camera_) forward = camera_->GetForwardXZ();
-            float fl2 = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
-            if (fl2 > 1e-6f) forward = VGet(forward.x/fl2, forward.y/fl2, forward.z/fl2);
-            VECTOR pos = VAdd(ppos, VAdd(VScale(forward, 1.4f), VGet(0.0f, 1.6f, 0.0f)));
-            DebugPrint("F1 spawn effect (player-front) at %.2f,%.2f,%.2f\n", pos.x, pos.y, pos.z);
-            gem->PlayEffectAt(pos, nullptr, 3.0f);
-        }
-    }
-
-    // ’n–Ê•½–Ê‚É‰ˆ‚Á‚½ƒOƒŠƒbƒh‚ğ•`‰æi•½–Êã‚Ì^‚Ì 3D ƒOƒŠƒbƒhj
     DrawGroundGrid(groundPoint_, groundNormal_, 60.0f, 1.0f);
-    // NavMesh ‚Ìó‘Ô‚ğ‰Â‹‰»i—Î=’Ês‰Â, Ô=áŠQj
     navMesh_.DebugDraw();
 
-    // ƒƒbƒNƒIƒ“‘I‘ğ: ƒXƒRƒA = Šp“x· * d‚İ + ‹——£
     float bestScore = 1e9f;
     Enemy* best = nullptr;
     for (auto e : enemies_) {
         VECTOR epos = e->GetPosition();
         VECTOR toEnemy = VSub(epos, ppos);
         float dist = VSize(toEnemy);
-        // forward: ƒJƒƒ‰‚Ìƒ^[ƒQƒbƒg‚ªİ’è‚³‚ê‚Ä‚¢‚é‘z’èB`target_` ‚ğ‹ü•ûŒü‚Æ‚µ‚Äg‚¢Aƒ[ƒ‚È‚çƒtƒH[ƒ‹ƒoƒbƒN
         VECTOR forward = VSub(target_, ppos);
         float flen = VSize(forward);
         if (flen < 0.0001f) forward = VGet(0,0,1);
@@ -226,25 +163,22 @@ void SceneMgr::Update()
 
         float dot = (forward.x * toEnemy.x + forward.y * toEnemy.y + forward.z * toEnemy.z) / (dist);
         dot = clamp(dot, -1.0f, 1.0f);
-        float angle = acosf(dot); // ƒ‰ƒWƒAƒ“’PˆÊ
+        float angle = acosf(dot);
 
-        // ƒXƒRƒA: Šp“xd‚İ + ³‹K‰»‹——£
         float score = angle * 2.0f + dist * 0.1f;
-        if (angle < (30.0f * 3.14159f / 180.0f)) { // 30“xˆÈ“à
+        if (angle < (30.0f * 3.14159f / 180.0f)) {
             if (score < bestScore) { bestScore = score; best = e; }
         }
     }
 
     bool locked = (best != nullptr) && lockButton;
 
-    // ƒJƒƒ‰‚ğXV
     if (locked && best) {
         camera_->Update(ppos, best->GetPosition(), true, dt);
     } else {
         camera_->Update(ppos, VGet(0,0,0), false, dt);
     }
 
-    // “G‚ğƒJƒƒ‰‹óŠÔ‚Ì[“x•t‚«‚ÅƒŠƒXƒg‰»‚µAƒvƒŒƒCƒ„[‚Æ‚Ì‘Š‘Î•`‰æ‡‚ğŒˆ‚ß‚é
     struct EnemyDepth { Enemy* e; float z; bool uiVisible; float screenZ; float screenX; float screenY; };
     std::vector<EnemyDepth> edepths;
 
@@ -255,7 +189,6 @@ void SceneMgr::Update()
     else fwd = VGet(fwd.x/fl, fwd.y/fl, fwd.z/fl);
 
     for (auto e : enemies_) {
-        // “G‚Ìƒ^[ƒQƒbƒg‚ğƒvƒŒƒCƒ„[ˆÊ’u‚Éİ’è‚µ‚Ä‚©‚çƒƒWƒbƒN‚ğXV
         e->SetTarget(ppos);
         e->Update(dt);
 
@@ -263,7 +196,6 @@ void SceneMgr::Update()
         VECTOR camTo = VSub(epos, camPos);
         float zcam = fwd.x * camTo.x + fwd.y * camTo.y + fwd.z * camTo.z;
 
-        // UIiÆ€j‚ğ•`‰æ‚·‚×‚«‚©”»’è
         VECTOR head = VAdd(epos, VGet(0.0f, 2.0f, 0.0f));
         VECTOR camToHead = VSub(head, camPos);
         float zcamHead = fwd.x * camToHead.x + fwd.y * camToHead.y + fwd.z * camToHead.z;
@@ -282,14 +214,12 @@ void SceneMgr::Update()
         edepths.push_back({e, zcam, uiVis, sZ, sX, sY});
     }
 
-    // Separation pass: nudge overlapping grounded enemies apart so they don't visually stack.
-    const float minSeparation = 1.0f; // desired minimum distance on XZ plane
+    const float minSeparation = 1.0f;
     const float minSepSq = minSeparation * minSeparation;
     for (size_t i = 0; i < edepths.size(); ++i) {
         for (size_t j = i + 1; j < edepths.size(); ++j) {
             Enemy* a = edepths[i].e;
             Enemy* b = edepths[j].e;
-            // don't push airborne enemies
             if (a->IsAirborne() || b->IsAirborne()) continue;
             VECTOR pa = a->GetPosition();
             VECTOR pb = b->GetPosition();
@@ -299,7 +229,6 @@ void SceneMgr::Update()
             if (d2 < minSepSq) {
                 float d = sqrtf(d2);
                 if (d < 1e-5f) {
-                    // exactly overlapping: separate along X axis
                     float push = minSeparation * 0.5f;
                     a->NudgePosition(VGet(-push, 0.0f, 0.0f));
                     b->NudgePosition(VGet(push, 0.0f, 0.0f));
@@ -308,7 +237,6 @@ void SceneMgr::Update()
                     float half = overlap * 0.5f;
                     float nx = dx / d;
                     float nz = dz / d;
-                    // move a negative direction, b positive direction along the line
                     a->NudgePosition(VGet(-nx * half, 0.0f, -nz * half));
                     b->NudgePosition(VGet(nx * half, 0.0f, nz * half));
                 }
@@ -316,7 +244,6 @@ void SceneMgr::Update()
         }
     }
 
-    // After nudging, recompute depth/screen positions used for UI and ordering
     for (auto &ed : edepths) {
         VECTOR epos = ed.e->GetPosition();
         VECTOR camTo = VSub(epos, camPos);
@@ -338,7 +265,6 @@ void SceneMgr::Update()
         }
     }
 
-    // “G‚Ì UI ƒI[ƒo[ƒŒƒC‚ğ•`‰æi•`‰æ‡‚ÉˆË‘¶‚µ‚È‚¢j - Šù‘¶‹““®‚ğˆÛ
     Enemy* bestForUI = best;
     for (const auto &ed : edepths) {
         if (!ed.uiVisible) continue;
@@ -346,50 +272,38 @@ void SceneMgr::Update()
         DrawEnemyUI(*ed.e, ed.e == bestForUI);
     }
 
-    // ƒvƒŒƒCƒ„[‚ÌƒJƒƒ‰‹óŠÔ‚Å‚Ì[“x‚ğŒvZ
     VECTOR camToPlayer = VSub(ppos, camPos);
     float playerZ = fwd.x * camToPlayer.x + fwd.y * camToPlayer.y + fwd.z * camToPlayer.z;
 
-    // [“x‚Åƒ\[ƒgi‰“‚¢‡ -> ‹ß‚¢‡j
     std::sort(edepths.begin(), edepths.end(), [](const EnemyDepth&a, const EnemyDepth&b){ return a.z > b.z; });
 
-    // ƒvƒŒƒCƒ„[‚æ‚è‰“‚¢“G‚ğæ‚É•`‰æ
     for (const auto &ed : edepths) {
         if (ed.z > playerZ) {
             ed.e->Draw();
         }
     }
 
-    // ƒvƒŒƒCƒ„[‚ğ•`‰æ
     player_->Draw();
+    player_->DrawCoinThrowEffect();
+    player_->DrawReflectTrajectory();
 
-    // iƒŒƒ“ƒ_[ƒXƒe[ƒg‚Ì‹£‡‚ğ”ğ‚¯‚é‚½‚ßAƒGƒtƒFƒNƒg‚Í‘S‚Ä‚Ì 3D •`‰æ‚ÌŒã‚É•`‰æj
-
-    // ƒvƒŒƒCƒ„[‚æ‚è‹ß‚¢A‚Ü‚½‚Í“¯‚¶[“x‚Ì“G‚ğ•`‰æiƒvƒŒƒCƒ„[‚Ìã‚É•\¦‚³‚ê‚é‚æ‚¤‚Éj
     for (const auto &ed : edepths) {
         if (ed.z <= playerZ) {
             ed.e->Draw();
         }
     }
 
-    // ƒOƒ[ƒoƒ‹ƒGƒtƒFƒNƒgi3Dj‚ğ•`‰æ‚µA‘¼‚Ì 3D ƒWƒIƒƒgƒŠ‚Æ“¯‚¶ƒ[ƒ‹ƒh‹óŠÔ‚Å•\¦‚·‚é
     if (gem) {
         gem->Draw();
     }
 
-    // •`‰æŒã‚É HUD / ƒfƒoƒbƒOƒeƒLƒXƒg‚ğ•`‰æ
     DrawFormatString(10, 10, GetColor(255,255,255), "Enemies: %d  Best: %s", (int)enemies_.size(), best ? "Yes" : "No");
 
-    // --- ƒsƒbƒNƒAƒbƒvXV / •`‰æ ---
-    // Pickup ŠÖ˜A‚Ìˆ—‚ÍÓ–±‚ğ•ªŠ„‚µ‚Äƒwƒ‹ƒpŠÖ”‚ÖˆÚ÷‚µ‚Ü‚·B
-    // - UpdateWeaponPickups: “ü—Í‚ÆƒvƒŒƒCƒ„[ˆÊ’u‚ğó‚¯æ‚èæ“¾”»’è/Equip ‚ğs‚¤
-    // - DrawWeaponPickups: ƒsƒbƒNƒAƒbƒv‚Ì UI •\¦‚ÆÀÛ‚Ì•`‰æEíœ‚ğs‚¤
     UpdateWeaponPickups(in, ppos);
     DrawWeaponPickups();
 
-    // HUD: Œ»İ‘•”õ
     const char* eq = Game::GetWeaponName(player_->GetEquippedWeapon());
-    DrawFormatString(10, 50, GetColor(200,200,255), "‘•”õ: %s", eq);
+    DrawFormatString(10, 50, GetColor(200,200,255), "Weapon: %s", eq);
 }
 
 void SceneMgr::ChangeScene(Scene s)
@@ -402,14 +316,6 @@ SceneMgr::Scene SceneMgr::GetCurrentScene() const
     return currentScene_;
 }
 
-// ------------------------------------------------------------------
-// Pickup helpers
-// ------------------------------------------------------------------
-// FindNearestPickupIndex:
-// w’è‚µ‚½ƒ[ƒ‹ƒhˆÊ’u(ppos) ‚©‚ç XZ •½–Ê‚Å‚ÌÅ’Z‹——£‚É‚ ‚é–¢æ“¾‚Ì
-// WeaponPickup ‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ•Ô‚µ‚Ü‚·B–¢æ“¾ƒGƒ“ƒgƒŠ‚ª–³‚¯‚ê‚Î -1.
-// ‚±‚ÌŠÖ”‚Í’Tõ‚¾‚¯‚ÉÓ–±‚ğŒÀ’è‚µ‚Ä‚¢‚é‚½‚ßA«—ˆ“I‚É•¡”Œó•â‚ÌûW
-// (CollectNearbyPickups) ‚â—Dæ‡ˆÊ•t‚¯ƒƒWƒbƒN‚Ö·‚µ‘Ö‚¦‚âŠg’£‚ª—eˆÕ‚Å‚·B
 int SceneMgr::FindNearestPickupIndex(const VECTOR& ppos) const
 {
     int nearestIdx = -1;
@@ -425,12 +331,6 @@ int SceneMgr::FindNearestPickupIndex(const VECTOR& ppos) const
     return nearestIdx;
 }
 
-// UpdateWeaponPickups:
-// - “ü—Í(in) ‚ÆƒvƒŒƒCƒ„[ˆÊ’u(ppos) ‚ğó‚¯æ‚èAÅŠñ‚èƒsƒbƒNƒAƒbƒv‚Ì”ÍˆÍ”»’è
-//   ‚ÆÀÛ‚Ì Equip / ƒhƒƒbƒvˆ—‚ğs‚¢‚Ü‚·B
-// - ÀÛ‚Ì•`‰æ‚Í DrawWeaponPickups ‚É”C‚¹‚é‚½‚ßA‚±‚±‚Å‚Í UI •\¦‚Ís‚¢‚Ü‚¹‚ñB
-// - ¬Œ÷/¸”s‚É‚©‚©‚í‚ç‚¸AÅŒã‚ÉŒ©‚Â‚©‚Á‚½ÅŠñ‚èƒCƒ“ƒfƒbƒNƒX‚Æ‹——£‚ğ
-//   lastNearestPickupIdx_/lastNearestPickupDist2_ ‚É•Û‘¶‚µ‚Ä‚¨‚«‚Ü‚·B
 void SceneMgr::UpdateWeaponPickups(const InputState& in, const VECTOR& ppos)
 {
     lastNearestPickupIdx_ = -1;
@@ -448,13 +348,10 @@ void SceneMgr::UpdateWeaponPickups(const InputState& in, const VECTOR& ppos)
         const auto &wp = weaponPickups_[lastNearestPickupIdx_];
         float range2 = pickupRange_ * pickupRange_;
         if (lastNearestPickupDist2_ <= range2) {
-            // ƒvƒŒƒCƒ„[‚ªƒCƒ“ƒ^ƒ‰ƒNƒg“ü—Í‚ğs‚Á‚½ê‡‚Ì‚İ Equip ‚ğs‚¤B
             if (in.interactPressed) {
                 Game::WeaponType newW = wp.GetType();
                 Game::WeaponType old = player_->EquipWeapon(newW);
-                // ’lƒIƒuƒWƒFƒNƒg‚Ì”z—ñ‚ğ’¼Ú‘€ì‚µ‚Ä Picked ƒtƒ‰ƒO‚ğ—§‚Ä‚é
                 weaponPickups_[lastNearestPickupIdx_].MarkPicked();
-                // ˆÈ‘O‚Ì•Ší‚ª‚ ‚ê‚Î‚»‚ÌˆÊ’u‚Éƒhƒƒbƒv‚·‚é
                 if (old != Game::WeaponType::None) {
                     VECTOR dropPos = wp.GetPosition();
                     weaponPickups_.push_back(Game::WeaponPickup(old, dropPos));
@@ -464,30 +361,18 @@ void SceneMgr::UpdateWeaponPickups(const InputState& in, const VECTOR& ppos)
     }
 }
 
-// DrawWeaponPickups:
-// - Pickup ‚Ì HUD •\¦i"E ‚ÅE‚¤"j‚âÀÛ‚Ì 3D •`‰æ‚ğs‚¢‚Ü‚·B
-// - ‚Ü‚½æ“¾Ï‚İ( IsPicked() ) ‚ÌƒGƒ“ƒgƒŠ‚ğ”z—ñ‚©‚çíœ‚µ‚ÄA–¢g—pƒGƒ“ƒgƒŠ‚ª
-//   —­‚Ü‚é‚Ì‚ğ–h‚¬‚Ü‚·B
-// - UI •\¦‚Í«—ˆ“I‚ÉƒfƒoƒCƒX’†—§‰»i"E / ¢ ‚ÅE‚¤" ‚â”Ä—p Interact •\‹L‚Öj
-//   ‚Ö·‚µ‘Ö‚¦‚â‚·‚¢‚æ‚¤‚É•ª—£‚µ‚Ä‚¢‚Ü‚·B
 void SceneMgr::DrawWeaponPickups()
 {
-    // ÅŠñ‚èƒsƒbƒNƒAƒbƒv‚ª”ÍˆÍ“à‚È‚çˆÄ“à UI ‚ğ•`‰æ‚·‚é
     if (lastNearestPickupIdx_ != -1) {
         const auto &wp = weaponPickups_[lastNearestPickupIdx_];
         float range2 = pickupRange_ * pickupRange_;
         if (lastNearestPickupDist2_ <= range2) {
-            // TODO: «—ˆ“I‚É•\¦‚Í InputActions ˆË‘¶‚Ì•¶š—ñ‚ğˆø‚¯‚é‚æ‚¤‚É‚·‚é
-            // Œ»ó‚ÍƒL[ƒ{[ƒhŒü‚¯ "E ‚ÅE‚¤" ‚ğ•\¦‚·‚é‚ªAƒfƒoƒCƒX’†—§‰»‚Ì
-            // ‚½‚ß‚É "E / ¢ ‚ÅE‚¤" ‚Ö•ÏX‚µ‚Ä‚¨‚­B
-            DrawFormatString(10, 30, GetColor(255,255,0), "E / ¢ ‚ÅE‚¤: %s", Game::GetWeaponName(wp.GetType()));
+            DrawFormatString(10, 30, GetColor(255,255,0), "E / å–å¾—: %s", Game::GetWeaponName(wp.GetType()));
         }
     }
 
-    // æ“¾Ï‚İƒGƒ“ƒgƒŠ‚ğíœ‚µ‚Ä–¢g—pƒGƒ“ƒgƒŠ‚Ì’~Ï‚ğ–h‚®
     weaponPickups_.erase(std::remove_if(weaponPickups_.begin(), weaponPickups_.end(), [](const Game::WeaponPickup &w){ return w.IsPicked(); }), weaponPickups_.end());
 
-    // ‚·‚×‚Ä‚ÌƒsƒbƒNƒAƒbƒv‚ğ•`‰æ
     for (auto &wp : weaponPickups_) {
         wp.Draw();
     }
