@@ -45,4 +45,7 @@ private:
 
     // If true, camera is snapped directly above the player and should not be moved by inputs or springs.
     bool frozenAbove_ = false;
+
+    // カメラの前方XZ平面ベクトル（正規化済み）
+    VECTOR lastForwardXZ_{0.0f, 0.0f, 1.0f};
 };
