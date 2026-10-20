@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "Enemy.h"
 #include "../Sys/Input.h"
 #include "../Sys/DebugPrint.h"
 #include "CameraRig.h"
