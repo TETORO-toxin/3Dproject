@@ -12,8 +12,9 @@ public:
     Enemy(const VECTOR& pos);
     ~Enemy();
 
-    // ゲームロジック（物理/状態）だけを更新する。描画は Draw() に分離し、呼び出し側で描画順を制御できるようにする。
+    // Simple AI / movement target
     void Update(float dt);
+    void Update(float dt, const std::vector<Enemy*>& neighbors, const VECTOR& playerPos);
     void Draw() const;
 
     VECTOR GetPosition() const;
@@ -81,4 +82,11 @@ private:
 
     // simple vertical velocity for lift during launch
     float velY = 0.0f;
+
+    // chase pause / spacing behaviour
+    float chasePauseTimer_ = 0.0f;
+    float chasePauseDuration_ = 1.2f;
+    float playerStopDistance_ = 2.2f;
+    float enemySeparationRadius_ = 1.5f;
+    float enemySeparationStrength_ = 2.8f;
 };
