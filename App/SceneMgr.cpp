@@ -9,6 +9,7 @@
 #include "../Sys/DebugPrint.h"
 #include "../Game/WeaponPickup.h"
 #include "../Game/WeaponTypes.h"
+#include "../Game/TimescaleManager.h"
 
 #include "../Sys/Input.h"
 #include "../Game/UI3D2D.h"
@@ -121,6 +122,14 @@ void SceneMgr::Update()
     if (dt < 0.0f) dt = 0.0f;
     if (dt > 0.05f) dt = 0.05f;
 
+    if (player_ && player_->IsThrowCharging()) {
+        timescaleManager_.SetTargetTimescale(0.2f);
+    } else {
+        timescaleManager_.SetTargetTimescale(1.0f);
+    }
+    timescaleManager_.Update(dt);
+    float effectiveDt = dt * timescaleManager_.GetCurrentTimescale();
+
     if (currentScene_ == Scene::Title) {
         bool start = titleScene_->Update();
         titleScene_->Draw();
@@ -128,14 +137,10 @@ void SceneMgr::Update()
         return;
     }
 
-    player_->UpdateLogic(dt, in);
+    player_->UpdateLogic(effectiveDt, in);
     VECTOR ppos = player_->GetPosition();
 
-    std::vector<VECTOR> enemyPositions;
-    for (auto e : enemies_) {
-        enemyPositions.push_back(e->GetPosition());
-    }
-    player_->UpdateCoinThrow(dt, in, enemyPositions);
+    player_->UpdateCoinThrow(effectiveDt, in, enemies_);
 
     EffectManager* gem = GetGlobalEffectManager();
     if (gem) {
@@ -174,9 +179,9 @@ void SceneMgr::Update()
     bool locked = (best != nullptr) && lockButton;
 
     if (locked && best) {
-        camera_->Update(ppos, best->GetPosition(), true, dt);
+        camera_->Update(ppos, best->GetPosition(), true, effectiveDt);
     } else {
-        camera_->Update(ppos, VGet(0,0,0), false, dt);
+        camera_->Update(ppos, VGet(0,0,0), false, effectiveDt);
     }
 
     struct EnemyDepth { Enemy* e; float z; bool uiVisible; float screenZ; float screenX; float screenY; };
@@ -190,7 +195,7 @@ void SceneMgr::Update()
 
     for (auto e : enemies_) {
         e->SetTarget(ppos);
-        e->Update(dt);
+        e->Update(effectiveDt);
 
         VECTOR epos = e->GetPosition();
         VECTOR camTo = VSub(epos, camPos);
@@ -293,9 +298,7 @@ void SceneMgr::Update()
         }
     }
 
-    if (gem) {
-        gem->Draw();
-    }
+    if (gem) gem->Draw();
 
     DrawFormatString(10, 10, GetColor(255,255,255), "Enemies: %d  Best: %s", (int)enemies_.size(), best ? "Yes" : "No");
 
