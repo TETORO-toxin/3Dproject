@@ -10,6 +10,22 @@
 #include "../Sys/GlobalEffects.h"
 #include <cmath>
 
+// プレイヤーの前方ベクトルを取得するユーティリティ関数
+static VECTOR GetPlayerForward(const Player* player, const CameraRig* camera)
+{
+    if (camera != nullptr) {
+        // カメラが存在する場合はカメラのXZ前方ベクトルを使う
+        VECTOR fwd = camera->GetForwardXZ();
+        float len = sqrtf(fwd.x * fwd.x + fwd.y * fwd.y + fwd.z * fwd.z);
+        if (len > 1e-6f) return VGet(fwd.x / len, fwd.y / len, fwd.z / len);
+        return VGet(0.0f, 0.0f, 1.0f);
+    } else {
+        // カメラが無い場合はプレイヤーのYawから前方を計算
+        float yaw = player->currentYaw_;
+        return VGet(sinf(yaw), 0.0f, cosf(yaw));
+    }
+}
+
 // UpdateLogic: �Q�[�����W�b�N�݂̂��X�V�����i�`���͍s���Ȃ��j
 //  - �Œ��^�C���X�e�b�v�œ��͂��|�[�����O���A���[�h�ؑցA�����A�⏕���˔����A�U��/�W�����v���͂̏������s���B
 //  - �J������̈ړ��x�N�g�������[���hXZ�ɕϊ����ʒu�ƌ������X�V�����B

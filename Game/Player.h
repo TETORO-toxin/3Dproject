@@ -90,6 +90,8 @@ public:
     bool TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut);
     Game::WeaponType EquipWeapon(Game::WeaponType newWeapon);
 
+    float GetCurrentYaw() const { return currentYaw_; }
+
 private:
     int baseModelHandle_ = -1;
     int modelHandle_ = -1;
@@ -204,4 +206,20 @@ private:
     float reflectDrawTimer_ = 0.0f;
     VECTOR coinFocusTarget_ = VGet(0.0f, 0.0f, 0.0f);
     Enemy* reflectHitEnemy_ = nullptr;
+
+    // プレイヤーの前方ベクトルを取得するユーティリティ関数
+    static VECTOR GetPlayerForward(const Player* player, const CameraRig* camera)
+    {
+        if (camera != nullptr) {
+            // カメラが存在する場合はカメラのXZ前方ベクトルを使う
+            VECTOR fwd = camera->GetForwardXZ();
+            float len = sqrtf(fwd.x * fwd.x + fwd.y * fwd.y + fwd.z * fwd.z);
+            if (len > 1e-6f) return VGet(fwd.x / len, fwd.y / len, fwd.z / len);
+            return VGet(0.0f, 0.0f, 1.0f);
+        } else {
+            // カメラが無い場合はプレイヤーのYawから前方を計算
+            float yaw = player->GetCurrentYaw();
+            return VGet(sinf(yaw), 0.0f, cosf(yaw));
+        }
+    }
 };
