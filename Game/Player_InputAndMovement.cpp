@@ -1,123 +1,180 @@
-// Player_InputAndMovement.cpp
-// サマリー:
-//  - プレイヤーの入力処理と移動、ジャンプ/物理、モード切替/回避/攻撃入力の判定を担当します。
-//  - カメラ参照を使ったカメラ基準移動とプレイヤーの向き設定、各種入力のデバウンスやクールダウン処理も含みます。
-
 #include "Player.h"
 #include "../Sys/Input.h"
 #include "../Sys/DebugPrint.h"
 #include "CameraRig.h"
 #include "../Sys/GlobalEffects.h"
 #include <cmath>
+#include <algorithm>
 
-// UpdateLogic: ゲームロジックのみを更新する（描画は行わない）
-//  - 固定タイムステップで入力をポーリングし、モード切替、回避、補助発射判定、攻撃/ジャンプ入力の処理を行う。
-//  - カメラ基準の移動ベクトルをワールドXZに変換し位置と向きを更新する。
-//  - ジャンプや着地の垂直物理を統合し、適切なアニメーションへ遷移させる。
-void Player::UpdateLogic(float dt, const InputState& in)
+static inline VECTOR Normalize3D(const VECTOR& v)
 {
-    // dt は SceneMgr から渡された値（秒）
+    float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (len < 0.0001f) return VGet(0.0f, 0.0f, 1.0f);
+    return VGet(v.x / len, v.y / len, v.z / len);
+}
 
-    // 現状は近接武器のみのためモード切替は無効化されています。
-    // 将来の射撃武器実装に向けた TODO として残しています。
+static inline VECTOR GetPlayerForward(const Player* player, CameraRig* camera)
+{
+    if (camera) {
+        VECTOR f = camera->GetForwardXZ();
+        float len = sqrtf(f.x * f.x + f.z * f.z);
+        if (len > 0.0001f) return Normalize3D(VGet(f.x, 0.0f, f.z));
+    }
+    return VGet(0.0f, 0.0f, 1.0f);
+}
 
-    // 回避（意味ベースのフラグを使用）
-    if (in.dodgePressed || (in.dodgeDown && !in.dodgePressed && false)) {
-        unsigned int now = GetNowCount();
-        if (now - lastDodgeTimeMs_ > dodgeCooldownMs_) {
-            // ジャスト回避か判定
-            if (now - lastIncomingTimeMs_ <= justWindowMs_) {
-                justExecuted_ = true;
-                // ジャスト回避ボーナス（短い前方テレポート）を適用
-                x_ += 2.0f;
-            }
-            lastDodgeTimeMs_ = now;
+void Player::SetCoinFocusTarget(const VECTOR& coinPos)
+{
+    coinFocusTarget_ = coinPos;
+}
+
+void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<VECTOR>& enemyPositions)
+{
+    bool attackKeyDown = in.attackLightDown || in.attackHeavyDown || in.mouseLeft || in.mouseRight;
+    bool attackKeyPressed = in.attackLightPressed || in.attackHeavyPressed || in.mouseLeft || in.mouseRight;
+
+    if (state_ == PlayerState::STATE_NORMAL)
+    {
+        if (attackKeyPressed)
+        {
+            state_ = PlayerState::STATE_THROW_CHARGING;
+            chargeTime_ = 0.0f;
+            coinAlive_ = true;
+            attackKeyHeld_ = true;
+
+            VECTOR forward = GetPlayerForward(this, camera_);
+            VECTOR muzzlePos = VAdd(GetPosition(), VGet(0.0f, 1.5f, 0.0f));
+            muzzlePos = VAdd(muzzlePos, VScale(forward, 1.5f));
+
+            coinPos_ = muzzlePos;
+            coinVel_ = VGet(forward.x * 6.5f, 5.5f, forward.z * 6.5f);
+            currentTimeScale_ = slowMotionScale_;
+            reflectShotDrawn_ = false;
+            reflectHit_ = false;
+            reflectTarget_ = coinPos_;
+            reflectDrawTimer_ = 0.0f;
+
+            DebugPrint("Coin throw started: player pos=(%.2f,%.2f,%.2f)\n", x_, y_, z_);
         }
     }
 
-    // 補助攻撃（左/右トリガーやマウスボタン） - 意味ベースの閾値を使用
-    if (in.leftTrigger > 0.5f || in.leftTriggerHoldTime > 0.0f) {
-        // 左補助発射 - 外部呼び出しを期待
-    }
-    if (in.rightTrigger > 0.5f || in.rightTriggerHoldTime > 0.0f) {
-        // 右補助発射 - 外部呼び出しを期待
-    }
+    if (state_ == PlayerState::STATE_THROW_CHARGING)
+    {
+        attackKeyHeld_ = attackKeyDown;
+        bool releaseThisFrame = (!attackKeyDown) && attackKeyHeld_;
+        attackKeyHeld_ = attackKeyDown;
 
-    // 攻撃とジャンプ入力: InputState の意味的アクションフラグを使用
-    bool attackInput = in.attackLightPressed || in.attackLightDown || in.attackHeavyPressed || in.attackHeavyDown;
-    bool jumpInput = in.jumpPressed || in.jumpDown;
+        float scaledDt = dt * slowMotionScale_;
+        chargeTime_ += scaledDt;
 
-    // 左スティック/キーボードによる単純移動
-    // 移動はカメラ基準: 前方入力でプレイヤーがカメラから遠ざかる（プレイヤーの背がカメラ向き）ように移動
+        coinVel_.y -= 18.0f * scaledDt;
+        coinPos_ = VAdd(coinPos_, VScale(coinVel_, scaledDt));
+
+        if (coinPos_.y <= 0.0f)
+        {
+            coinPos_.y = 0.0f;
+            coinAlive_ = false;
+            state_ = PlayerState::STATE_NORMAL;
+            currentTimeScale_ = 1.0f;
+            reflectShotDrawn_ = false;
+            DebugPrint("Coin missed: return to normal state.\n");
+            return;
+        }
+
+        coinFocusTarget_ = coinPos_;
+
+        if (!attackKeyDown)
+        {
+            VECTOR targetPos = coinPos_;
+            if (!enemyPositions.empty())
+            {
+                float bestDist = 999999.0f;
+                for (const VECTOR& enemyPos : enemyPositions)
+                {
+                    float d = (enemyPos.x - coinPos_.x) * (enemyPos.x - coinPos_.x)
+                            + (enemyPos.y - coinPos_.y) * (enemyPos.y - coinPos_.y)
+                            + (enemyPos.z - coinPos_.z) * (enemyPos.z - coinPos_.z);
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        targetPos = enemyPos;
+                    }
+                }
+            }
+
+            reflectHit_ = (GetRand(100) < 50);
+
+            if (reflectHit_)
+            {
+                reflectTarget_ = targetPos;
+            }
+            else
+            {
+                reflectTarget_ = VAdd(coinPos_, VGet(
+                    (GetRand(200) - 100) * 0.05f,
+                    1.0f + (GetRand(100) * 0.02f),
+                    (GetRand(200) - 100) * 0.05f));
+            }
+
+            reflectShotDrawn_ = true;
+            reflectDrawTimer_ = 0.8f;
+            coinAlive_ = false;
+            state_ = PlayerState::STATE_NORMAL;
+            currentTimeScale_ = 1.0f;
+
+            DebugPrint("Reflect shot fired: hit=%s target=(%.2f,%.2f,%.2f)\n",
+                reflectHit_ ? "true" : "false",
+                reflectTarget_.x, reflectTarget_.y, reflectTarget_.z);
+            return;
+        }
+    }
+}
+
+void Player::DrawCoinThrowEffect() const
+{
+    if (coinAlive_)
+    {
+        DrawSphere3D(coinPos_, 0.25f, 16, 16,
+            GetColor(255, 210, 80), GetColor(255, 180, 20), TRUE);
+    }
+}
+
+void Player::DrawReflectTrajectory() const
+{
+    if (!reflectShotDrawn_) return;
+
+    VECTOR muzzle = VAdd(GetPosition(), VGet(0.0f, 1.4f, 0.0f));
+    muzzle = VAdd(muzzle, VScale(GetPlayerForward(this, camera_), 1.5f));
+
+    DrawLine3D(muzzle, coinPos_, GetColor(255, 220, 90));
+    DrawLine3D(coinPos_, reflectTarget_, reflectHit_ ? GetColor(0, 255, 120) : GetColor(255, 90, 90));
+
+    DrawSphere3D(reflectTarget_, 0.18f, 10, 10,
+        reflectHit_ ? GetColor(0, 255, 150) : GetColor(255, 120, 120),
+        reflectHit_ ? GetColor(40, 180, 90) : GetColor(180, 60, 60),
+        TRUE);
+}
+
+void Player::UpdateLogic(float dt, const InputState& in)
+{
     float moveX = in.moveX;
     float moveY = in.moveY;
 
     if (camera_ != nullptr) {
-          VECTOR camF = camera_->GetForwardXZ(); // カメラからターゲット（プレイヤー）への正規化された前方ベクトル
-          // プレイヤーの前方はカメラの前方とは逆向き（XZ平面）。前へ入力(moveY>0)でプレイヤーはカメラから離れる
-          // XZ上の右ベクトルを計算
-          VECTOR right = VGet(camF.z, 0.0f, -camF.x); // 90度回転
-      
-          // カメラ基準軸を使ってワールドXZの移動を合成。moveX=右, moveY=前
-          float worldDX = right.x * moveX + (-camF.x) * moveY;
-          float worldDZ = right.z * moveX + (-camF.z) * moveY;
+        VECTOR camF = camera_->GetForwardXZ();
+        VECTOR right = VGet(camF.z, 0.0f, -camF.x);
+        float worldDX = right.x * moveX + (-camF.x) * moveY;
+        float worldDZ = right.z * moveX + (-camF.z) * moveY;
 
-          x_ += worldDX * 0.2f;
-          z_ += worldDZ * 0.2f;
+        x_ += worldDX * 0.2f;
+        z_ += worldDZ * 0.2f;
+    } else {
+        x_ += moveX * 0.2f;
+        z_ += moveY * 0.2f;
+    }
 
-          // プレイヤーの向きを移動方向に合わせる
-          {
-              float faceDX = worldDX;
-              float faceDZ = worldDZ;
-              if (fabsf(faceDX) > 0.0001f || fabsf(faceDZ) > 0.0001f) {
-                  float desiredYaw = atan2f(faceDX, faceDZ);
-                  targetYaw_ = desiredYaw;
-                  // 最短の角距離で目標ヨーへ刻み移動する
-                  float a = currentYaw_;
-                  float b = desiredYaw;
-                  float diff = b - a;
-                  // 巻き込みを行い角差を [-pi, pi] に正規化
-                  while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
-                  while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
-                  float maxStep = yawTurnSpeed_ * dt;
-                  if (fabsf(diff) <= maxStep) currentYaw_ = b;
-                  else currentYaw_ += (diff > 0.0f ? 1.0f : -1.0f) * maxStep;
-
-                  // Rotation applied during Draw() to keep transform updates centralized.
-                  // Avoid setting MV1 model rotation here to prevent inconsistent orientation.
-              }
-          }
-      } else {
-          x_ += moveX * 0.2f;
-          z_ += moveY * 0.2f;
-
-          // プレイヤーの向きを移動方向に合わせる
-          {
-              float faceDX = moveX;
-              float faceDZ = moveY;
-              if (fabsf(faceDX) > 0.0001f || fabsf(faceDZ) > 0.0001f) {
-                  float desiredYaw = atan2f(faceDX, faceDZ);
-                  targetYaw_ = desiredYaw;
-                  float a = currentYaw_;
-                  float b = desiredYaw;
-                  float diff = b - a;
-                  // 巻き込みを行い角差を [-pi, pi] に正規化
-                  while (diff > DX_PI_F) diff -= DX_PI_F * 2.0f;
-                  while (diff < -DX_PI_F) diff += DX_PI_F * 2.0f;
-                  float maxStep = yawTurnSpeed_ * dt;
-                  if (fabsf(diff) <= maxStep) currentYaw_ = b;
-                  else currentYaw_ += (diff > 0.0f ? 1.0f : -1.0f) * maxStep;
-
-                  // Rotation applied during Draw() to keep transform updates centralized.
-                  // Avoid setting MV1 model rotation here to prevent inconsistent orientation.
-              }
-          }
-      }
-    // 地上にいる時、WASD/キーボード移動（またはコントローラ左スティック）でmoveアニメを再生
-    bool moving = (fabsf(moveX) > 0.0001f || fabsf(moveY) > 0.0001f);
     if (onGround_) {
-        // 攻撃やジャンプアニメを上書きしない
-        // exclude both attack variants
+        bool moving = (fabsf(moveX) > 0.0001f || fabsf(moveY) > 0.0001f);
         if (currentAnim_ != "attack" && currentAnim_ != "attack_weapon" && currentAnim_ != "jump") {
             if (moving) {
                 if (currentAnim_ != "move") PlayAnimation("move", true, AnimLayer::Lower);
@@ -127,76 +184,26 @@ void Player::UpdateLogic(float dt, const InputState& in)
             }
         }
     }
-     
-     // 攻撃入力の処理（移動より優先、ジャンプよりは劣後）
-    unsigned int now = GetNowCount();
 
-    // 攻撃入力をエッジ検出して、1 回の押下で 1 回だけ攻撃が発動するようにする
-    bool attackBtnComposite = attackInput;
-    if (attackBtnComposite && !prevAttackBtnDown_) {
-        // 押下開始（エッジ）
-        if (now - lastAttackTimeMs_ > (unsigned int)attackCooldownMs_) {
-            lastAttackTimeMs_ = now;
-            // 下半身状態（move/idle）を維持しつつ上半身攻撃アニメを再生
-            // 装備状態に応じて攻撃アニメを切り替える
-            const std::string attackName = (equippedWeapon_ == Game::WeaponType::None) ? "attack" : "attack_weapon";
-            PlayAnimation(attackName, false, AnimLayer::Upper);
-            // spawn an attack effect slightly in front of the player
-            // 変更点: 装備武器 (equippedWeapon_) に合わせてエフェクトのファイル/スケール/オフセットを選択する
-            // - WeaponTypes のヘルパー GetWeaponEffectFile/Scale/Offset を使う
-            // - 装備なし (None) でも攻撃は行えるが、エフェクトは弱めにする
-            EffectManager* gem = GetGlobalEffectManager();
-            if (gem) {
-                VECTOR forward = VGet(0.0f, 0.0f, 1.0f);
-                if (camera_) forward = camera_->GetForwardXZ();
-                float fl = sqrtf(forward.x*forward.x + forward.y*forward.y + forward.z*forward.z);
-                if (fl > 1e-6f) forward = VGet(forward.x/fl, forward.y/fl, forward.z/fl);
-
-                // WeaponSpec から差分を取得
-                const Game::WeaponSpec& wspec = Game::GetWeaponSpec(equippedWeapon_);
-                const char* efFile = wspec.effectFile;
-                float efScale = wspec.effectScale;
-                VECTOR efOffset = wspec.effectOffset;
-
-                // オフセットの z 成分は前方に乗算して扱う (forward を正規化しているため、z 成分だけを使うのではなく
-                // forward ベクトルに対して efOffset.z を掛ける)
-                VECTOR pos = GetPosition();
-                // 高さを efOffset.y、左右は efOffset.x、前方方向に efOffset.z
-                pos = VAdd(pos, VGet(efOffset.x, efOffset.y, 0.0f));
-                pos = VAdd(pos, VScale(forward, efOffset.z));
-
-                // PlayEffectAt はファイルパスとスケールを受け取れるためそれらを渡す。
-                gem->PlayEffectAt(pos, efFile, efScale);
-            }
-        }
-    }
-    prevAttackBtnDown_ = attackBtnComposite;
-
-    // ジャンプ入力の処理
+    bool jumpInput = in.jumpPressed || in.jumpDown;
     if (jumpInput && onGround_) {
         unsigned int nowJ = GetNowCount();
         if (nowJ - lastJumpTimeMs_ > 200) {
             lastJumpTimeMs_ = nowJ;
-            // ジャンプ開始
             velY_ = jumpVelocity_;
             onGround_ = false;
-            // ジャンプは全身アニメなのでフルレイヤー再生（上半身アニメをクリア）
             PlayAnimation("jump", false, AnimLayer::Full);
         }
     }
 
-    // 単純な垂直方向物理を統合
     if (!onGround_) {
         velY_ += gravity_ * dt;
         y_ += velY_ * dt;
         if (y_ <= 0.0f) {
-            // 着地
             y_ = 0.0f;
             velY_ = 0.0f;
             onGround_ = true;
-            // 着地時に移動またはアイドルアニメに復帰
             if (currentAnim_ != "attack" && currentAnim_ != "attack_weapon") {
-                // プレイヤーが移動中ならmove、そうでなければ装備状態に応じた idle
                 bool movingNow = (fabsf(in.moveX) > 0.0001f || fabsf(in.moveY) > 0.0001f);
                 if (movingNow) PlayAnimation("move", true, AnimLayer::Lower);
                 else {
@@ -207,6 +214,6 @@ void Player::UpdateLogic(float dt, const InputState& in)
         }
     }
 
-    // アニメ更新（フレーム時間で進める）
+    UpdateCoinThrow(dt, in, {});
     UpdateAnimation(dt);
 }
