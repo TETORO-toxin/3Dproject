@@ -8,16 +8,14 @@
 #include "../Sys/Input.h"
 #include "WeaponTypes.h"
 
-// 新規攻撃システム用の状態
-//  - STATE_NORMAL: 通常状態
-//  - STATE_THROW_CHARGING: コイン投擲中（長押し・スローモーション中）
+class Enemy;
+
 enum class PlayerState
 {
     STATE_NORMAL,
     STATE_THROW_CHARGING
 };
 
-// 右手・上半身のボーン名候補
 static const char* const kRightHandFrameCandidates[] = {
     "mixamorig:LeftHand",
     "LeftHand",
@@ -56,34 +54,28 @@ public:
     Player(AssetsMgr* assets = nullptr);
     ~Player();
     void Update();
-
-    // 既存のロジック更新 API
     void UpdateLogic(float dt, const InputState& in);
     void Draw();
 
     VECTOR GetPosition() const;
     void SetCamera(CameraRig* cam);
 
-    // 新規コイン投擲システム
     PlayerState GetState() const { return state_; }
     bool IsThrowCharging() const { return state_ == PlayerState::STATE_THROW_CHARGING; }
     bool HasCoinInAir() const { return coinAlive_; }
     VECTOR GetCoinPosition() const { return coinPos_; }
     void SetCoinFocusTarget(const VECTOR& coinPos);
-    void UpdateCoinThrow(float dt, const InputState& in, const std::vector<VECTOR>& enemyPositions);
+    void UpdateCoinThrow(float dt, const InputState& in, const std::vector<Enemy*>& enemies);
     void DrawCoinThrowEffect() const;
     void DrawReflectTrajectory() const;
 
-    // 既存の被ダメージ関連 API
     void OnIncomingAttack();
     bool IsInvulnerable() const;
 
-    // Aux units
     void UpdateAux(float dt, ProjectileManager& pm);
     void FireAuxLeft(ProjectileManager& pm);
     void FireAuxRight(ProjectileManager& pm);
 
-    // Support/Status
     void SetAwakened(bool v);
     void Heal(float amount);
     float GetHP() const { return hp; }
@@ -168,7 +160,6 @@ private:
 
     int upperAttachedAnimAttachIndex_ = -1;
     int prevUpperAttachedAnimAttachIndex_ = -1;
-
     float upperAttachedAnimTotalTime_ = 0.0f;
     float prevUpperAttachedAnimTotalTime_ = 0.0f;
 
@@ -199,7 +190,6 @@ private:
     int equippedWeaponModelHandle_ = -1;
     bool equippedWeaponModelOwned_ = false;
 
-    // 新規攻撃システム用の状態
     PlayerState state_ = PlayerState::STATE_NORMAL;
     bool coinAlive_ = false;
     VECTOR coinPos_ = VGet(0.0f, 0.0f, 0.0f);
@@ -213,4 +203,5 @@ private:
     VECTOR reflectTarget_ = VGet(0.0f, 0.0f, 0.0f);
     float reflectDrawTimer_ = 0.0f;
     VECTOR coinFocusTarget_ = VGet(0.0f, 0.0f, 0.0f);
+    Enemy* reflectHitEnemy_ = nullptr;
 };
