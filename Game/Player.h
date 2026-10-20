@@ -8,10 +8,17 @@
 #include "../Sys/Input.h"
 #include "WeaponTypes.h"
 
-// ‰EèƒtƒŒ[ƒ€’TõŒó•â–¼i—Dæ‡j
-// ƒ‚ƒfƒ‹·‚µ‘Ö‚¦‚É‚±‚±‚¾‚¯‚ğ•ÒW‚·‚ê‚Î‚æ‚¢‚æ‚¤‚Éˆê——‚É‚Ü‚Æ‚ß‚éB
+// æ–°è¦æ”»æ’ƒã‚·ã‚¹ãƒ†ãƒ ç”¨ã®çŠ¶æ…‹
+//  - STATE_NORMAL: é€šå¸¸çŠ¶æ…‹
+//  - STATE_THROW_CHARGING: ã‚³ã‚¤ãƒ³æŠ•æ“²ä¸­ï¼ˆé•·æŠ¼ã—ãƒ»ã‚¹ãƒ­ãƒ¼ãƒ¢ãƒ¼ã‚·ãƒ§ãƒ³ä¸­ï¼‰
+enum class PlayerState
+{
+    STATE_NORMAL,
+    STATE_THROW_CHARGING
+};
+
+// å³æ‰‹ãƒ»ä¸ŠåŠèº«ã®ãƒœãƒ¼ãƒ³åå€™è£œ
 static const char* const kRightHandFrameCandidates[] = {
-    // —Dæ‡: mixamorig Œn‚ğÅ—Dæ‚Æ‚µA¶èŒn‚ÌŒó•â–¼‚ğ—ñ‹“
     "mixamorig:LeftHand",
     "LeftHand",
     "Hand_L",
@@ -21,13 +28,9 @@ static const char* const kRightHandFrameCandidates[] = {
     "hand.L",
     "WeaponAttach_L",
     "Left",
-    "è_¶",
-    "¶è",
-    "ƒ|ƒCƒ“ƒg",
     nullptr
 };
 
-// ã”¼gƒ‹[ƒgŒó•âi—Dæ‡j
 static const char* const kUpperBodyFrameCandidates[] = {
     "mixamorig:Spine",
     "Spine",
@@ -36,7 +39,6 @@ static const char* const kUpperBodyFrameCandidates[] = {
     "UpperBody",
     "Spine1",
     "Spine2",
-    "‹¹",
     nullptr
 };
 
@@ -55,21 +57,25 @@ public:
     ~Player();
     void Update();
 
-    // ƒƒWƒbƒNXV‚Æ•`‰æ‚ğ•ª—£: ƒV[ƒ“‘¤‚Å•`‰æ‡‚ğ§Œä‚Å‚«‚é‚æ‚¤‚É‚·‚é
-    // dt: delta time in seconds
-    // “ü—Íó‘Ô‚ÍŠO•”‚Å1‰ñ‚¾‚¯ Poll ‚µ‚Ä“n‚·İŒv‚É•ÏX‚µ‚Ü‚µ‚½B
-    // ‚±‚ê‚É‚æ‚è SceneMgr ‚ªƒtƒŒ[ƒ€’PˆÊ‚Å“ü—Í‚ğˆêŒ³“I‚Éæ“¾E”z•z‚Å‚«A
-    // ƒvƒŒƒCƒ„[^UI^ƒsƒbƒNƒAƒbƒv‚È‚Ç‚Å“ü—Í‚Ì‹£‡‚ğ§Œä‚µ‚â‚·‚­‚È‚è‚Ü‚·B
+    // æ—¢å­˜ã®ãƒ­ã‚¸ãƒƒã‚¯æ›´æ–° API
     void UpdateLogic(float dt, const InputState& in);
     void Draw();
 
     VECTOR GetPosition() const;
-
-    // Scene/Camera ‚ªƒJƒƒ‰î•ñ‚ğ’Ê’m‚µ‚ÄAƒJƒƒ‰Šî€‚ÌˆÚ“®/Œü‚«İ’è‚É—˜—p‚Å‚«‚é‚æ‚¤‚É‚·‚é
     void SetCamera(CameraRig* cam);
 
-    // í“¬ŠÖ˜A API
-    void OnIncomingAttack(); // notify an incoming attack for just-dodge timing
+    // æ–°è¦ã‚³ã‚¤ãƒ³æŠ•æ“²ã‚·ã‚¹ãƒ†ãƒ 
+    PlayerState GetState() const { return state_; }
+    bool IsThrowCharging() const { return state_ == PlayerState::STATE_THROW_CHARGING; }
+    bool HasCoinInAir() const { return coinAlive_; }
+    VECTOR GetCoinPosition() const { return coinPos_; }
+    void SetCoinFocusTarget(const VECTOR& coinPos);
+    void UpdateCoinThrow(float dt, const InputState& in, const std::vector<VECTOR>& enemyPositions);
+    void DrawCoinThrowEffect() const;
+    void DrawReflectTrajectory() const;
+
+    // æ—¢å­˜ã®è¢«ãƒ€ãƒ¡ãƒ¼ã‚¸é–¢é€£ API
+    void OnIncomingAttack();
     bool IsInvulnerable() const;
 
     // Aux units
@@ -82,118 +88,80 @@ public:
     void Heal(float amount);
     float GetHP() const { return hp; }
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“iŒİŠ·«‚Ì‚½‚ßƒAƒjƒ‚²‚Æ‚É•ÊMV1ƒ‚ƒfƒ‹‚ğg—pj
-    // ’ˆÓ: ƒAƒNƒeƒBƒu‚Èƒ‚ƒfƒ‹ƒnƒ“ƒhƒ‹‚ğ·‚µ‘Ö‚¦‚é‚Ì‚Å‚Í‚È‚­AŒ³‚Ìƒx[ƒXƒ‚ƒfƒ‹‚É‘Î‚µ‚ÄƒAƒjƒ‚ğ“K—p‚µ‚ÄÄ¶‚·‚éB
-    // layer ƒpƒ‰ƒ[ƒ^‚Í‘SgÄ¶‚©‰º”¼g/ã”¼g‚Ì‚İ‚©‚ğ‘I‘ğ‚·‚éB
     void PlayAnimation(const std::string& name, bool loop = false, AnimLayer layer = AnimLayer::Full);
     void UpdateAnimation(float dt);
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“ƒCƒxƒ“ƒgƒwƒ‹ƒp[: w’è•b”‚É’B‚µ‚½‚çƒR[ƒ‹ƒoƒbƒN‚ğŒÄ‚Ô
     void AddAnimEvent(const std::string& animName, float timeSec, std::function<void()> cb);
     void ClearAnimEvents(const std::string& animName);
 
-    // ‘•”õ’†‚Ì•ŠíŠÇ—: Å¬À‘• (WeaponType ‚ğ Game/WeaponTypes.h ‚Å’è‹`)
-    // EquipWeapon ‚Í‹Œ‘•”õ‚ğ•Ô‚·BEquipWeapon ‚É‚æ‚è“¯‚¶•Ší‚ÌÄ‘•”õ‚Ís‚í‚È‚¢B
     Game::WeaponType GetEquippedWeapon() const;
-    // `newWeapon` ‚ğ‘•”õ‚µ‚æ‚¤‚Æ‚·‚éB‘•”õ‚ª•ÏX‚³‚ê‚½ê‡‚Í true ‚ğ•Ô‚µA
-    // ˆÈ‘O‚Ì‘•”õ‚ğ `oldOut` ‚É‘‚«‚Şi–¢‘•”õ‚Ìê‡‚Í `Game::WeaponType::None`jB
-    // “¯ˆê‚Ì•Ší‚ğ‘•”õ‚µ‚æ‚¤‚Æ‚µ‚½ê‡‚Í‰½‚à‚¹‚¸ false ‚ğ•Ô‚µA`oldOut` ‚Í•ÏX‚µ‚È‚¢B
-    // ‚±‚ê‚É‚æ‚è–ß‚è’l‚ÌB–†‚³‚ğ”r‚µA•s—v‚ÈÄƒhƒƒbƒv‚ğ–h‚®B
     bool TryEquipWeapon(Game::WeaponType newWeapon, Game::WeaponType* oldOut);
-
-    // Œã•ûŒİŠ·‚Ìƒwƒ‹ƒp[BÀÛ‚ÉŒğŠ·‚ª”­¶‚µ‚½ê‡‚ÍˆÈ‘O‚Ì•Ší‚ğ•Ô‚µA
-    // ŒğŠ·‚ªs‚í‚ê‚È‚©‚Á‚½ê‡‚Í `Game::WeaponType::None` ‚ğ•Ô‚·B
     Game::WeaponType EquipWeapon(Game::WeaponType newWeapon);
 
 private:
-    // Œ³‚Ìƒx[ƒX MV1 ƒ‚ƒfƒ‹ƒnƒ“ƒhƒ‹i•\¦‚Ég‚¤ƒ‚ƒfƒ‹jBƒAƒjƒ[ƒVƒ‡ƒ“—p‚Ìƒ‚ƒfƒ‹‚Í•Ê“r•Û‚µA‚±‚±‚ÉƒAƒ^ƒbƒ`‚µ‚ÄÄ¶‚·‚éB
-    int baseModelHandle_ = -1; // Œ³‚Ìƒ‚ƒfƒ‹i‚±‚±‚ğ·‚µ‘Ö‚¦‚È‚¢j
-
-    // Œ»İ•`‰æ‚Ég‚¤ MV1 ƒ‚ƒfƒ‹ƒnƒ“ƒhƒ‹iV•û®‚Å‚Í baseModelHandle_ ‚Æ“¯‚¶’l‚É‚È‚éj
-    int modelHandle_ = -1; // ƒAƒNƒeƒBƒu‚Èƒ‚ƒfƒ‹ƒnƒ“ƒhƒ‹
-    std::unordered_map<std::string,int> animModelHandles_; // map animation name -> MV1 model handle
-    // ƒAƒjƒ–¼ -> ƒAƒjƒƒ‚ƒfƒ‹“à‚Ìƒ‚[ƒVƒ‡ƒ“ƒCƒ“ƒfƒbƒNƒXiƒ‰ƒ“ƒ^ƒCƒ€‚Å MV1GetAnimIndex ‚ğŒÄ‚Î‚¸‚ÉÏ‚Ş‚æ‚¤‚É‚·‚éj
+    int baseModelHandle_ = -1;
+    int modelHandle_ = -1;
+    std::unordered_map<std::string,int> animModelHandles_;
     std::unordered_map<std::string,int> animModelAnimIndex_;
 
     float x_ = 0.0f, y_ = 0.0f, z_ = 0.0f;
+    float visualScale_ = 0.04f;
 
-    // •`‰æƒXƒP[ƒ‹
-    float visualScale_ = 0.04f; // ‚³‚ç‚Ék¬‚µ‚½ƒTƒCƒY
-
-    // HP
     float hp = 100.0f;
     float maxHp = 100.0f;
 
-    // ƒ‚[ƒh
     Mode mode_ = Mode::Melee;
     unsigned int lastModeSwitchTimeMs_ = 0;
 
-    // Attack/dodge timing (ms)
     unsigned int lastAttackTimeMs_ = 0;
     float baseAttackCooldownMs_ = 300.0f;
     float attackCooldownMs_ = 300.0f;
 
     unsigned int lastDodgeTimeMs_ = 0;
     unsigned int dodgeCooldownMs_ = 800;
-    unsigned int dodgeDurationMs_ = 300; // –³“GŠÔiƒ~ƒŠ•bj
+    unsigned int dodgeDurationMs_ = 300;
 
-    // Just dodge detection
     unsigned int lastIncomingTimeMs_ = 0;
     unsigned int baseJustWindowMs_ = 200;
     unsigned int justWindowMs_ = 200;
 
-    // state
     bool justExecuted_ = false;
 
-    // Aux units (left/right)
     AuxUnit* auxLeft = nullptr;
     AuxUnit* auxRight = nullptr;
 
-    // •â•‘•”õ—pƒQ[ƒW / ŠoÁ
-    float auxGauge = 100.0f; // 0..100 ©‘R‰ñ•œ
-    float baseAuxGaugeRegenRate = 5.0f; // •b‚ ‚½‚è
-    float auxGaugeRegenRate = 5.0f; // Œ»İ‚Ì‰ñ•œ‘¬“x
-    bool  awakened = false; // ŠoÁ’†‚Í”­ËƒRƒXƒg‚ª•s—v
+    float auxGauge = 100.0f;
+    float baseAuxGaugeRegenRate = 5.0f;
+    float auxGaugeRegenRate = 5.0f;
+    bool awakened = false;
 
-    // ƒAƒjƒ[ƒVƒ‡ƒ“‚Ì’·‚³‚ÆƒCƒxƒ“ƒgiƒAƒjƒ‚²‚Æ‚É•b”‚ğİ’è‰Â”\j
-    std::unordered_map<std::string, float> animDurations_; // seconds
-
-    // Lower-body (original) animation state
+    std::unordered_map<std::string, float> animDurations_;
     std::string currentAnim_;
-    float animTime_ = 0.0f; // seconds
+    float animTime_ = 0.0f;
     bool animLoop_ = true;
 
     struct AnimEvent { float time = 0.0f; bool fired = false; std::function<void()> cb; };
     std::unordered_map<std::string, std::vector<AnimEvent>> animEvents_;
     float prevAnimTime_ = 0.0f;
 
-    // ƒJƒƒ‰QÆiƒJƒƒ‰Šî€‚ÌˆÚ“®/Œü‚«ŒvZ‚Ég—pj
     CameraRig* camera_ = nullptr;
 
-    // Œü‚«iƒˆ[j‚Ì•½ŠŠ‰»ó‘Ô: –Ú•W/Œ»İ‚Ìƒˆ[iƒ‰ƒWƒAƒ“j‚Æ‰ñ“]‘¬“xiƒ‰ƒWƒAƒ“/•bj
-    float currentYaw_ = 0.0f; // Œ»İ“K—p‚³‚ê‚Ä‚¢‚éƒˆ[iƒ‰ƒWƒAƒ“j
-    float targetYaw_ = 0.0f;  // “ü—Í‚©‚çŒvZ‚µ‚½–Ú•Wƒˆ[
-    float yawTurnSpeed_ = 8.0f; // ƒvƒŒƒCƒ„[‚ª–Ú•W•ûŒü‚ÖŒü‚­‘¬“xiƒ‰ƒWƒAƒ“/•bj
+    float currentYaw_ = 0.0f;
+    float targetYaw_ = 0.0f;
+    float yawTurnSpeed_ = 8.0f;
 
-    // currently attached animation attach index (returned by MV1AttachAnim), or -1 if none (lower-body)
     int attachedAnimAttachIndex_ = -1;
-    // previously attached animation attach index (for blending)
     int prevAttachedAnimAttachIndex_ = -1;
-
-    // DXLib attach-animation total time for current and previous attachments (lower-body)
     float attachedAnimTotalTime_ = 0.0f;
     float prevAttachedAnimTotalTime_ = 0.0f;
 
-    // store previous anim name and its seconds-based playhead for event/length lookup (lower-body)
     std::string prevAnimName_;
     float prevAnimTimeSeconds_ = 0.0f;
     bool prevAnimLoop_ = true;
 
-    // blending control (lower-body)
-    float animBlendRate_ = 1.0f; // 0..1, goes to 1 when blend completes
-    float animBlendSpeed_ = 0.12f; // per-frame increment
+    float animBlendRate_ = 1.0f;
+    float animBlendSpeed_ = 0.12f;
 
-    // Upper-body animation state (new)
     std::string upperAnim_;
     float upperAnimTime_ = 0.0f;
     bool upperAnimLoop_ = true;
@@ -208,83 +176,41 @@ private:
     float prevUpperAnimTimeSeconds_ = 0.0f;
     bool prevUpperAnimLoop_ = true;
 
-    float upperAnimBlendRate_ = 1.0f; // blending for upper layer
-
-    // whether this object owns the base model handle (loaded directly instead of via AssetsMgr)
+    float upperAnimBlendRate_ = 1.0f;
     bool ownsBaseModel_ = false;
 
-    // --- V‹K: ƒWƒƒƒ“ƒv‘Î‰‚ÌŠÈˆÕ‚’¼•¨— ---
-    float velY_ = 0.0f;           // ‚’¼‘¬“xi’PˆÊ: ’PˆÊ/•bj
-    bool onGround_ = true;        // ’nã‚É‚¢‚é‚©
-    float gravity_ = -20.0f;      // d—Í‰Á‘¬“xi’PˆÊ/•b^2j
-    float jumpVelocity_ = 8.0f;   // ƒWƒƒƒ“ƒvŠJn‚Ì‰‘¬i’PˆÊ/•bj
-
-    // timing helper for jump input (debounce)
+    float velY_ = 0.0f;
+    bool onGround_ = true;
+    float gravity_ = -20.0f;
+    float jumpVelocity_ = 8.0f;
     unsigned int lastJumpTimeMs_ = 0;
 
-    // Track previous frame's attack button composite state to detect press edges (one attack per press)
     bool prevAttackBtnDown_ = false;
-    // --- ‘•”õi•ŠíjŠÖ˜A‚ÌÓ–±‚Æƒƒ“ƒo‚É‚Â‚¢‚Ä ---
-    // ‘•”õŠÖ˜A‚Ìó‘Ô‚ÍˆÈ‰º‚Ìƒƒ“ƒo‚ÅŠÇ—‚µ‚Ä‚¢‚Ü‚·BÓ–±‚ğ–¾Šm‚É‚·‚é‚½‚ß‚ÉƒRƒƒ“ƒg‚Åà–¾‚µ‚Ü‚·B
-    //
-    // 1) equippedWeapon_
-    //    - Œ^: Game::WeaponType
-    //    - “à—e: Œ»İƒvƒŒƒCƒ„[‚ª‘•”õ‚µ‚Ä‚¢‚é•Ší‚Ìí—ŞB
-    //    - ‰Šú‰»: Player ‚Ìƒƒ“ƒo‰Šú’l‚Å None ‚É‰Šú‰»‚³‚ê‚éB
-    //    - XV: Player::TryEquipWeapon / Player::EquipWeapon ‚É‚æ‚Á‚Ä•ÏX‚³‚ê‚éB
-    //    - •`‰æ˜AŒg: •`‰æ‚É GetWeaponSpec(equippedWeapon_) ‚ğQÆ‚µ‚Äƒ‚ƒfƒ‹‚â•â³‚ğæ“¾‚·‚éB
-    //
-    // 2) equippedWeaponModelHandle_
-    //    - Œ^: int (MV1 model handle)
-    //    - “à—e: ‘•”õ—pƒ‚ƒfƒ‹‚Ì MV1 ƒnƒ“ƒhƒ‹BAssetsMgr ‚©‚çæ“¾‚µ‚½ƒnƒ“ƒhƒ‹‚ğƒLƒƒƒbƒVƒ…‚·‚éB
-    //    - ‰Šú‰»: -1i–³Œøj‚Å‰Šú‰»B
-    //    - XV: ‘•”õØ‚è‘Ö‚¦iTryEquipWeaponj‚É AssetsMgr ‚©‚çæ“¾‚µAƒ[ƒh¸”s‚Í -1 ‚Ì‚Ü‚Ü‚É‚·‚éB
-    //    - •`‰æ˜AŒg: Player::Draw “à‚Å‚±‚Ìƒnƒ“ƒhƒ‹‚ğg‚Á‚Ä MV1SetMatrix/MV1DrawModel ‚ğŒÄ‚ÔB
-    //
-    // 3) rightHandFrameIndex_
-    //    - Œ^: int
-    //    - “à—e: base model “à‚Å‚Ì‰EèƒtƒŒ[ƒ€‚ÌƒCƒ“ƒfƒbƒNƒX‚ğƒLƒƒƒbƒVƒ…BŒ©‚Â‚©‚ç‚È‚¢ê‡‚Í -1B
-    //    - ‰Šú‰»: -1i–¢ŒŸoj‚Å‰Šú‰»B
-    //    - XV: ƒx[ƒXƒ‚ƒfƒ‹ƒ[ƒh/·‚µ‘Ö‚¦‚Éƒ‚ƒfƒ‹“àƒtƒŒ[ƒ€–¼ƒŠƒXƒg‚ğ‘–¸‚µ‚ÄŒˆ’è‚·‚éiPlayer ‰Šú‰»‚âƒ‚ƒfƒ‹•ÏXˆ—jB
-    //    - •`‰æ˜AŒg: ƒtƒŒ[ƒ€‚ª—LŒø‚Èê‡‚Í MV1GetFrameLocalWorldMatrix ‚ÅƒtƒŒ[ƒ€‚Ìƒ[ƒ‹ƒhs—ñ‚ğæ“¾‚µ‚Ä•Šís—ñ‚Æ‡¬‚·‚éB
-    //
-    // 4) assets_
-    //    - Œ^: AssetsMgr*
-    //    - “à—e: ƒAƒZƒbƒgŠÇ—Ší‚Ö‚ÌQÆBƒ‚ƒfƒ‹‚âƒeƒNƒXƒ`ƒƒ‚Ìæ“¾‚Ég—p‚·‚éB
-    //    - ‰Šú‰»: ƒRƒ“ƒXƒgƒ‰ƒNƒ^‚Ìˆø”‚Å“n‚³‚ê‚é‚© nullptrB
-    //    - XV: Šî–{“I‚ÉŠ—LŒ ‚Í‚½‚¸QÆ‚ğ•Û‚·‚éBŠO•”‚ÅŠÇ—‚³‚ê‚éƒAƒZƒbƒgƒ}ƒl[ƒWƒƒ‚ğQÆ‚·‚éB
-    //
-    // ’ˆÓ“_:
-    //  - ‘•”õó‘Ô‚ÌÓ–±‚Í‚±‚±iPlayerj‚Ås‚Á‚Ä‚¢‚Ü‚·‚ªA«—ˆ“I‚É‚Í‘•”õê—pƒRƒ“ƒ|[ƒlƒ“ƒg‚ÉØ‚èo‚·‚±‚Æ‚ğŒŸ“¢‚µ‚Ä‚­‚¾‚³‚¢B
-    //  - ‘•”õØ‚è‘Ö‚¦‚Í equippedWeapon_ ‚Æ equippedWeaponModelHandle_ ‚ğ®‡‚³‚¹ANone ‚Ì‚Æ‚«‚Íƒnƒ“ƒhƒ‹‚ğ -1 ‚É‚·‚é‚±‚ÆB
-    //  - •`‰æ‘¤‚Íƒnƒ“ƒhƒ‹‚ª -1 ‚Ìê‡‚ÍˆÀ‘S‚ÉƒXƒLƒbƒv‚·‚éÀ‘•‚Æ‚µ‚Ä‚­‚¾‚³‚¢B
 
-    // «—ˆ‚Ì®—ˆÄ: ‘•”õó‘Ô‚ğ‚Ü‚Æ‚ß‚é¬‚³‚È\‘¢‘Ì‚É‚Å‚«‚é‚æ‚¤‚Éƒeƒ“ƒvƒŒ‚ğ—pˆÓ‚µ‚Ü‚·B
-    struct EquipmentState {
-        Game::WeaponType equippedWeapon = Game::WeaponType::None; // Œ»İ‚Ì•Šíí•Ê
-        int equippedModelHandle = -1; // ‘•”õ•\¦‚Ég‚¤ MV1 ƒnƒ“ƒhƒ‹ (-1 = none)
-        int rightHandFrameIndex = -1; // ‰EèƒtƒŒ[ƒ€‚ÌƒLƒƒƒbƒVƒ…
-        // AssetsMgr ‚Í Player ‘S‘Ì‚Åg‚¤‚½‚ß‚±‚±‚É‚ÍQÆ‚µ‚È‚¢i•K—v‚È‚çƒ|ƒCƒ“ƒ^‚ğ’Ç‰Áj
-    };
-
-    // Œ»ó‚ÍŠù‘¶‚ÌŒÂ•Êƒƒ“ƒo‚ğˆÛ‚µ‚ÄŒİŠ·«‚ğ•Û‚ÂB
     Game::WeaponType equippedWeapon_ = Game::WeaponType::None;
-    // ƒAƒZƒbƒgƒ}ƒl[ƒWƒƒQÆiƒ‚ƒfƒ‹‚Ìæ“¾‚É—˜—pj
     AssetsMgr* assets_ = nullptr;
 
-    // ‰EèƒtƒŒ[ƒ€”Ô†‚ÌƒLƒƒƒbƒVƒ… (-1 = –¢ŒŸo)
     int rightHandFrameIndex_ = -1;
-    // ‰EèƒtƒŒ[ƒ€–¼ƒLƒƒƒbƒVƒ…iŒ©‚Â‚©‚Á‚½ê‡j
     std::string rightHandFrameName_;
 
-    // ã”¼gƒ‹[ƒgƒtƒŒ[ƒ€‚ÌƒLƒƒƒbƒVƒ… (-1 = –¢ŒŸo)
     int upperBodyFrameIndex_ = -1;
     std::string upperBodyFrameName_;
 
-    // ‘•”õ’†‚Ì•Šíƒ‚ƒfƒ‹ƒnƒ“ƒhƒ‹iAssetsMgr ‚ÌƒLƒƒƒbƒVƒ…æ‚ğQÆ‚·‚éj
     int equippedWeaponModelHandle_ = -1;
-    // Whether the equippedWeaponModelHandle_ is a dedicated duplicated instance
-    // owned by this Player (and must be deleted with MV1DeleteModel). If false,
-    // the handle refers to a shared cached model and must not be deleted here.
     bool equippedWeaponModelOwned_ = false;
+
+    // æ–°è¦æ”»æ’ƒã‚·ã‚¹ãƒ†ãƒ ç”¨ã®çŠ¶æ…‹
+    PlayerState state_ = PlayerState::STATE_NORMAL;
+    bool coinAlive_ = false;
+    VECTOR coinPos_ = VGet(0.0f, 0.0f, 0.0f);
+    VECTOR coinVel_ = VGet(0.0f, 0.0f, 0.0f);
+    float chargeTime_ = 0.0f;
+    float slowMotionScale_ = 0.2f;
+    float currentTimeScale_ = 1.0f;
+    bool attackKeyHeld_ = false;
+    bool reflectShotDrawn_ = false;
+    bool reflectHit_ = false;
+    VECTOR reflectTarget_ = VGet(0.0f, 0.0f, 0.0f);
+    float reflectDrawTimer_ = 0.0f;
+    VECTOR coinFocusTarget_ = VGet(0.0f, 0.0f, 0.0f);
 };
