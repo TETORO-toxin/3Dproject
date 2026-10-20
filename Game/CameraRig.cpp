@@ -62,17 +62,34 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     bool controllerPresent = (pad.pad != 0) || (pad.xi.ThumbLX != 0) || (pad.xi.ThumbLY != 0) || (pad.xi.ThumbRX != 0) || (pad.xi.ThumbRY != 0) || (pad.xi.LeftTrigger != 0) || (pad.xi.RightTrigger != 0);
 
     if (lockedOn) {
-        // ���b�N�I����: �ȑO�̋������ێ��i�v���C���[�̔w�ォ���^�[�Q�b�g�������j
-        // �^�[�Q�b�g�̕����Ɋ��Â��ăJ�������v���C���[�̔w���ɔz�u���A��������������
-        VECTOR forward = VSub(targetPos, playerPos);
-        float len = VSize(forward);
-        if (len > 0.0001f) forward = VScale(forward, 1.0f / len);
-        else forward = VGet(0.0f, 0.0f, 1.0f);
+        // Specific shoulder-over follow mode for target tracking (coin lock, enemy lock):
+        // keep the camera just behind the player's shoulder, offset to the side closest to the target,
+        // while the actual look-at point stays on the tracked target.
+        VECTOR playerToTarget = VSub(targetPos, playerPos);
+        float dist = VSize(playerToTarget);
+        if (dist > 0.0001f) playerToTarget = VScale(playerToTarget, 1.0f / dist);
+        else playerToTarget = VGet(0.0f, 0.0f, 1.0f);
 
-        desired = VAdd(playerPos, VScale(forward, -12.0f));
-        desired.y += 6.0f;
+        VECTOR forwardXZ = VGet(playerToTarget.x, 0.0f, playerToTarget.z);
+        float forwardLen = VSize(forwardXZ);
+        if (forwardLen > 0.0001f) forwardXZ = VScale(forwardXZ, 1.0f / forwardLen);
+        else forwardXZ = VGet(0.0f, 0.0f, 1.0f);
+
+        VECTOR rightXZ = VGet(forwardXZ.z, 0.0f, -forwardXZ.x);
+        float rightLen = VSize(rightXZ);
+        if (rightLen > 0.0001f) rightXZ = VScale(rightXZ, 1.0f / rightLen);
+        else rightXZ = VGet(1.0f, 0.0f, 0.0f);
+
+        // Choose the shoulder closest to the target side.
+        VECTOR playerToTargetXZ = VGet(targetPos.x - playerPos.x, 0.0f, targetPos.z - playerPos.z);
+        float sideBias = Dot(playerToTargetXZ, rightXZ);
+        VECTOR shoulderDir = VScale(rightXZ, sideBias >= 0.0f ? 1.0f : -1.0f);
+
+        // Aim the camera from behind the player's shoulder so the coin is visible at the edge of frame.
+        VECTOR camOffset = VAdd(VScale(playerToTarget, -8.0f), VAdd(VScale(shoulderDir, 1.5f), VGet(0.0f, 2.8f, 0.0f)));
+        desired = VAdd(playerPos, camOffset);
         target_ = targetPos;
-        frozenAbove_ = false; // allow movement when returning to normal
+        frozenAbove_ = false;
     } else {
         // �ʏ펞: �I�[�r�b�g�������}�E�X/�X�e�B�b�N���͂ɂ������]���s��
         // frozenAbove_ �� true �̂Ƃ��́A�v���C���[�̐^���ɌŒ肳���Ă����̂ŉ��]�������X�L�b�v
