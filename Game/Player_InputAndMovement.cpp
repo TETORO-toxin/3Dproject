@@ -3,6 +3,7 @@
 #include "../Sys/DebugPrint.h"
 #include "CameraRig.h"
 #include "../Sys/GlobalEffects.h"
+#include "Enemy.h"
 #include <cmath>
 #include <algorithm>
 
@@ -28,7 +29,7 @@ void Player::SetCoinFocusTarget(const VECTOR& coinPos)
     coinFocusTarget_ = coinPos;
 }
 
-void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<VECTOR>& enemyPositions)
+void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<Enemy*>& enemies)
 {
     bool attackKeyDown = in.attackLightDown || in.attackHeavyDown || in.mouseLeft || in.mouseRight;
     bool attackKeyPressed = in.attackLightPressed || in.attackHeavyPressed || in.mouseLeft || in.mouseRight;
@@ -41,6 +42,7 @@ void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<V
             chargeTime_ = 0.0f;
             coinAlive_ = true;
             attackKeyHeld_ = true;
+            reflectHitEnemy_ = nullptr;
 
             VECTOR forward = GetPlayerForward(this, camera_);
             VECTOR muzzlePos = VAdd(GetPosition(), VGet(0.0f, 1.5f, 0.0f));
@@ -53,17 +55,12 @@ void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<V
             reflectHit_ = false;
             reflectTarget_ = coinPos_;
             reflectDrawTimer_ = 0.0f;
-
-            DebugPrint("Coin throw started: player pos=(%.2f,%.2f,%.2f)\n", x_, y_, z_);
         }
     }
 
     if (state_ == PlayerState::STATE_THROW_CHARGING)
     {
         attackKeyHeld_ = attackKeyDown;
-        bool releaseThisFrame = (!attackKeyDown) && attackKeyHeld_;
-        attackKeyHeld_ = attackKeyDown;
-
         float scaledDt = dt * slowMotionScale_;
         chargeTime_ += scaledDt;
 
@@ -77,7 +74,6 @@ void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<V
             state_ = PlayerState::STATE_NORMAL;
             currentTimeScale_ = 1.0f;
             reflectShotDrawn_ = false;
-            DebugPrint("Coin missed: return to normal state.\n");
             return;
         }
 
@@ -85,31 +81,35 @@ void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<V
 
         if (!attackKeyDown)
         {
-            VECTOR targetPos = coinPos_;
-            if (!enemyPositions.empty())
+            Enemy* bestEnemy = nullptr;
+            float bestDistSq = 999999.0f;
+            for (Enemy* e : enemies)
             {
-                float bestDist = 999999.0f;
-                for (const VECTOR& enemyPos : enemyPositions)
+                if (!e) continue;
+                VECTOR diff = VSub(e->GetPosition(), coinPos_);
+                float distSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+                if (distSq < bestDistSq)
                 {
-                    float d = (enemyPos.x - coinPos_.x) * (enemyPos.x - coinPos_.x)
-                            + (enemyPos.y - coinPos_.y) * (enemyPos.y - coinPos_.y)
-                            + (enemyPos.z - coinPos_.z) * (enemyPos.z - coinPos_.z);
-                    if (d < bestDist)
-                    {
-                        bestDist = d;
-                        targetPos = enemyPos;
-                    }
+                    bestDistSq = distSq;
+                    bestEnemy = e;
                 }
             }
 
-            reflectHit_ = (GetRand(100) < 50);
-
-            if (reflectHit_)
+            reflectHitEnemy_ = nullptr;
+            bool hitEnemy = (bestEnemy != nullptr && bestDistSq < 25.0f);
+            if (hitEnemy)
             {
-                reflectTarget_ = targetPos;
+                reflectHitEnemy_ = bestEnemy;
+                reflectHit_ = true;
+                reflectTarget_ = bestEnemy->GetPosition();
+                bestEnemy->ApplyHitWEAK(100.0f);
+                bestEnemy->Launch();
+                DebugPrint("Enemy weak-hit confirmed: enemy at (%.2f, %.2f, %.2f)\n",
+                    reflectTarget_.x, reflectTarget_.y, reflectTarget_.z);
             }
             else
             {
+                reflectHit_ = false;
                 reflectTarget_ = VAdd(coinPos_, VGet(
                     (GetRand(200) - 100) * 0.05f,
                     1.0f + (GetRand(100) * 0.02f),
@@ -121,10 +121,6 @@ void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<V
             coinAlive_ = false;
             state_ = PlayerState::STATE_NORMAL;
             currentTimeScale_ = 1.0f;
-
-            DebugPrint("Reflect shot fired: hit=%s target=(%.2f,%.2f,%.2f)\n",
-                reflectHit_ ? "true" : "false",
-                reflectTarget_.x, reflectTarget_.y, reflectTarget_.z);
             return;
         }
     }
@@ -214,6 +210,5 @@ void Player::UpdateLogic(float dt, const InputState& in)
         }
     }
 
-    UpdateCoinThrow(dt, in, {});
     UpdateAnimation(dt);
 }
