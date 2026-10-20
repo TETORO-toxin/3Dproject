@@ -11,6 +11,7 @@ static VECTOR Normalize(const VECTOR& v) {
 
 CameraRig::CameraRig()
 {
+    lastForwardXZ_ = VGet(0.0f, 0.0f, 1.0f);
 }
 
 void CameraRig::SetTarget(float x, float y, float z)
@@ -28,6 +29,12 @@ void CameraRig::Update()
 {
     SetCameraNearFar(0.1f, 1200.0f);
     SetCameraPositionAndTarget_UpVecY(camPos_, target_);
+    VECTOR f = VSub(target_, camPos_);
+    f.y = 0.0f;
+    float len = sqrtf(f.x*f.x + f.z*f.z);
+    if (len > 0.0001f) {
+        lastForwardXZ_ = VGet(f.x / len, 0.0f, f.z / len);
+    }
 }
 
 void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn)
@@ -38,10 +45,10 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
 
 void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lockedOn, float dt)
 {
-    // ‚±‚ÌXVŠÖ”‚Í–ˆƒtƒŒ[ƒ€ŒÄ‚Ño‚³‚êAƒJƒƒ‰‚ÌˆÊ’uEŒü‚«‚ğŒvZ‚µ‚Ü‚·B
-    // playerPos: ƒvƒŒƒCƒ„[‚Ìƒ[ƒ‹ƒhÀ•W
-    // targetPos: ƒƒbƒNƒIƒ“‘ÎÛ‚È‚Ç‚Ìƒ^[ƒQƒbƒgÀ•W
-    // lockedOn: ƒƒbƒNƒIƒ“’†‚©‚Ç‚¤‚©‚Ìƒtƒ‰ƒO
+    // ï¿½ï¿½ï¿½ÌXï¿½Vï¿½Öï¿½ï¿½Í–ï¿½ï¿½tï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Ä‚Ñoï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½ÌˆÊ’uï¿½Eï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½vï¿½Zï¿½ï¿½ï¿½Ü‚ï¿½ï¿½B
+    // playerPos: ï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ìƒï¿½ï¿½[ï¿½ï¿½ï¿½hï¿½ï¿½ï¿½W
+    // targetPos: ï¿½ï¿½ï¿½bï¿½Nï¿½Iï¿½ï¿½ï¿½ÎÛ‚È‚Ç‚Ìƒ^ï¿½[ï¿½Qï¿½bï¿½gï¿½ï¿½ï¿½W
+    // lockedOn: ï¿½ï¿½ï¿½bï¿½Nï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç‚ï¿½ï¿½ï¿½ï¿½Ìƒtï¿½ï¿½ï¿½O
 
     SetCameraNearFar(0.1f, 1200.0f);
 
@@ -51,12 +58,12 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
     PadState pad = PollPad(0);
     InputState in = PollInput(0);
 
-    // ƒRƒ“ƒgƒ[ƒ‰‚ªÚ‘±‚³‚ê‚Ä‚¢‚é‚©”»’è‚·‚éiPollInput ‚Æ“¯‚¶ƒqƒ…[ƒŠƒXƒeƒBƒbƒNj
+    // ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½Ú‘ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½é‚©ï¿½ï¿½ï¿½è‚·ï¿½ï¿½ï¿½iPollInput ï¿½Æ“ï¿½ï¿½ï¿½ï¿½qï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½j
     bool controllerPresent = (pad.pad != 0) || (pad.xi.ThumbLX != 0) || (pad.xi.ThumbLY != 0) || (pad.xi.ThumbRX != 0) || (pad.xi.ThumbRY != 0) || (pad.xi.LeftTrigger != 0) || (pad.xi.RightTrigger != 0);
 
     if (lockedOn) {
-        // ƒƒbƒNƒIƒ“: ˆÈ‘O‚Ì‹““®‚ğˆÛiƒvƒŒƒCƒ„[‚Ì”wŒã‚©‚çƒ^[ƒQƒbƒg‚ğŒ©‚éj
-        // ƒ^[ƒQƒbƒg‚Ì•ûŒü‚ÉŠî‚Ã‚¢‚ÄƒJƒƒ‰‚ğƒvƒŒƒCƒ„[‚Ì”wŒã‚É”z’u‚µA­‚µã•û‚ğŒ©‚é
+        // ï¿½ï¿½ï¿½bï¿½Nï¿½Iï¿½ï¿½ï¿½ï¿½: ï¿½È‘Oï¿½Ì‹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ûï¿½ï¿½iï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ì”wï¿½ã‚©ï¿½ï¿½ï¿½^ï¿½[ï¿½Qï¿½bï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½j
+        // ï¿½^ï¿½[ï¿½Qï¿½bï¿½gï¿½Ì•ï¿½ï¿½ï¿½ï¿½ÉŠï¿½ï¿½Ã‚ï¿½ï¿½ÄƒJï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ì”wï¿½ï¿½ï¿½É”zï¿½uï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         VECTOR forward = VSub(targetPos, playerPos);
         float len = VSize(forward);
         if (len > 0.0001f) forward = VScale(forward, 1.0f / len);
@@ -67,24 +74,20 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         target_ = targetPos;
         frozenAbove_ = false; // allow movement when returning to normal
     } else {
-        // ’Êí: ƒI[ƒrƒbƒgˆ—‚âƒ}ƒEƒX/ƒXƒeƒBƒbƒN“ü—Í‚É‚æ‚é‰ñ“]‚ğs‚¤
-        // frozenAbove_ ‚ª true ‚Ì‚Æ‚«‚ÍAƒvƒŒƒCƒ„[‚Ì^ã‚ÉŒÅ’è‚³‚ê‚Ä‚¢‚é‚Ì‚Å‰ñ“]ˆ—‚ğƒXƒLƒbƒv
+        // ï¿½Êí: ï¿½Iï¿½[ï¿½rï¿½bï¿½gï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½}ï¿½Eï¿½X/ï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½ï¿½ï¿½Í‚É‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]ï¿½ï¿½ï¿½sï¿½ï¿½
+        // frozenAbove_ ï¿½ï¿½ true ï¿½Ì‚Æ‚ï¿½ï¿½ÍAï¿½vï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½[ï¿½Ì^ï¿½ï¿½ï¿½ÉŒÅ’è‚³ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½Ì‚Å‰ï¿½ï¿½]ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½Lï¿½bï¿½v
         if (frozenAbove_) {
-            // ƒXƒvƒŠƒ“ƒO‚ªŒÅ’èó‘Ô‚Æ‘ˆ‚í‚È‚¢‚æ‚¤Aplayer ‚É‘Î‚·‚éŒ»İ‚Ì camPos ‚ğˆÛ‚·‚é
+            // ï¿½Xï¿½vï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½ï¿½ï¿½Å’ï¿½ï¿½ï¿½ï¿½Ô‚Æ‘ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½æ‚¤ï¿½Aplayer ï¿½É‘Î‚ï¿½ï¿½éŒ»ï¿½İ‚ï¿½ camPos ï¿½ï¿½ï¿½Ûï¿½ï¿½ï¿½ï¿½ï¿½
             desired = camPos_;
         } else {
-            // ƒI[ƒrƒbƒg‘€ì: ƒRƒ“ƒgƒ[ƒ‰‰EƒXƒeƒBƒbƒN‚Ü‚½‚Íƒ}ƒEƒXˆÚ“®‚©‚ç yaw/pitch ‚ğXV
-            // ƒRƒ“ƒgƒ[ƒ‰: ‰EƒXƒeƒBƒbƒN² (RX, RY)Bƒ}ƒEƒX: ‰æ–Ê’†S‚©‚ç‚Ì•Î·‚ğ—p‚¢‚é•û®
+            // ï¿½Iï¿½[ï¿½rï¿½bï¿½gï¿½ï¿½ï¿½ï¿½: ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½ï¿½Eï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½Ü‚ï¿½ï¿½Íƒ}ï¿½Eï¿½Xï¿½Ú“ï¿½ï¿½ï¿½ï¿½ï¿½ yaw/pitch ï¿½ï¿½ï¿½Xï¿½V
+            // ï¿½Rï¿½ï¿½ï¿½gï¿½ï¿½ï¿½[ï¿½ï¿½: ï¿½Eï¿½Xï¿½eï¿½Bï¿½bï¿½Nï¿½ï¿½ (RX, RY)ï¿½Bï¿½}ï¿½Eï¿½X: ï¿½ï¿½ï¿½Ê’ï¿½ï¿½Sï¿½ï¿½ï¿½ï¿½ï¿½Ì•Îï¿½ï¿½ï¿½ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             if (controllerPresent) {
                 // right stick gives -1..1 per axis; integrate over dt
                 yaw_ += pad.RX * controllerYawSpeed_ * dt;
                 pitch_ += -pad.RY * controllerPitchSpeed_ * dt; // invert Y
             } else {
-                // ƒ}ƒEƒX“ü—Íˆ—:
-                // ‰æ–Ê’†‰›‚ğŒ´“_‚Æ‚µ‚Äí‚É’†‰›‚©‚ç‚Ì•Î·‚Å‰ñ“]—Ê‚ğŒˆ‚ß‚éiFPS ‘€ì‚É‹ß‚¢•û®jB
-                // –ˆƒtƒŒ[ƒ€ SetMousePoint ‚Å’†‰›‚É–ß‚·‚±‚Æ‚ÅAâ‘ÎÀ•W‚ÌÏZ‚ğ”ğ‚¯‚éB
-
-                const int screenW = 800; // ƒQ[ƒ€•`‰æ‰ğ‘œ“x‚É‡‚í‚¹‚éi•K—v‚È‚ç‹¤—L’è”‚ÖˆÚ“®j
+                const int screenW = 800;
                 const int screenH = 600;
 
                 int mx = 0, my = 0;
@@ -93,35 +96,28 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                 int centerX = screenW / 2;
                 int centerY = screenH / 2;
 
-                // ‰‰ñ—˜—p‚ÍƒJ[ƒ\ƒ‹‚ğ’†‰›‚É”z’u‚µ‚ÄŠî€‚ğì‚é
                 if (prevMouseX_ == -1 && prevMouseY_ == -1) {
                     SetMousePoint(centerX, centerY);
                     prevMouseX_ = centerX;
                     prevMouseY_ = centerY;
-                    // ¡ƒtƒŒ[ƒ€‚ÍˆÚ“®—Ê0‚Æ‚µ‚Äˆµ‚¤
                     mx = centerX; my = centerY;
                 }
 
-                // ‰æ–Ê’†‰›‚©‚ç‚Ì•Î·‚ğŒvZ
                 int dx = mx - centerX;
                 int dy = my - centerY;
 
-                // •Î·‚ÉŠ´“x‚ğŠ|‚¯‚Ä‰ñ“]—Ê‚ğŒˆ‚ß‚éi‚±‚±‚Å‚ÍŠù‘¶‚Ì mouseSensitivity_ ‚ÌƒXƒP[ƒ‹‚ğ‘¸dj
-                yaw_ += -dx * mouseSensitivity_; // ‰E•ûŒü‚Ö‚Ìƒ}ƒEƒX¨ƒJƒƒ‰‰E‰ñ“]
+                yaw_ += -dx * mouseSensitivity_;
                 pitch_ += -dy * mouseSensitivity_;
 
-                // ŸƒtƒŒ[ƒ€‚à’†‰›‚©‚ç‚Ì•Î·‚ğ“¾‚é‚½‚ß‚Éƒ}ƒEƒX‚ğÄƒZƒ“ƒ^ƒŠƒ“ƒO‚·‚é
                 SetMousePoint(centerX, centerY);
                 prevMouseX_ = centerX; prevMouseY_ = centerY;
             }
 
-            // ƒsƒbƒ`Šp‚ÌãŒÀE‰ºŒÀ‚ğƒNƒ‰ƒ“ƒv‚µ‚Ä‹“_”½“]‚ğ–h~
-            const float maxPitch = 1.4f; // ~80 degrees
-            const float minPitch = -1.2f; // allow looking slightly up
+            const float maxPitch = 1.4f;
+            const float minPitch = -1.2f;
             if (pitch_ > maxPitch) pitch_ = maxPitch;
             if (pitch_ < minPitch) pitch_ = minPitch;
 
-            // compute offset from spherical coords
             float cp = cosf(pitch_);
             float sp = sinf(pitch_);
             float cy = cosf(yaw_);
@@ -131,34 +127,26 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
                                  orbitRadius_ * sp,
                                  orbitRadius_ * cp * cy);
 
-            // ‹…–ÊÀ•W‚©‚çƒIƒtƒZƒbƒg‚ğŒvZ‚µAƒvƒŒƒCƒ„[‚Ìü‚è‚ÉƒJƒƒ‰‚ğ”z’u
             desired = VAdd(playerPos, VGet(offset.x, offset.y + 3.0f, offset.z));
             target_ = VAdd(playerPos, VGet(0.0f, 3.0f, 0.0f));
         }
     }
 
-    // desired ‚ªƒvƒŒƒCƒ„[‚ÌŠî€–Ê‚æ‚è‚à’á‚­‚È‚éê‡AƒJƒƒ‰‚ª’n–Ê‚É‚ß‚è‚Ü‚È‚¢‚æ‚¤Ú‹ß‚ğ–h‚®B
-    // ‚±‚±‚Å‚ÍƒvƒŒƒCƒ„[Šî€–ÊigroundPlanej‚É‘Î‚·‚é signed ‹——£‚ğ”äŠr‚µ‚Ä•â³‚ğs‚¤B
     {
-        // compute signed distances to plane
         VECTOR pToPlane = VSub(playerPos, groundPoint_);
         float playerSigned = Dot(pToPlane, groundNormal_);
         VECTOR dToPlane = VSub(desired, groundPoint_);
         float desiredSigned = Dot(dToPlane, groundNormal_);
-        const float minAbovePlayer = 1.8f; // keep camera at least this above player's origin when centered
+        const float minAbovePlayer = 1.8f;
 
         if (desiredSigned < playerSigned + minAbovePlayer) {
-            // desired ‚ªƒvƒŒƒCƒ„[‚Ìã•ûè‡’l‚æ‚è’á‚¢ê‡A
-            // ‚©‚Â”¼Œa‹——£‚ğk‚ß‚é‚æ‚¤‚Å‚ ‚ê‚ÎŒ»İ‚Ì”¼Œa‚ğˆÛ‚µ‚Ä‹ß‚Ã‚©‚È‚¢‚æ‚¤‚É‚·‚é
             VECTOR curDir = VSub(camPos_, playerPos);
             VECTOR wantDir = VSub(desired, playerPos);
             float curDist = VSize(curDir);
             float wantDist = VSize(wantDir);
             if (wantDist < curDist && curDist > 0.0001f && wantDist > 0.0001f) {
-                // ƒvƒŒƒCƒ„[‚©‚ç‚ÌŒ»İ‚Ì‹——£‚ğˆÛ‚µ‚½‚Ü‚ÜAŒü‚«‚ğ desired ‚Ì•ûŒü‚ÉŒü‚¯‚é
                 VECTOR wantDirN = VScale(wantDir, 1.0f / wantDist);
                 desired = VAdd(playerPos, VScale(wantDirN, curDist));
-                // also nudge desired up along normal so it's at least the minimum signed height
                 float newDesiredSigned = Dot(VSub(desired, groundPoint_), groundNormal_);
                 if (newDesiredSigned < playerSigned + minAbovePlayer) {
                     float push = (playerSigned + minAbovePlayer) - newDesiredSigned;
@@ -170,100 +158,73 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
         }
     }
 
-    // ’Pƒ‚ÈƒXƒvƒŠƒ“ƒOÏ•ª: F = -k(x - x_desired) - c v
     VECTOR displacement = VSub(camPos_, desired);
     VECTOR springF = VScale(displacement, -springStiffness_);
     VECTOR dampingF = VScale(camVel_, -springDamping_);
     VECTOR acc = VAdd(springF, dampingF);
 
-    // integrate velocity and position
     camVel_ = VAdd(camVel_, VScale(acc, dt));
     camPos_ = VAdd(camPos_, VScale(camVel_, dt));
 
-    // •½–Ê‚Æ‚ÌÕ“Ë/ƒNƒ‰ƒ“ƒvˆ—:
-    // ƒJƒƒ‰‚ª’n–Ê‚É‚ß‚è‚Ü‚È‚¢‚æ‚¤‚ÉA’n–Ê–@ü•ûŒü‚Ì signed ‹——£‚ª minAboveGround ˆÈã‚É‚È‚é‚æ‚¤•â³‚·‚éB
-    const float minAboveGround = 1.0f; // meters above ground to keep (increased from 0.5f)
-    // compute signed distance from plane: d = dot(camPos - groundPoint, groundNormal)
+    const float minAboveGround = 1.0f;
     VECTOR camToPlane = VSub(camPos_, groundPoint_);
     float signedDist = Dot(camToPlane, groundNormal_);
     if (signedDist < minAboveGround) {
-        // ’n–Ê‚æ‚è’á‚¯‚ê‚ÎŠŠ‚ç‚©‚É‰Ÿ‚µã‚°‚éˆ—
         float desiredDist = minAboveGround;
         float diff = desiredDist - signedDist;
-        // move camera along normal by diff smoothly
         float lerp = 1.0f - powf(0.001f, dt);
         camPos_.x += groundNormal_.x * diff * lerp;
         camPos_.y += groundNormal_.y * diff * lerp;
         camPos_.z += groundNormal_.z * diff * lerp;
 
-        // XZ •½–Êã‚ÅƒvƒŒƒCƒ„[‚Ì“Š‰e“_‚ÖŠŠ‚ç‚©‚ÉŠñ‚¹‚éˆ—
-        // ‚Ü‚¸ƒvƒŒƒCƒ„[‚Ì•½–Êã‚ÌÅ‹ß–T“_‚ğ‹‚ß‚é
         VECTOR playerToPlane = VSub(playerPos, groundPoint_);
         float playerDist = Dot(playerToPlane, groundNormal_);
         VECTOR playerOnPlane = VSub(playerPos, VScale(groundNormal_, playerDist));
 
-        // ‚’¼•ûŒü‚ÌŠÑ’Ê‚ğ‘¦À‚É•â³‚µAƒJƒƒ‰‚ª’n–Ê‚æ‚è‰º‚És‚©‚È‚¢‚æ‚¤‚É‚·‚éB
         float camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
         if (camSignedNow < minAboveGround) {
             float pushUp = minAboveGround - camSignedNow;
             camPos_ = VAdd(camPos_, VScale(groundNormal_, pushUp));
             camSignedNow = minAboveGround;
-            // also remove any downward velocity along the normal to avoid re-penetration
             float velN = Dot(camVel_, groundNormal_);
             if (velN < 0.0f) {
-                // don't kill downward velocity instantly; damp it to avoid a sudden jerk
                 camVel_ = VSub(camVel_, VScale(groundNormal_, velN * 0.6f));
             }
         }
 
-        // Project current camera position onto plane
         VECTOR camOnPlane = VSub(camPos_, VScale(groundNormal_, camSignedNow));
-
-        // •½–Êã‚Å‚ÌƒJƒƒ‰‚©‚çƒvƒŒƒCƒ„[‚Ö‚Ì•ûŒü‚Æ‹——£‚ğŒvZ
         VECTOR planeDir = VSub(playerOnPlane, camOnPlane);
         float planeDist = sqrtf(planeDir.x*planeDir.x + planeDir.y*planeDir.y + planeDir.z*planeDir.z);
 
         if (planeDist > 0.001f) {
             VECTOR planeDirN = VScale(planeDir, 1.0f / planeDist);
-
-            // ƒvƒŒƒCƒ„[•ûŒü‚ÖŠŠ‚ç‚©‚ÉˆÚ“®‚³‚¹‚é‚½‚ß‚Ì–]‚Ü‚µ‚¢‘¬“x‚ğŒˆ’è
             const float maxSlideSpeed = 1.6f;
             float desiredSpeed = planeDist * 0.5f;
             if (desiredSpeed < 0.02f) desiredSpeed = 0.02f;
             if (desiredSpeed > maxSlideSpeed) desiredSpeed = maxSlideSpeed;
 
             VECTOR desiredVelPlane = VScale(planeDirN, desiredSpeed);
-
-            // Œ»İ‚Ì‘¬“x‚©‚ç–@ü¬•ª‚ğæ‚èœ‚¢‚Ä•½–Êã‚Ì‘¬“x‚ğŒvZ
             float velAlongNormal = Dot(camVel_, groundNormal_);
             VECTOR camVelPlane = VSub(camVel_, VScale(groundNormal_, velAlongNormal));
 
-            // Lerp current plane velocity toward desired to create a smooth ramp-up (avoids instant jumps)
-            const float rampAlpha = 0.12f; // small -> smooth start
+            const float rampAlpha = 0.12f;
             camVelPlane.x = camVelPlane.x * (1.0f - rampAlpha) + desiredVelPlane.x * rampAlpha;
             camVelPlane.y = camVelPlane.y * (1.0f - rampAlpha) + desiredVelPlane.y * rampAlpha;
             camVelPlane.z = camVelPlane.z * (1.0f - rampAlpha) + desiredVelPlane.z * rampAlpha;
 
-            // clamp plane speed just in case
             float spd = sqrtf(camVelPlane.x*camVelPlane.x + camVelPlane.y*camVelPlane.y + camVelPlane.z*camVelPlane.z);
             if (spd > maxSlideSpeed) camVelPlane = VScale(camVelPlane, maxSlideSpeed / spd);
 
-            // –@ü¬•ª‚ğ•Û‚µ‚Â‚Â•½–Êã‘¬“x‚ğÄ\¬
             camVel_ = VAdd(VScale(groundNormal_, velAlongNormal), camVelPlane);
-
-            // V‚µ‚¢•½–Ê‘¬“x‚Å•½–Êã‚ÌˆÊ’u‚ği‚ß‚éi¬‚³‚È dt ƒXƒeƒbƒvj
             camPos_ = VAdd(camPos_, VScale(camVelPlane, dt));
 
-            // ”’lŒë·‚Å’n–Ê‚æ‚è‰º‚É’¾‚ñ‚Å‚¢‚È‚¢‚©‚ğ•ÛØ‚·‚é’Ç‰Á•â³
             camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
             if (camSignedNow < minAboveGround) {
                 camPos_ = VAdd(camPos_, VScale(groundNormal_, (minAboveGround - camSignedNow)));
-                // damp any remaining downward normal velocity
                 float vn = Dot(camVel_, groundNormal_);
                 if (vn < 0.0f) camVel_ = VSub(camVel_, VScale(groundNormal_, vn * 0.5f));
             }
         } else {
-            // ƒvƒŒƒCƒ„[‚Ì^ã‚É”ñí‚É‹ß‚¢ê‡: •½–Ê‘¬“x‚ğ‰¸‚â‚©‚Éœ‹‚µAXZ ‚ğƒvƒŒƒCƒ„[ã‚ÉƒXƒiƒbƒv
             float velAlongNormal = Dot(camVel_, groundNormal_);
             VECTOR camVelPlane = VSub(camVel_, VScale(groundNormal_, velAlongNormal));
             camVelPlane = VScale(camVelPlane, 0.2f);
@@ -272,74 +233,54 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camPos_.z = playerOnPlane.z;
         }
 
-        // “Ë‘R‚Ì’â~‚ğ”ğ‚¯‚é‚½‚ß‘¬“x‚ğƒ[ƒ‚É‚¹‚¸ŠŠ‚ç‚©‚ÉŒ¸Š‚³‚¹‚é
         camVel_.x *= 0.6f;
         camVel_.y *= 0.25f;
         camVel_.z *= 0.6f;
-        // Slide camera along plane toward player to avoid digging into ground
-        // (previous position-based slide replaced by velocity-based sliding)
 
-        // ƒXƒiƒbƒv”»’è‚Ì‚½‚ß‚ÉƒJƒƒ‰‚Ì“Š‰e‚ÆƒvƒŒƒCƒ„[•½–Ê“_‚Ö‚Ì‹——£‚ğÄŒvZ
         camSignedNow = Dot(VSub(camPos_, groundPoint_), groundNormal_);
         camOnPlane = VSub(camPos_, VScale(groundNormal_, camSignedNow));
         VECTOR diffPlane = VSub(camOnPlane, playerOnPlane);
         float diffPlaneDist = sqrtf(diffPlane.x*diffPlane.x + diffPlane.y*diffPlane.y + diffPlane.z*diffPlane.z);
 
         const float snapThreshold = 0.3f;
-        const float minAbovePlayer = 1.8f; // keep camera at least this above player's origin when centered
+        const float minAbovePlayer = 1.8f;
 
         if (diffPlaneDist < snapThreshold) {
-            // ƒvƒŒƒCƒ„[‚Ìã‚É’¼ÚƒJƒƒ‰‚ğ”z’uiˆê’è‚Ì signed ‚‚³‚ğ•Û‚ÂƒXƒiƒbƒvj
             float targetSigned = playerDist + minAbovePlayer;
             camPos_ = VAdd(playerOnPlane, VScale(groundNormal_, targetSigned));
 
-            // ensure at least minAboveGround
             VECTOR camToPlane3 = VSub(camPos_, groundPoint_);
             float finalSigned = Dot(camToPlane3, groundNormal_);
             if (finalSigned < minAboveGround) {
                 camPos_ = VAdd(camPos_, VScale(groundNormal_, minAboveGround - finalSigned));
             }
 
-            // reduce velocities to avoid popping
             camVel_.x *= 0.05f;
             camVel_.y *= 0.01f;
             camVel_.z *= 0.05f;
 
-            // ƒXƒiƒbƒv‚ÍƒvƒŒƒCƒ„[‚ğ^‰º‚ÉŒ©‚é‚æ‚¤‚Éƒ^[ƒQƒbƒg‚ğİ’è
             target_ = playerPos;
-
-            // ^ã‚ğŒü‚¢‚½‚Ü‚Ü‚Ì•s—v‚ÈˆÚ“®/ƒWƒƒƒ_[‚ğ–h‚®‚½‚ßƒJƒƒ‰‚ğŒÅ’è‚·‚é
             frozenAbove_ = true;
         } else {
-            // ƒXƒ‰ƒCƒh’†‚Í‘¬“x‚ğŠŠ‚ç‚©‚ÉŒ¸Š‚³‚¹‚é
             camVel_.x *= 0.8f;
             camVel_.y *= 0.5f;
             camVel_.z *= 0.8f;
 
-            // When sliding, ensure camera looks toward player's upper body so it's aligned
             target_ = VAdd(playerPos, VGet(0.0f, 2.0f, 0.0f));
-
-            // ˆÈ‘O frozenAbove_ ‚¾‚Á‚½ê‡‚Å‚àè‡’lˆÈã—£‚ê‚½‚çŒÅ’è‚ğ‰ğœ‚·‚é
             frozenAbove_ = false;
         }
     }
 
-    // ’Ç‰Á‚Ì•ÛŒì: ƒJƒƒ‰‚ªƒvƒŒƒCƒ„[‚É”ñí‚É‹ß‚¢ê‡AƒvƒŒƒCƒ„[‚â’n–Ê‚ÖƒNƒŠƒbƒsƒ“ƒO‚µ‚È‚¢‚æ‚¤
-    // ƒJƒƒ‰‚ğã•û‚Ö‰Ÿ‚µã‚°AŒy‚­ŠO‘¤‚É‰Ÿ‚µo‚·ˆ—
-    // compute vector in plane tangent from player to camera
     VECTOR playerToCam = VSub(camPos_, playerPos);
-    // remove normal component
     float pn = Dot(playerToCam, groundNormal_);
     VECTOR tangent = VSub(playerToCam, VScale(groundNormal_, pn));
-    float distXZ = sqrtf(tangent.x*tangent.x + tangent.z*tangent.z + tangent.y*tangent.y); // distance along plane
-    const float closeThreshold = 0.7f; // meters
-    const float minAbovePlayer = 1.8f; // keep camera at least this above player's origin when centered (signed distance)
-    // compute player's signed distance to plane
+    float distXZ = sqrtf(tangent.x*tangent.x + tangent.z*tangent.z + tangent.y*tangent.y);
+    const float closeThreshold = 0.7f;
+    const float minAbovePlayer = 1.8f;
     VECTOR pToPlane = VSub(playerPos, groundPoint_);
     float playerSigned = Dot(pToPlane, groundNormal_);
     if (distXZ < closeThreshold) {
-        // ƒJƒƒ‰‚ªƒvƒŒƒCƒ„[‚É‹ß‚·‚¬‚éê‡‚Ì‚‚³Šm•Û
-        if ( (signedDist) < (playerSigned + minAbovePlayer) ) {
+        if (signedDist < (playerSigned + minAbovePlayer)) {
             float targetSigned = playerSigned + minAbovePlayer;
             float push = targetSigned - signedDist;
             float pushLerp = 1.0f - powf(0.001f, dt);
@@ -348,7 +289,6 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             camPos_.z += groundNormal_.z * push * pushLerp;
             camVel_.y *= 0.2f;
 
-            // Úü•ûŒü‚ÉŒy‚­ŠO‘¤‚Ö‰Ÿ‚µo‚µ‚ÄƒvƒŒƒCƒ„[‚Æ‚ÌÚG‚ğ”ğ‚¯‚é
             float nudge = (closeThreshold - distXZ) * 0.5f;
             if (distXZ > 0.0001f) {
                 camPos_.x += (tangent.x / distXZ) * -nudge;
@@ -357,27 +297,28 @@ void CameraRig::Update(const VECTOR& playerPos, const VECTOR& targetPos, bool lo
             } else {
                 camPos_.x += 0.01f; camPos_.y += 0.01f; camPos_.z += 0.01f;
             }
-            // ƒvƒŒƒCƒ„[‚Ìã”¼giáŠ±ãj‚ğ’‹‚·‚é‚æ‚¤ƒ^[ƒQƒbƒg‚ğ’²®
             target_ = VAdd(playerPos, VGet(0.0f, 2.2f, 0.0f));
         }
     }
 
-    // frozenAbove_ ‚Ìê‡AˆÊ’u•Ï‰»‚ğÅ¬‰»‚µ‚ÄƒWƒƒƒ_[‚ğ”ğ‚¯‚é‚½‚ß‘¬“x‚ğ‹­‚­Œ¸Š
     if (frozenAbove_) {
-        // ¬‚³‚È‘¬“x‚ğƒ[ƒ‚É‚µˆÊ’u‚ğƒƒbƒN‚µ‚ÄƒWƒƒƒ_[‚ğ–h‚®
         if (VSize(camVel_) < 0.01f) {
             camVel_.x = camVel_.y = camVel_.z = 0.0f;
         } else {
-            // damp strongly
             camVel_.x *= 0.05f;
             camVel_.y *= 0.02f;
             camVel_.z *= 0.05f;
         }
-        // lock camPos_ to current to avoid drift
-        // (no changes; we've already set camPos_ earlier when snapping)
     }
 
     SetCameraPositionAndTarget_UpVecY(camPos_, target_);
+
+    VECTOR f = VSub(target_, camPos_);
+    f.y = 0.0f;
+    float len = sqrtf(f.x*f.x + f.z*f.z);
+    if (len > 0.0001f) {
+        lastForwardXZ_ = VGet(f.x / len, 0.0f, f.z / len);
+    }
 }
 
 // Return camera forward vector projected to XZ plane and normalized.
@@ -386,8 +327,12 @@ VECTOR CameraRig::GetForwardXZ() const
     VECTOR f = VSub(target_, camPos_);
     f.y = 0.0f;
     float len = sqrtf(f.x*f.x + f.z*f.z);
-    if (len < 0.0001f) return VGet(0.0f, 0.0f, 1.0f);
-    return VGet(f.x / len, 0.0f, f.z / len);
+    if (len < 0.0001f) {
+        return lastForwardXZ_;
+    }
+
+    VECTOR forward = VGet(f.x / len, 0.0f, f.z / len);
+    return forward;
 }
 
 // getters
