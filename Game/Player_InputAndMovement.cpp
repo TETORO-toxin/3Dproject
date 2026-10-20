@@ -1,7 +1,3 @@
-// Player_InputAndMovement.cpp
-// �T�}���[:
-//  - �v���C���[�̓��͏����ƈړ��A�W�����v/�����A���[�h�ؑ�/����/�U�����͂̔������S�����܂��B
-//  - �J�����Q�Ƃ��g�����J������ړ��ƃv���C���[�̌����ݒ��A�e�����͂̃f�o�E���X���N�[���_�E���������܂݂܂��B
 
 #include "Player.h"
 #include "../Sys/Input.h"
@@ -21,15 +17,18 @@ static VECTOR GetPlayerForward(const Player* player, const CameraRig* camera)
         return VGet(0.0f, 0.0f, 1.0f);
     } else {
         // カメラが無い場合はプレイヤーのYawから前方を計算
-        float yaw = player->currentYaw_;
+        float yaw = player->GetCurrentYaw();
         return VGet(sinf(yaw), 0.0f, cosf(yaw));
     }
 }
 
-// UpdateLogic: �Q�[�����W�b�N�݂̂��X�V�����i�`���͍s���Ȃ��j
-//  - �Œ��^�C���X�e�b�v�œ��͂��|�[�����O���A���[�h�ؑցA�����A�⏕���˔����A�U��/�W�����v���͂̏������s���B
-//  - �J������̈ړ��x�N�g�������[���hXZ�ɕϊ����ʒu�ƌ������X�V�����B
-//  - �W�����v�⒅�n�̐��������𓝍����A�K�؂ȃA�j���[�V�����֑J�ڂ������B
+void Player::UpdateCoinThrow(float dt, const InputState& in, const std::vector<Enemy*>& enemies)
+{
+    (void)dt;
+    (void)in;
+    (void)enemies;
+}
+
 void Player::UpdateLogic(float dt, const InputState& in)
 {
     float moveX = in.moveX;
@@ -165,7 +164,6 @@ void Player::DrawCoinThrowEffect() const
             16,
             GetColor(255, 210, 80),
             GetColor(255, 180, 20),
-            GetColor(0, 0, 0),
             TRUE);
     }
 }
@@ -186,6 +184,5 @@ void Player::DrawReflectTrajectory() const
         10,
         reflectHit_ ? GetColor(0, 255, 150) : GetColor(255, 120, 120),
         reflectHit_ ? GetColor(40, 180, 90) : GetColor(180, 60, 60),
-        GetColor(0, 0, 0),
         TRUE);
 }
