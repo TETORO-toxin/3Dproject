@@ -81,6 +81,9 @@ public:
     void Heal(float amount);
     float GetHP() const { return hp; }
 
+    void SetTimeScale(float scale) { currentTimeScale_ = scale; }
+    float GetTimeScale() const { return currentTimeScale_; }
+
     void PlayAnimation(const std::string& name, bool loop = false, AnimLayer layer = AnimLayer::Full);
     void UpdateAnimation(float dt);
 
@@ -207,5 +210,4 @@ private:
     float reflectDrawTimer_ = 0.0f;
     VECTOR coinFocusTarget_ = VGet(0.0f, 0.0f, 0.0f);
     Enemy* reflectHitEnemy_ = nullptr;
-
 };
