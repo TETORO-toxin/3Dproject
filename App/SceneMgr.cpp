@@ -178,7 +178,9 @@ void SceneMgr::Update()
 
     bool locked = (best != nullptr) && lockButton;
 
-    if (locked && best) {
+    if (player_ && (player_->IsThrowCharging() || player_->HasCoinInAir())) {
+        camera_->Update(ppos, player_->GetCoinPosition(), false, effectiveDt);
+    } else if (locked && best) {
         camera_->Update(ppos, best->GetPosition(), true, effectiveDt);
     } else {
         camera_->Update(ppos, VGet(0,0,0), false, effectiveDt);
