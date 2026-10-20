@@ -129,7 +129,7 @@ void Enemy::Update(float dt)
 {
     // airborne vertical physics
     if (airborne) {
-        velY -= 9.8f * dt; // èdóÕ
+        velY -= 9.8f * dt; // ÔøΩdÔøΩÔøΩ
         pos_.y += velY * dt;
         if (pos_.y <= 0.0f) {
             pos_.y = 0.0f;
@@ -184,30 +184,35 @@ void Enemy::Update(float dt)
         moveTarget = pos_;
     }
 
-    // simple AI: move towards moveTarget on XZ plane
-    VECTOR diff = VSub(moveTarget, pos_);
-    float dx = diff.x;
-    float dz = diff.z;
-    float distXZ = sqrtf(dx*dx + dz*dz);
-    // snap to target when very close to avoid tiny residual motion preventing idle
-    const float arrivalThreshold = 0.6f; // slightly more forgiving than before
-    if (distXZ <= arrivalThreshold) {
-        if (!path_.empty() && currentPathIndex_ < (int)path_.size() - 1) {
-            // if we could see further ahead, jump the path index forward
-            // bestIndex was computed above; advance to it if appropriate
-            if (bestIndex > currentPathIndex_) currentPathIndex_ = bestIndex;
-            else currentPathIndex_++;
-        } else {
-            if (currentAnim_ != "idle") PlayAnimation("idle", true);
+    // Keep a reasonable attack distance from the player instead of closing to zero.
+    // This prevents the enemy from overlapping the player and feeling stuck in contact.
+    const float desiredKeepDistance = 1.8f;
+    const float keepDistanceError = 0.25f;
+
+    VECTOR chaseTarget = moveTarget;
+    VECTOR toTarget = VSub(chaseTarget, pos_);
+    float targetDistXZ = sqrtf(toTarget.x*toTarget.x + toTarget.z*toTarget.z);
+    if (targetDistXZ > 0.0001f) {
+        const float targetScale = 1.0f / targetDistXZ;
+        VECTOR dir = VGet(toTarget.x * targetScale, 0.0f, toTarget.z * targetScale);
+        VECTOR desiredPos = VAdd(chaseTarget, VScale(dir, -desiredKeepDistance));
+
+        // Use the keep-distance point as the actual movement target.
+        // If the enemy is already within the desired range, it will hover rather than
+        // closing to zero distance; if it is farther away, it advances toward this point.
+        VECTOR desiredDiff = VSub(desiredPos, pos_);
+        float desiredDistXZ = sqrtf(desiredDiff.x*desiredDiff.x + desiredDiff.z*desiredDiff.z);
+        if (desiredDistXZ > 0.0001f) {
+            float nx = desiredDiff.x / desiredDistXZ;
+            float nz = desiredDiff.z / desiredDistXZ;
+            float move = moveSpeed_ * dt;
+            if (move > desiredDistXZ) move = desiredDistXZ;
+            pos_.x += nx * move;
+            pos_.z += nz * move;
         }
-    } else if (distXZ > 0.01f) {
-        float nx = dx / distXZ;
-        float nz = dz / distXZ;
-        float move = moveSpeed_ * dt;
-        if (move > distXZ) move = distXZ;
-        pos_.x += nx * move;
-        pos_.z += nz * move;
-        // face target direction (keep looking toward overall target rather than instantaneous move)
+
+        // Face the player, but keep a stable offset so the model does not end up
+        // turning as if it were standing directly on top of the player.
         VECTOR lookDiff = VSub(targetPos_, pos_);
         float ldx = lookDiff.x;
         float ldz = lookDiff.z;
@@ -216,10 +221,17 @@ void Enemy::Update(float dt)
             float targetYaw = atan2f(ldx, ldz) + 3.14159265f; // flip so model faces forward
             yaw_ = ApproachAngle(yaw_, targetYaw, turnSpeed_ * dt);
         }
-        // play move anim
+
         if (currentAnim_ != "move") PlayAnimation("move", true);
-    } else {
-        if (currentAnim_ != "idle") PlayAnimation("idle", true);
+
+        // If the enemy is too close to the player, back off slightly instead of staying in contact.
+        if (targetDistXZ < desiredKeepDistance - keepDistanceError) {
+            float nudge = (desiredKeepDistance - targetDistXZ) * 0.5f;
+            if (targetDistXZ > 0.0001f) {
+                pos_.x -= (toTarget.x / targetDistXZ) * nudge;
+                pos_.z -= (toTarget.z / targetDistXZ) * nudge;
+            }
+        }
     }
 
     // update animation playhead
@@ -289,12 +301,12 @@ void Enemy::NudgePosition(const VECTOR& delta)
 void Enemy::ApplyHitWEAK(float weakGain)
 {
     if (!isWeak) {
-        // WEAK ÉQÅ[ÉWÇâ¡éZ
+        // WEAK ÔøΩQÔøΩ[ÔøΩWÔøΩÔøΩÔøΩÔøΩÔøΩZ
         weakGauge = weakGauge + weakGain;
         if (weakGauge > 100.0f) weakGauge = 100.0f;
         if (weakGauge >= 100.0f) {
             isWeak = true;
-            // TODO: ÉGÉtÉFÉNÉgê∂ê¨
+            // TODO: ÔøΩGÔøΩtÔøΩFÔøΩNÔøΩgÔøΩÔøΩÔøΩÔøΩ
         }
     }
 }
