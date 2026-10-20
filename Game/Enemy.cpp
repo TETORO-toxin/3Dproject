@@ -127,6 +127,11 @@ Enemy::~Enemy()
 
 void Enemy::Update(float dt)
 {
+    Update(dt, {}, targetPos_);
+}
+
+void Enemy::Update(float dt, const std::vector<Enemy*>& neighbors, const VECTOR& playerPos)
+{
     // airborne vertical physics
     if (airborne) {
         velY -= 9.8f * dt; // 重力
@@ -137,11 +142,11 @@ void Enemy::Update(float dt)
             velY = 0.0f;
         }
     }
+
     // ensure current animation is attached; retry attach if missing
     if (attachedAnimAttachIndex_ == -1 && modelHandle_ >= 0 && !currentAnim_.empty()) {
         PlayAnimation(currentAnim_, animLoop_);
 
-        // limited debug logging when attach still missing
         static std::string lastMissingAnim;
         if (attachedAnimAttachIndex_ == -1 && lastMissingAnim != currentAnim_) {
             std::cerr << "Enemy: attach missing for anim '" << currentAnim_ << "' (modelHandle=" << modelHandle_ << ")\n";
@@ -155,21 +160,22 @@ void Enemy::Update(float dt)
     // path-following: if navMesh_ is set, periodically request path to targetPos_
     pathRecalcTimer_ -= dt;
     if (navMesh_ && pathRecalcTimer_ <= 0.0f) {
-        pathRecalcTimer_ = 0.2f; // more frequent path updates for smoother pursuit
+        pathRecalcTimer_ = 0.2f;
         RequestPathTo(targetPos_);
     }
 
-    // choose a move target from the path, preferring the farthest visible waypoint
-    // By default we won't blindly move straight to the world-space target when a NavMesh
-    // is present but no path could be found; that caused enemies to walk through
-    // non-walkable nodes. If navMesh_ exists and path_ is empty, freeze movement.
+    // temporarily pause chase when the enemy gets too close to the player
+    if (chasePauseTimer_ > 0.0f) {
+        chasePauseTimer_ -= dt;
+        if (currentAnim_ != "idle") PlayAnimation("idle", true);
+    }
+
     VECTOR moveTarget = targetPos_;
     int bestIndex = currentPathIndex_;
     if (!path_.empty() && currentPathIndex_ < (int)path_.size()) {
-        const int maxAdvance = 4; // try up to 4 waypoints ahead
+        const int maxAdvance = 4;
         int lastIndex = (int)path_.size() - 1;
         for (int i = currentPathIndex_; i <= lastIndex && i <= currentPathIndex_ + maxAdvance; ++i) {
-            // if this waypoint is visible from our position, prefer it
             if (HasLineOfSight(pos_, path_[i])) {
                 bestIndex = i;
             }
@@ -177,48 +183,67 @@ void Enemy::Update(float dt)
         moveTarget = path_[bestIndex];
     }
 
-    // If NavMesh is available but no path was found, do not attempt to move directly
-    // toward the world-space target (which may lie behind blocked cells). This prevents
-    // enemies from walking through non-walkable nodes.
     if (navMesh_ && path_.empty()) {
         moveTarget = pos_;
     }
 
-    // Keep a safe chase distance from the player so enemies do not close to zero distance.
-    // This ensures they approach, but stop short of overlapping the player.
-    const float desiredKeepDistance = 1.8f;
-    const float arrivalThreshold = 0.25f;
+    VECTOR desiredMove = VGet(0.0f, 0.0f, 0.0f);
 
-    VECTOR chasePos = moveTarget;
-    VECTOR toTarget = VSub(chasePos, pos_);
-    float targetDistXZ = sqrtf(toTarget.x*toTarget.x + toTarget.z*toTarget.z);
-
-    if (targetDistXZ > 0.0001f) {
-        // Move toward a point slightly behind the target instead of directly on top of it.
-        VECTOR dir = VGet(toTarget.x / targetDistXZ, 0.0f, toTarget.z / targetDistXZ);
-        VECTOR desiredPos = VAdd(chasePos, VScale(dir, -desiredKeepDistance));
-
-        VECTOR diff = VSub(desiredPos, pos_);
-        float distXZ = sqrtf(diff.x*diff.x + diff.z*diff.z);
-
-        if (distXZ > arrivalThreshold) {
-            float nx = diff.x / distXZ;
-            float nz = diff.z / distXZ;
-            float move = moveSpeed_ * dt;
-            if (move > distXZ) move = distXZ;
-            pos_.x += nx * move;
-            pos_.z += nz * move;
+    // 1) Preserve a safe player distance. Once very close, pause for a beat instead of zipping to zero.
+    VECTOR toPlayer = VSub(playerPos, pos_);
+    float playerDistXZ = sqrtf(toPlayer.x * toPlayer.x + toPlayer.z * toPlayer.z);
+    if (playerDistXZ > 0.001f) {
+        if (playerDistXZ < playerStopDistance_ && chasePauseTimer_ <= 0.0f) {
+            chasePauseTimer_ = chasePauseDuration_;
         }
 
-        // Face the player, but keep a stable offset so the model doesn't end up turning as if
-        // it were standing directly on top of the player.
-        VECTOR lookDiff = VSub(targetPos_, pos_);
-        float ldx = lookDiff.x;
-        float ldz = lookDiff.z;
-        float lookDist = sqrtf(ldx*ldx + ldz*ldz);
-        if (lookDist > 0.001f) {
-            float targetYaw = atan2f(ldx, ldz) + 3.14159265f; // flip so model faces forward
-            yaw_ = ApproachAngle(yaw_, targetYaw, turnSpeed_ * dt);
+        if (chasePauseTimer_ <= 0.0f) {
+            VECTOR dir = VGet(toPlayer.x / playerDistXZ, 0.0f, toPlayer.z / playerDistXZ);
+            desiredMove = VAdd(desiredMove, VScale(dir, 1.0f));
+        }
+    }
+
+    // 2) Keep a buffer between nearby enemies so they don't stack into each other.
+    for (Enemy* other : neighbors) {
+        if (other == this) continue;
+
+        VECTOR diff = VSub(pos_, other->GetPosition());
+        float dx = diff.x;
+        float dz = diff.z;
+        float distXZ = sqrtf(dx * dx + dz * dz);
+
+        if (distXZ > 0.0001f && distXZ < enemySeparationRadius_) {
+            float push = enemySeparationRadius_ - distXZ;
+            float nx = dx / distXZ;
+            float nz = dz / distXZ;
+
+            VECTOR repel = VGet(nx * push * enemySeparationStrength_,
+                                0.0f,
+                                nz * push * enemySeparationStrength_);
+            desiredMove = VAdd(desiredMove, repel);
+        }
+    }
+
+    // 3) Apply movement if there is any desired direction.
+    float moveLen = sqrtf(desiredMove.x * desiredMove.x + desiredMove.z * desiredMove.z);
+    if (moveLen > 0.0001f) {
+        VECTOR dir = VGet(desiredMove.x / moveLen, 0.0f, desiredMove.z / moveLen);
+        float move = moveSpeed_ * dt;
+        if (move > moveLen) move = moveLen;
+
+        pos_.x += dir.x * move;
+        pos_.z += dir.z * move;
+
+        // face the player while not paused
+        if (chasePauseTimer_ <= 0.0f) {
+            VECTOR lookDiff = VSub(playerPos, pos_);
+            float ldx = lookDiff.x;
+            float ldz = lookDiff.z;
+            float lookDist = sqrtf(ldx * ldx + ldz * ldz);
+            if (lookDist > 0.001f) {
+                float targetYaw = atan2f(ldx, ldz) + 3.14159265f; // flip so model faces forward
+                yaw_ = ApproachAngle(yaw_, targetYaw, turnSpeed_ * dt);
+            }
         }
 
         if (currentAnim_ != "move") PlayAnimation("move", true);
